@@ -14,22 +14,22 @@
 
                 <!--begin: Desarrollos -->
                 <div class="menu-item">
-                    <a class="menu-link {{ request()->is('desarrollos*') ? 'active' : '' }}" href="/desarrollos">
+                    <a class="menu-link {{ request()->is('/') ? 'active' : '' }}" href="/">
                         <span class="menu-icon">
                             <i class="ki-outline ki-home-2 fs-2"></i>
                         </span>
-                        <span class="menu-title">Desarrollos</span>
+                        <span class="menu-title">{{ __('messages.desarrollos') }}</span>
                     </a>
                 </div>
                 <!--end: Desarrollos -->
 
                 <!--begin: Consulta Adara -->
-                <div class="menu-item">
+                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
                     <a class="menu-link {{ request()->is('consulta*') ? 'active' : '' }}" href="/consulta">
                         <span class="menu-icon">
                             <i class="ki-outline ki-search-list fs-2"></i>
                         </span>
-                        <span class="menu-title">Consulta Adara</span>
+                        <span class="menu-title">{{ __('messages.consulta_adara') }}</span>
                     </a>
                 </div>
                 <!--end: Consulta Adara -->
@@ -40,19 +40,19 @@
                         <span class="menu-icon">
                             <i class="ki-outline ki-element-7 fs-2"></i>
                         </span>
-                        <span class="menu-title">Reportes</span>
+                        <span class="menu-title">{{ __('messages.reportes') }}</span>
                     </a>
                 </div>
                 <!--end: iFrames -->
 
                 <!--begin: CRM Naboo -->
-                <div class="menu-item menu-accordion {{ request()->is('projects*', 'phases*', 'stages*', 'lotsAdara*') ? 'show' : '' }}"
+                <div class="menu-item menu-accordion {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
                     data-kt-menu-trigger="click">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="ki-outline ki-briefcase fs-2"></i>
                         </span>
-                        <span class="menu-title">Catálogo Naboo</span>
+                        <span class="menu-title">{{ __('messages.catalogo_naboo') }}</span>
                         <span class="menu-arrow"></span>
                     </span>
 
@@ -61,28 +61,28 @@
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('projects*') ? 'active' : '' }}" href="/projects">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">Proyectos</span>
+                                <span class="menu-title">{{ __('messages.proyectos') }}</span>
                             </a>
                         </div>
                         <!-- Fases -->
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('phases*') ? 'active' : '' }}" href="/phases">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">Fases</span>
+                                <span class="menu-title">{{ __('messages.fases') }}</span>
                             </a>
                         </div>
                         <!-- Etapas -->
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('stages*') ? 'active' : '' }}" href="/stages">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">Etapas</span>
+                                <span class="menu-title">{{ __('messages.etapas') }}</span>
                             </a>
                         </div>
                         <!-- Lotes -->
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->is('lotsAdara*') ? 'active' : '' }}" href="/lotsAdara">
+                            <a class="menu-link {{ request()->is('tickets*') ? 'active' : '' }}" href="/tickets">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">Lotes</span>
+                                <span class="menu-title">{{ __('messages.lotes') }}</span>
                             </a>
                         </div>
                     </div>
@@ -90,41 +90,64 @@
                 <!--end: CRM Naboo -->
 
                 <!-- Dashboard -->
-                <div class="menu-item">
+                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
                     <a class="menu-link {{ request()->is('dashboards*') ? 'active' : '' }}" href="/dashboards">
                         <span class="menu-icon"><i class="ki-outline ki-chart-line fs-2"></i></span>
-                        <span class="menu-title">Dashboards</span>
+                        <span class="menu-title">{{ __('messages.dashboards') }}</span>
                     </a>
                 </div>
 
-                <div class="menu-item">
+                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
                     <a class="menu-link {{ request()->is('search*') ? 'active' : '' }}" href="/search">
                         <span class="menu-icon">
                             <i class="ki-outline ki-magnifier fs-2"></i>
                         </span>
-                        <span class="menu-title">Búsqueda masiva</span>
+                        <span class="menu-title">{{ __('messages.busqueda_masiva') }}</span>
                     </a>
                 </div>
 
                 <!--begin: Financiamiento -->
                 <div class="menu-item">
-                    <a class="menu-link {{ request()->is('financing*') ? 'active' : '' }}" href="/financing">
+                    <a class="menu-link {{ request()->is('financiamientos*') ? 'active' : '' }}"
+                        href="/financiamientos">
                         <span class="menu-icon">
                             <i class="ki-outline ki-calculator fs-2"></i>
                         </span>
-                        <span class="menu-title">Financiamiento</span>
+                        <span class="menu-title">{{ __('messages.financiamiento') }}</span>
                     </a>
                 </div>
                 <!--end: Financiamiento -->
 
+                <!--begin: Bitácora -->
+                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
+                    <a class="menu-link {{ request()->is('bitacora*') ? 'active' : '' }}" href="/bitacora">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-notepad fs-2"></i>
+                        </span>
+                        <span class="menu-title">{{ __('messages.bitacora') }}</span>
+                    </a>
+                </div>
+                <!--end: Bitácora -->
+
+                <!--begin: Migrar información -->
+                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
+                    <a class="menu-link {{ request()->is('migracion*') ? 'active' : '' }}" href="/migracion">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-send fs-2"></i>
+                        </span>
+                        <span class="menu-title">{{ __('messages.migrar_info') }}</span>
+                    </a>
+                </div>
+                <!--end: Migrar información -->
+
                 <!--begin: Configuraciones -->
-                <div class="menu-item menu-accordion {{ request()->is('users*', 'connections*', 'access*') ? 'show' : '' }}"
+                <div class="menu-item menu-accordion {{ auth()->user()->role === 'admin' ? '' : 'd-none' }} {{ request()->is('users*', 'connections*', 'access*') ? 'show' : '' }}"
                     data-kt-menu-trigger="click">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="ki-outline ki-setting-3 fs-2"></i>
                         </span>
-                        <span class="menu-title">Configuraciones</span>
+                        <span class="menu-title">{{ __('messages.configuraciones') }}</span>
                         <span class="menu-arrow"></span>
                     </span>
 
@@ -133,7 +156,7 @@
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('users*') ? 'active' : '' }}" href="/users">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">Usuarios</span>
+                                <span class="menu-title">{{ __('messages.usuarios') }}</span>
                             </a>
                         </div>
 
@@ -142,7 +165,7 @@
                             <a class="menu-link {{ request()->is('connections*') ? 'active' : '' }}"
                                 href="/connections">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">Conexiones APIs</span>
+                                <span class="menu-title">{{ __('messages.conexiones') }}</span>
                             </a>
                         </div>
                     </div>

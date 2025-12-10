@@ -8,53 +8,85 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
+   public function index()
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        $user = Auth::user();
+        return view('profile.index', compact('user'));
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request)
     {
-        $request->user()->fill($request->validated());
+        $user = Auth::user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+        ]);
+
+        $user->update($request->only('name', 'email'));
+
+        return back()->with('success', 'Perfil actualizado correctamente.');
+    }
+
+   public function updatePhoto(Request $request)
+    {
+        $request->validate([
+            'profile_photo' => 'required|image|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        // Carpeta donde se guardará dentro de /public/
+        $destination = public_path('profile_photos');
+
+        // Crear carpeta si no existe
+        if (!file_exists($destination)) {
+            mkdir($destination, 0777, true);
         }
 
-        $request->user()->save();
+        // Eliminar foto anterior si existe en public
+        if ($user->profile_photo && file_exists(public_path($user->profile_photo))) {
+            unlink(public_path($user->profile_photo));
+        }
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        // Preparar nombre del archivo
+        $file = $request->file('profile_photo');
+        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+
+        // Mover la foto a /public/profile_photos/
+        $file->move($destination, $filename);
+
+        // Guardar ruta relativa (para usar con asset())
+        $relativePath = 'profile_photos/' . $filename;
+
+        $user->update(['profile_photo' => $relativePath]);
+
+        return back()->with('success', 'Foto de perfil actualizada.');
     }
 
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
+
+    public function updatePassword(Request $request)
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
+        $request->validate([
+            'current_password'      => 'required',
+            'password'              => 'required|confirmed|min:8',
         ]);
 
-        $user = $request->user();
+        $user = Auth::user();
 
-        Auth::logout();
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('error', 'La contraseña actual no es correcta.');
+        }
 
-        $user->delete();
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
+        return back()->with('success', 'Contraseña actualizada correctamente.');
     }
 }
