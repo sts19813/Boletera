@@ -5,18 +5,27 @@ $(document).ready(function () {
     // ===============================================================
     let ticketsTable = $('#ticketsTable').DataTable({
         processing: true,
-        serverSide: true,
-        ajax: 'api/tickets',
+        serverSide: false,
+        ajax: {
+            url: '/api/tickets',
+            dataSrc: ''
+        },
         order: [[0, 'desc']],
         columns: [
-            { data: 'id', name: 'id' },
-            { data: 'stage.name', name: 'stage.name' },
-            { data: 'name', name: 'name' },
-            { data: 'type', name: 'type' },
+            { data: 'id' },
+            { data: 'name' },
+            { data: 'type' },
+            { data: 'stage.phase.project.name' },
+            { data: 'stage.phase.name' },
+            { data: 'stage.name' },
             {
                 data: 'total_price',
                 render: (data) => `$${parseFloat(data).toLocaleString()}`
             },
+            { data: 'stock' },
+            { data: 'sold' },
+            { data: 'available_from' },
+            { data: 'available_until' },
             {
                 data: 'is_courtesy',
                 render: (data) =>
@@ -31,8 +40,7 @@ $(document).ready(function () {
                         ? '<span class="badge bg-primary">Activo</span>'
                         : '<span class="badge bg-secondary">Inactivo</span>'
             },
-            { data: 'created_at', name: 'created_at' },
-            { data: 'actions', orderable: false, searchable: false }
+            { data: 'created_at' }
         ],
         language: {
             url: "/assets/datatables/spanish.json"

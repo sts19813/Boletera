@@ -12,9 +12,13 @@ use App\Http\Controllers\View\PhaseViewController;
 use App\Http\Controllers\View\StageViewController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PaymentController;
 
-Route::view('/', 'login');
-
+Route::get('/', function () {
+    return Auth::check()
+        ? redirect()->route('events.index')
+        : view('login');
+});
 // =========================
 // Autenticación con Google
 // =========================
@@ -38,7 +42,7 @@ Route::get('/google-auth/callback', function () {
 
     Auth::login($user);
 
-    return redirect()->intended('/Eventos');
+    return redirect()->intended('/');
 });
 
 
@@ -62,7 +66,7 @@ Route::middleware(['auth', AdminMiddleware::class])
         // =========================
         // CRUD Eventos
         // =========================
-        Route::get('/Eventos/create', [EventosController::class, 'create'])
+        Route::get('/events/create', [EventosController::class, 'create'])
             ->name('events.create');
 
         Route::get('/events', [EventosController::class, 'index'])
@@ -85,6 +89,14 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])
             ->name('events.configurator');
 
+
+         Route::post('/evets/fetch', [EventosController::class, 'fetch'])
+            ->name('events.fetch');
+
+
+        Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])
+            ->name('eventsSettings.store');
+
   
         //perfil
         Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
@@ -103,8 +115,37 @@ Route::middleware(['auth', AdminMiddleware::class])
 });
 
 
-Route::get('/iframe/{lot}/', [EventosController::class, 'iframe'])
-    ->name('iframe.index');
+Route::get('/checkout', [PaymentController::class, 'checkout'])->name('checkout');
+Route::get('/pago/success', [PaymentController::class, 'success']);
+Route::get('/pago/cancel', [PaymentController::class, 'cancel']);
+
+
+
+
+Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form');
+
+Route::post('/pago/intent', [PaymentController::class, 'crearIntent'])
+    ->name('pago.intent');
+
+Route::get('/pago/success', [PaymentController::class, 'success'])
+    ->name('pago.success');
+
+Route::get('/pago/cancel', [PaymentController::class, 'cancel'])
+    ->name('pago.cancel');
+
+
+Route::get('/cart', [App\Http\Controllers\CartController::class, 'get'])->name('cart.get');
+Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/remove', [App\Http\Controllers\CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
+
+// Checkout: crea sesión stripe (ejemplo con Checkout Sessions)
+Route::post('/cart/checkout', [App\Http\Controllers\CartController::class, 'checkout'])->name('cart.checkout');
+
+
+
+Route::get('/event/{lot}/', [EventosController::class, 'iframe'])
+    ->name('eventPublic.index');
 
 // =========================
 // Auth Routes

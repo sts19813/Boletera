@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Eventos;
 use App\Models\Lote;
 use App\Models\Ticket;
+use App\Models\TicketSvgMapping;
 use Illuminate\Http\Request;
 use App\Services\FileUploadService;
 use Illuminate\Support\Facades\Log;
@@ -143,6 +144,62 @@ class EventosController extends Controller
             ->with('success', 'Evento creado correctamente.');
     }
 
+//guarda el mapeo de los boletos del configurador
+    public function storeSettings(Request $request)
+    {
+        try {
+            // Validación
+            $request->validate([
+                'project_id'   => 'nullable|integer',
+                'phase_id'     => 'nullable|integer',
+                'stage_id'     => 'nullable|integer',
+                'lot_id'       => 'nullable|string',
+                'polygonId'    => 'nullable|string',
+                'redirect'     => 'nullable|boolean',
+                'redirect_url' => 'nullable|string',
+                'desarrollo_id'=> 'required|integer',
+                'color'        => 'nullable|string|max:9',
+                'color_active' => 'nullable|string|max:9',
+            ]);
+    
+            // Solo tomar redirect_url si está marcado
+            $redirectChecked = $request->has('redirect') && $request->redirect;
+            $redirectUrl = $redirectChecked ? $request->redirect_url : null;
+    
+            // Crear registro
+            $lote = TicketSvgMapping::create([
+                'evento_id' => $request->desarrollo_id,
+                'project_id'    => $request->project_id ?: null,
+                'phase_id'      => $request->phase_id ?: null,
+                'stage_id'      => $request->stage_id ?: null,
+                'ticket_id'       => $request->lot_id ?: null,
+                'svg_selector'   => $request->polygonId,
+                'redirect'      => $redirectChecked,
+                'redirect_url'  => $redirectUrl,
+                'color'         => $redirectChecked ? $request->color : null,
+                'color_active'  => $redirectChecked ? $request->color_active : null,
+            ]);
+    
+            return response()->json([
+                'success' => true,
+                'lote' => $lote
+            ]);
+    
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Devolver errores de validación en JSON
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+    
+        } catch (\Exception $e) {
+            // Captura cualquier otro error
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Obtener fases de un proyecto
@@ -177,8 +234,8 @@ class EventosController extends Controller
         $projects = Eventos::all();
 
         $lots = Ticket::where('stage_id', $lot->stage_id)->get();
-        $dbLotes = Lote::where([
-                        'desarrollo_id' => $lot->id,
+        $dbLotes = TicketSvgMapping::where([
+                        'evento_id' => $lot->id,
                         'project_id' => $lot->project_id,
                         'phase_id' => $lot->phase_id,
                         'stage_id' => $lot->stage_id
@@ -197,24 +254,24 @@ class EventosController extends Controller
         $lot = Eventos::findOrFail($id);
         $sourceType = $lot->source_type ?? 'adara';
 
+        $projects = Eventos::all();
+
         $lots = [];
         $dbLotes = [];
 
-        $lots = Lot::where('stage_id', $lot->stage_id)->get();
+        $lots = Ticket::where('stage_id', $lot->stage_id)->get();
 
-        $dbLotes = Lote::where([
-            'desarrollo_id' => $lot->id,
+        $dbLotes = TicketSvgMapping::where([
+            'evento_id' => $lot->id,
             'project_id' => $lot->project_id,
             'phase_id' => $lot->phase_id,
             'stage_id' => $lot->stage_id
         ])->get();
 
 
-         //  Obtener financiamientos relacionados (solo activos)
-        $financiamientos = $lot->financiamientos()->activos()->get();
-        $templateModal = $lot->iframe_template_modal ?? 'emedos';
 
-        return view('iframe.index', compact('lot','projects','lots','dbLotes', 'financiamientos', 'templateModal'));
+
+         return view('events.iframe', compact('lot','projects','lots','dbLotes'));
     }
 
     /**
@@ -230,101 +287,9 @@ class EventosController extends Controller
 
         $Eventos = Eventos::select('id', 'name')->get();
 
-        return view('Eventos.edit', compact('lot','projects','phases','stages','Eventos'));
+        return view('events.edit', compact('lot','projects','phases','stages','Eventos'));
     }
 
-    /**
-     * Actualizar desarrollo existente en la basse de datos
-     */
-    
-    public function update(Request $request, $id)
-    {
-        $desarrollo = Eventos::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'total_lots' => 'required|integer|min:1',
-            'svg_image' => 'nullable|mimes:svg,xml',
-            'png_image' => 'nullable|image|mimes:png,jpg,jpeg',
-            'project_id' => 'nullable|integer',
-            'phase_id' => 'nullable|integer',
-            'stage_id' => 'nullable|integer',
-            'modal_color' => 'nullable|string|max:10',
-            'modal_selector' => 'nullable|string|max:255',
-            'color_primario' => 'nullable|string|max:50',
-            'color_acento' => 'nullable|string|max:50',
-            'financing_months' => 'nullable|integer|min:0',
-            'redirect_return' => 'nullable|string|max:255',
-            'redirect_next' => 'nullable|string|max:255',
-            'redirect_previous' => 'nullable|string|max:255',
-            'plusvalia' => 'nullable|numeric|min:0|max:100',
-            'iframe_template_modal'=> 'nullable|string|max:255',
-            'is_migrated' => 'nullable|boolean',
-        ]);
-
-        $data = $request->only([
-            'name','description','total_lots','project_id','phase_id','stage_id',
-            'modal_color','modal_selector','color_primario','color_acento',
-            'financing_months','redirect_return','redirect_next','redirect_previous',
-            'plusvalia','source_type','iframe_template_modal','is_migrated'
-        ]);
-
-        $data['is_migrated'] = $request->boolean('is_migrated');
-
-        // Manejo de archivos
-        if ($request->hasFile('svg_image')) {
-            $data['svg_image'] = $this->fileUploadService->upload($request->file('svg_image'), 'lots');
-        }
-        if ($request->hasFile('png_image')) {
-            $data['png_image'] = $this->fileUploadService->upload($request->file('png_image'), 'lots');
-        }
-
-         DB::beginTransaction();
-
-        try {
-            // 1) Guardar cambios del desarrollo (IMPORTANTE)
-            $desarrollo->update($data);
-
-            // 2) Si marcó migrado, actualizar lotes antiguos para apuntar a los nuevos IDs
-            if ($data['is_migrated']) {
-
-                $nProject = $data['project_id'];
-                $nPhase = $data['phase_id'];
-                $nStage = $data['stage_id'];
-
-                // Validar que vengan IDs nuevos
-                if (!$nProject || !$nPhase || !$nStage) {
-                    Log::warning("Intento de migración sin IDs completos (project/phase/stage) para desarrollo {$desarrollo->id}");
-                    // opcional: lanzar excepción para abortar
-                    throw new \Exception('Faltan project_id / phase_id / stage_id para completar la migración de lotes.');
-                }
-
-                // Obtener lotes antiguos por desarrollo
-                $lotesViejos = Lote::where('desarrollo_id', $desarrollo->id)->get();
-
-                // Actualizar en bloque (si prefieres row-by-row para triggers, usa loop)
-                foreach ($lotesViejos as $lote) {
-                    // Si tu tabla Lote tiene fillable con project_id/phase_id/stage_id puedes:
-                    $lote->update([
-                        'project_id' => $nProject,
-                        'phase_id'   => $nPhase,
-                        'stage_id'   => $nStage,
-                    ]);
-                }
-
-                Log::info("Migración de lotes completa para desarrollo {$desarrollo->id}. Lotes actualizados: {$lotesViejos->count()}");
-            }
-
-            DB::commit();
-
-            return redirect()->route('admin.index')->with('success', 'Desarrollo y lotes actualizados correctamente.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error("Error actualizando desarrollo {$desarrollo->id}: " . $e->getMessage());
-            return redirect()->back()->withInput()->withErrors(['error' => 'Error al actualizar: ' . $e->getMessage()]);
-        }
-    }
 
     /**
      * Eliminar desarrollo

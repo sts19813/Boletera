@@ -79,7 +79,7 @@
                                 Mapear asientos
                             </a>
 
-                            <a href="{{ url('iframe/event/' . $event->id) }}" 
+                            <a href="{{ url('event/' . $event->id) }}" 
                                class="btn btn-sm btn-secondary" style="background-color:#3FB549 !important" 
                                target="_blank">
                                 Iframe

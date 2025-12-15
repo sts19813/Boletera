@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Stripe\Stripe;
 use Stripe\Checkout\Session as StripeSession;
+use Illuminate\Support\Facades\Log;
+
 
 class CartController extends Controller
 {
