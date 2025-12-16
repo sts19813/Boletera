@@ -18,21 +18,12 @@
                         <span class="menu-icon">
                             <i class="ki-outline ki-home-2 fs-2"></i>
                         </span>
-                        <span class="menu-title">{{ __('messages.desarrollos') }}</span>
+                        <span class="menu-title">{{ __('messages.eventos') }}</span>
                     </a>
                 </div>
                 <!--end: Desarrollos -->
 
-                <!--begin: Consulta Adara -->
-                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
-                    <a class="menu-link {{ request()->is('consulta*') ? 'active' : '' }}" href="/consulta">
-                        <span class="menu-icon">
-                            <i class="ki-outline ki-search-list fs-2"></i>
-                        </span>
-                        <span class="menu-title">{{ __('messages.consulta_adara') }}</span>
-                    </a>
-                </div>
-                <!--end: Consulta Adara -->
+
 
                 <!--begin: iFrames / Reportes -->
                 <div class="menu-item">
@@ -40,7 +31,7 @@
                         <span class="menu-icon">
                             <i class="ki-outline ki-element-7 fs-2"></i>
                         </span>
-                        <span class="menu-title">{{ __('messages.reportes') }}</span>
+                        <span class="menu-title">{{ __('messages.tickets') }}</span>
                     </a>
                 </div>
                 <!--end: iFrames -->
@@ -82,7 +73,7 @@
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('tickets*') ? 'active' : '' }}" href="/tickets">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">{{ __('messages.lotes') }}</span>
+                                <span class="menu-title">{{ __('messages.tickets') }}</span>
                             </a>
                         </div>
                     </div>
@@ -97,27 +88,7 @@
                     </a>
                 </div>
 
-                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
-                    <a class="menu-link {{ request()->is('search*') ? 'active' : '' }}" href="/search">
-                        <span class="menu-icon">
-                            <i class="ki-outline ki-magnifier fs-2"></i>
-                        </span>
-                        <span class="menu-title">{{ __('messages.busqueda_masiva') }}</span>
-                    </a>
-                </div>
-
-                <!--begin: Financiamiento -->
-                <div class="menu-item">
-                    <a class="menu-link {{ request()->is('financiamientos*') ? 'active' : '' }}"
-                        href="/financiamientos">
-                        <span class="menu-icon">
-                            <i class="ki-outline ki-calculator fs-2"></i>
-                        </span>
-                        <span class="menu-title">{{ __('messages.financiamiento') }}</span>
-                    </a>
-                </div>
-                <!--end: Financiamiento -->
-
+        
                 <!--begin: Bitácora -->
                 <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
                     <a class="menu-link {{ request()->is('bitacora*') ? 'active' : '' }}" href="/bitacora">
@@ -129,16 +100,7 @@
                 </div>
                 <!--end: Bitácora -->
 
-                <!--begin: Migrar información -->
-                <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
-                    <a class="menu-link {{ request()->is('migracion*') ? 'active' : '' }}" href="/migracion">
-                        <span class="menu-icon">
-                            <i class="ki-outline ki-send fs-2"></i>
-                        </span>
-                        <span class="menu-title">{{ __('messages.migrar_info') }}</span>
-                    </a>
-                </div>
-                <!--end: Migrar información -->
+           
 
                 <!--begin: Configuraciones -->
                 <div class="menu-item menu-accordion {{ auth()->user()->role === 'admin' ? '' : 'd-none' }} {{ request()->is('users*', 'connections*', 'access*') ? 'show' : '' }}"
@@ -160,14 +122,7 @@
                             </a>
                         </div>
 
-                        <!-- Conexiones -->
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('connections*') ? 'active' : '' }}"
-                                href="/connections">
-                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">{{ __('messages.conexiones') }}</span>
-                            </a>
-                        </div>
+                      
                     </div>
                 </div>
                 <!--end: Configuraciones -->

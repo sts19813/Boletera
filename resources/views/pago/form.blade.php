@@ -1,4 +1,5 @@
-@extends('layouts.app')
+@extends('layouts.iframe')
+
 
 @section('title', 'Pago seguro')
 

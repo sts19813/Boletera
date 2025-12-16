@@ -69,27 +69,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function intent(Request $request)
-    {
-        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-
-        $cart = session('svg_cart', []);
-
-        $total = collect($cart)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
-
-        $intent = \Stripe\PaymentIntent::create([
-            'amount' => (int) round($total * 100),
-            'currency' => 'mxn',
-            'metadata' => [
-                'cart' => json_encode($cart),
-                'order_uuid' => (string) Str::uuid()
-            ]
-        ]);
-
-        return response()->json([
-            'clientSecret' => $intent->client_secret
-        ]);
-    }
 
     public function success(Request $request)
     {

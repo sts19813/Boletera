@@ -20,7 +20,7 @@
                 data-kt-menu-placement="bottom-end">
 
                 @if (Auth::user()->profile_photo)
-                    <img src="{{ asset(Auth::user()->profile_photo) }} xdd" 
+                    <img src="{{ asset(Auth::user()->profile_photo) }}" 
                         alt="user"
                         class="symbol-label"
                         style="object-fit: cover;">

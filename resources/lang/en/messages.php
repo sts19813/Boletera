@@ -2,14 +2,13 @@
 
 return [
     // Menu
-    'desarrollos' => 'Developments',
-    'consulta_adara' => 'Query',
-    'reportes' => 'Reports',
+    'eventos' => 'Events',
+    'tickets' => 'Tickets',
     'catalogo_naboo' => 'Catalog',
     'proyectos' => 'Projects',
     'fases' => 'Phases',
     'etapas' => 'Stages',
-    'lotes' => 'Lots',
+    'lotes' => 'tickets',
     'dashboards' => 'Dashboards',
     'busqueda_masiva' => 'Mass Search',
     'financiamiento' => 'Financing Models',
