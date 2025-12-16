@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.iframe')
 
 @section('title', 'Pago exitoso')
 
@@ -22,11 +22,11 @@
                 Presenta este QR el día del evento.
             </p>
 
-           @if(!empty($qr))
+            @foreach ($qrs as $qr)
                 <div class="text-center mt-5">
                     {!! $qr !!}
                 </div>
-            @endif
+            @endforeach
 
 
             <div class="text-gray-700 mb-8">

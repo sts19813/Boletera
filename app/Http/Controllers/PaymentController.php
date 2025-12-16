@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
+use App\Models\Ticket;
+use App\Models\TicketInstance;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Str;
+
 
 class PaymentController extends Controller
 {
@@ -70,23 +74,147 @@ class PaymentController extends Controller
     }
 
 
+   
     public function success(Request $request)
     {
-        $email = $request->query('email', 'no-definido');
+        $paymentIntentId = $request->query('pi');
+        $email = $request->query('email');
 
-        $payload = [
-            'email' => $email,
-            'timestamp' => now()->toDateTimeString(),
-        ];
+        if (!$paymentIntentId) {
+            abort(400, 'Pago inválido');
+        }
 
-        $qr = QrCode::size(250)
-            ->format('svg')
-            ->generate(json_encode($payload));
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $intent = PaymentIntent::retrieve($paymentIntentId);
+
+        if ($intent->status !== 'succeeded') {
+            abort(403, 'Pago no confirmado');
+        }
+
+        $cart = json_decode($intent->metadata->cart ?? '[]', true);
+
+        if (empty($cart)) {
+            abort(400, 'Carrito vacío');
+        }
+
+        /**
+         * Timestamp único para TODA la compra
+         */
+        $purchaseAt = now();
+        $purchaseAtString = $purchaseAt->toDateTimeString();
+
+        $qrs = [];
+
+        foreach ($cart as $item) {
+
+            $ticket = Ticket::findOrFail($item['id']);
+            $qty = max(1, (int) ($item['qty'] ?? 1));
+
+            /**
+             * ==================================================
+             * CASO 1 — BOLETO ÚNICO (VIP / ASIENTO)
+             * ==================================================
+             */
+            if ($ticket->stock == 1) {
+
+                // Ya vendido → solo regenerar QR
+                if ($ticket->status === 'sold') {
+
+                    $qrs[] = $this->makeQr([
+                        'type' => 'ticket',
+                        'ticket_id' => $ticket->id,
+                        'ticket_instance_id' => null,
+                        'email' => $email,
+                        'purchased_at' => optional($ticket->purchased_at)->toDateTimeString(),
+                    ]);
+
+                    continue;
+                }
+
+                // Marcar como vendido
+                $ticket->update([
+                    'status'       => 'sold',
+                    'purchased_at' => $purchaseAt,
+                ]);
+
+                $qrs[] = $this->makeQr([
+                    'type' => 'ticket',
+                    'ticket_id' => $ticket->id,
+                    'ticket_instance_id' => null,
+                    'email' => $email,
+                    'purchased_at' => $purchaseAtString,
+                ]);
+
+                continue;
+            }
+
+            /**
+             * ==================================================
+             * CASO 2 — BOLETOS GENERALES (stock > 1)
+             * ==================================================
+             */
+
+            // Idempotencia por PaymentIntent
+            $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
+                ->where('ticket_id', $ticket->id)
+                ->get();
+
+            if ($existingInstances->isNotEmpty()) {
+
+                foreach ($existingInstances as $instance) {
+
+                    $qrs[] = $this->makeQr([
+                        'type' => 'ticket',
+                        'ticket_id' => $ticket->id,
+                        'ticket_instance_id' => $instance->id,
+                        'email' => $instance->email,
+                        'purchased_at' => $instance->purchased_at->toDateTimeString(),
+                    ]);
+                }
+
+                continue;
+            }
+
+            // Crear instancias nuevas
+            for ($i = 0; $i < $qty; $i++) {
+
+                $instance = TicketInstance::create([
+                    'ticket_id'         => $ticket->id,
+                    'email'             => $email,
+                    'purchased_at'      => $purchaseAt,
+                    'qr_hash'           => (string) Str::uuid(),
+                    'payment_intent_id' => $paymentIntentId,
+                ]);
+
+                $qrs[] = $this->makeQr([
+                    'type' => 'ticket',
+                    'ticket_id' => $ticket->id,
+                    'ticket_instance_id' => $instance->id,
+                    'email' => $email,
+                    'purchased_at' => $purchaseAtString,
+                ]);
+            }
+
+            // Actualizar contadores
+            $ticket->increment('sold', $qty);
+
+            if ($ticket->sold >= $ticket->stock) {
+                $ticket->update(['status' => 'sold']);
+            }
+        }
 
         return view('pago.success', [
-            'qr' => $qr,
+            'qrs' => $qrs,
             'email' => $email,
         ]);
+    }
+
+    private function makeQr(array $payload)
+    {
+        return QrCode::size(220)
+            ->format('svg')
+            ->generate(json_encode($payload));
     }
 
 

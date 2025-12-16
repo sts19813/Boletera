@@ -172,4 +172,152 @@ $(document).ready(function () {
         });
     });
 
+
+    // ===============================================================
+    // Descargar plantilla Excel
+    // ===============================================================
+    $('#btnDownloadTemplate').on('click', function () {
+
+        const headers = [[
+            'id',
+            'stage_id',
+            'name',
+            'type',
+            'total_price',
+            'stock',
+            'sold',
+            'available_from',
+            'available_until',
+            'description',
+            'is_courtesy',
+            'status'
+        ]];
+
+        const ws = XLSX.utils.aoa_to_sheet(headers);
+        const wb = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Tickets');
+        XLSX.writeFile(wb, 'tickets_importacion.xlsx');
+    });
+
+
+
+    // ===============================================================
+    // Importar Tickets desde Excel
+    // ===============================================================
+    let importedFile = null;
+    let importedRows = [];
+    $('#btnImport').on('click', function () {
+        $('#inputImportFile').click();
+    });
+
+
+    $('#inputImportFile').on('change', function (e) {
+
+        importedFile = e.target.files[0];
+        if (!importedFile) return;
+
+        const reader = new FileReader();
+
+        reader.onload = function (evt) {
+            const workbook = XLSX.read(evt.target.result, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+            importedRows = rows;
+
+            const tbody = $('#previewTable tbody');
+            tbody.empty();
+
+            rows.forEach(r => {
+
+                const action = (!r.id || !r.stage_id)
+                    ? '<span class="badge bg-success">Nuevo</span>'
+                    : '<span class="badge bg-warning">Actualizar</span>';
+
+                tbody.append(`
+                <tr>
+                    <td>${action}</td>
+                    <td>${r.id || '-'}</td>
+                    <td>${r.stage_id || '-'}</td>
+                    <td>${r.name}</td>
+                    <td>$${r.total_price || 0}</td>
+                    <td>${r.stock || 0}</td>
+                    <td>${r.status}</td>
+                </tr>
+            `);
+            });
+            $('#modalPreviewImport').modal('show');
+        };
+
+        reader.readAsArrayBuffer(importedFile);
+    });
+
+
+
+    $('#btnConfirmImport').on('click', function () {
+
+        const formData = new FormData();
+        formData.append('file', importedFile);
+
+        Swal.fire({
+            title: 'Procesando importación...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        $.ajax({
+            url: '/api/tickets/import',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (res) {
+                Swal.fire('Éxito', res.message, 'success');
+                $('#modalPreviewImport').modal('hide');
+                ticketsTable.ajax.reload(null, false);
+                $('#inputImportFile').val('');
+                importedFile = null;
+            },
+            error: function (xhr) {
+                Swal.fire('Error', xhr.responseJSON?.message, 'error');
+            }
+        });
+    });
+
+    $('#btnExportTickets').on('click', function () {
+
+        const data = ticketsTable.rows({ search: 'applied' }).data().toArray();
+
+        if (!data.length) {
+            Swal.fire('Sin datos', 'No hay tickets para exportar', 'info');
+            return;
+        }
+
+        const rows = data.map(t => ({
+            id: t.id,
+            stage_id: t.stage_id,
+            name: t.name,
+            type: t.type,
+            total_price: t.total_price,
+            stock: t.stock,
+            sold: t.sold,
+            available_from: t.available_from,
+            available_until: t.available_until,
+            description: t.description,
+            is_courtesy: t.is_courtesy ? 1 : 0,
+            status: t.status
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Tickets');
+        XLSX.writeFile(wb, 'tickets_exportados.xlsx');
+    });
+
+
 });

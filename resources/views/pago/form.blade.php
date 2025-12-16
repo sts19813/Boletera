@@ -153,8 +153,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (result.paymentIntent.status === 'succeeded') {
                     window.location.href =
-                        "{{ route('pago.success') }}?email=" +
-                        encodeURIComponent(email);
+                        "{{ route('pago.success') }}?pi=" +
+                        result.paymentIntent.id +
+                        "&email=" + encodeURIComponent(email);
                 }
             });
         });

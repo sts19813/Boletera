@@ -15,10 +15,16 @@
                 <i class="ki-duotone ki-download fs-2"></i> Descargar Plantilla
             </button>
 
-            <input type="file" id="inputImport" accept=".xlsx" hidden>
-            <button id="btnImport" class="btn btn-info">
-                <i class="ki-duotone ki-upload fs-2"></i> Importar Tickets
+            <button id="btnExportTickets" class="btn btn-warning">
+                Exportar Tickets
             </button>
+            <input type="file" id="inputImportFile" accept=".xlsx" hidden>
+
+            <button id="btnImport" class="btn btn-info">
+                Importar Tickets
+            </button>
+
+
         </div>
     </div>
 
@@ -120,7 +126,8 @@
 
                         <div class="mb-3">
                             <label class="form-label">Disponible Hasta</label>
-                            <input type="datetime-local" id="editAvailableUntil" name="available_until" class="form-control">
+                            <input type="datetime-local" id="editAvailableUntil" name="available_until"
+                                class="form-control">
                         </div>
 
                         <div class="mb-3">
@@ -243,6 +250,43 @@
             </div>
         </div>
     </div>
+
+
+    <div class="modal fade" id="modalPreviewImport" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Vista previa de importación</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <table class="table table-bordered" id="previewTable">
+                        <thead>
+                            <tr>
+                                <th>Acción</th>
+                                <th>ID</th>
+                                <th>Stage</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="btnConfirmImport" class="btn btn-primary">
+                        Confirmar Importación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')

@@ -75,13 +75,13 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::post('/events', [EventosController::class, 'store'])
             ->name('events.store');
 
-        Route::get('/events/{desarrollo}/edit', [EventosController::class, 'edit'])
+        Route::get('/events/{event}/edit', [EventosController::class, 'edit'])
             ->name('events.edit');
 
-        Route::put('/events/{desarrollo}', [EventosController::class, 'update'])
+        Route::put('/events/{event}', [EventosController::class, 'update'])
             ->name('events.update');
 
-        Route::delete('/events/{desarrollo}', [EventosController::class, 'destroy'])
+        Route::delete('/events/{event}', [EventosController::class, 'destroy'])
             ->name('events.destroy');
 
         Route::get('/dashboards', [EventosController::class, 'index'])->name('dashboards.index');
@@ -92,6 +92,8 @@ Route::middleware(['auth', AdminMiddleware::class])
 
          Route::post('/evets/fetch', [EventosController::class, 'fetch'])
             ->name('events.fetch');
+
+
 
 
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])
@@ -111,16 +113,13 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/phases', [PhaseViewController::class, 'index'])->name('phases.index');
         Route::get('/stages', [StageViewController::class, 'index'])->name('stages.index');
         Route::get('/tickets', [TicketViewController::class, 'index'])->name('tickets.index');
+        
+
 
 });
 
 
 Route::get('/checkout', [PaymentController::class, 'checkout'])->name('checkout');
-Route::get('/pago/success', [PaymentController::class, 'success']);
-Route::get('/pago/cancel', [PaymentController::class, 'cancel']);
-
-
-
 
 Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form');
 

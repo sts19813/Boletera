@@ -24,6 +24,7 @@ class Ticket extends Model
         'sold',
         'available_from',
         'available_until',
+        'purchased_at',
         'description',
         'is_courtesy'
     ];
@@ -33,6 +34,7 @@ class Ticket extends Model
         'total_price'     => 'decimal:2',
         'available_from'  => 'datetime',
         'available_until' => 'datetime',
+        'purchased_at'    => 'datetime',
     ];
 
     // Genera UUID automáticamente
@@ -56,5 +58,11 @@ class Ticket extends Model
     public function customFields()
     {
         return $this->morphMany(CustomField::class, 'customizable');
+    }
+
+
+    public function scopePurchased($query)
+    {
+        return $query->whereNotNull('purchased_at');
     }
 }

@@ -10,28 +10,68 @@ document.addEventListener('DOMContentLoaded', function () {
         items: []
     };
 
-    function isInCart(ticketId) {
-        return window.cartState.items.some(t => t.id == ticketId);
+    function getCartItem(ticketId) {
+        return window.cartState.items.find(t => t.id == ticketId);
     }
 
     function addToCart(ticket) {
-        if (isInCart(ticket.id)) return;
-        window.cartState.items.push(ticket);
+
+        let item = getCartItem(ticket.id);
+
+        if (item) {
+            // Solo sumar si es general
+            if (ticket.stock > 1 && item.qty < ticket.stock) {
+                item.qty++;
+            }
+            updateCartUI();
+            return;
+        }
+
+        window.cartState.items.push({
+            id: ticket.id,
+            name: ticket.name,
+            total_price: Number(ticket.total_price),
+            stock: ticket.stock ?? 1,
+            qty: 1,
+            svg_selector: ticket.svg_selector ?? null
+        });
+
         updateCartUI();
     }
 
-    function removeFromCart(ticketId) {
+
+    window.updateQty = function (ticketId, delta) {
+        debugger
+        const item = getCartItem(ticketId);
+        if (!item) return;
+
+        item.qty += delta;
+
+        if (item.qty <= 0) {
+            removeFromCart(ticketId);
+            return;
+        }
+
+        if (item.qty > item.stock) {
+            item.qty = item.stock;
+        }
+
+        updateCartUI();
+    };
+
+    window.removeFromCart = function (ticketId) {
         window.cartState.items =
             window.cartState.items.filter(t => t.id != ticketId);
         updateCartUI();
-    }
+    };
+
 
     /**
      * =========================
      * CLICK EN ASIENTOS
      * =========================
      */
-    document.querySelectorAll('svg g').forEach(group => {
+    document.querySelectorAll(selector).forEach(group => {
 
         if (group.dataset.status !== 'available') return;
 
@@ -40,13 +80,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const ticket = window.getTicketFromGroup(group);
             if (!ticket) return;
 
-            if (isInCart(ticket.id)) {
-                removeFromCart(ticket.id);
-                paintGroup(group, ticketStatusColors.available);
-            } else {
-                addToCart(ticket);
-                paintGroup(group, 'rgba(0,120,255,.6)');
+            // 🎟 Numerado
+            if (ticket.stock <= 1) {
+
+                if (getCartItem(ticket.id)) {
+                    removeFromCart(ticket.id);
+                    paintGroup(group, ticketStatusColors.available);
+                } else {
+                    addToCart(ticket);
+                    paintGroup(group, 'rgba(0,120,255,.6)');
+                }
+
+                return;
             }
+
+            // 🎫 General
+            addToCart(ticket);
         });
     });
 
@@ -72,9 +121,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 cart: window.cartState.items.map(t => ({
                     id: t.id,
                     name: t.name,
-                    price: Number(t.total_price),
-                    qty: 1,
-                    selectorSVG: t.svg_selector ?? null
+                    price: t.total_price,
+                    qty: t.qty,
+                    selectorSVG: t.svg_selector
                 }))
             })
         })
@@ -88,6 +137,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Error al preparar el pago');
             });
     });
+
+
 
 });
 
@@ -111,27 +162,65 @@ function updateCartUI() {
         const li = document.createElement('li');
         li.style.display = 'flex';
         li.style.justifyContent = 'space-between';
+        li.style.alignItems = 'center';
+        li.style.marginBottom = '6px';
+
+        let controls = '';
+
+        // 🎫 SOLO si stock > 1
+        if (ticket.stock > 1) {
+            controls = `
+                <div style="display:flex; gap:6px; align-items:center">
+                    <button class="btn-minus" data-id="${ticket.id}">−</button>
+                    <strong>${ticket.qty}</strong>
+                    <button class="btn-plus" data-id="${ticket.id}">+</button>
+                </div>
+            `;
+
+        } else {
+            controls = `<strong>1</strong>`;
+        }
 
         li.innerHTML = `
             <span>${ticket.name}</span>
+            ${controls}
             <span style="cursor:pointer">✕</span>
         `;
 
+        // ❌ quitar
         li.querySelector('span:last-child').onclick = () => {
             removeFromCart(ticket.id);
 
-            const mapping = window.dbLotes.find(m => m.ticket_id == ticket.id);
-            if (mapping) {
-                const el = document.getElementById(mapping.svg_selector);
-                if (el) paintGroup(el, ticketStatusColors.available);
+            // solo devolver color a numerados
+            if (ticket.stock <= 1) {
+                const mapping = window.dbLotes.find(m => m.ticket_id == ticket.id);
+                if (mapping) {
+                    const el = document.getElementById(mapping.svg_selector);
+                    if (el) paintGroup(el, ticketStatusColors.available);
+                }
             }
         };
 
         list.appendChild(li);
-        total += Number(ticket.total_price || 0);
+
+        // ➖
+        li.querySelector('.btn-minus')?.addEventListener('click', e => {
+            e.stopPropagation();
+            updateQty(ticket.id, -1);
+        });
+
+        // ➕
+        li.querySelector('.btn-plus')?.addEventListener('click', e => {
+            e.stopPropagation();
+            updateQty(ticket.id, 1);
+        });
+
+
+        total += ticket.total_price * ticket.qty;
     });
 
     totalEl.textContent = `$${total.toLocaleString('es-MX')}`;
     panel.style.display = window.cartState.items.length ? 'block' : 'none';
     btn.disabled = window.cartState.items.length === 0;
 }
+
