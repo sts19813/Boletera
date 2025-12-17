@@ -144,9 +144,15 @@
                         <span>${{ number_format($subtotal, 2) }}</span>
                     </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-gray-600">Cargo por servicio</span>
-                        <span>${{ number_format($comision, 2) }}</span>
+                    <div class="d-flex justify-content-between mb-2 d-none">
+                        <span class="text-gray-600">
+                            Cargo por servicio
+                            <span class="badge badge-light-success ms-2">SIN COSTO</span>
+                        </span>
+
+                        <span class="text-gray-400 text-decoration-line-through">
+                            ${{ number_format($comision, 2) }}
+                        </span>
                     </div>
 
                     <div class="separator separator-dashed my-4"></div>

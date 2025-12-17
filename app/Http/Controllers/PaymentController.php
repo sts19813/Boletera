@@ -33,16 +33,20 @@ class PaymentController extends Controller
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
 
         // comisión ejemplo
+        $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
+
+        // cargo solo informativo
         $comision = round($subtotal * 0.05, 2);
 
-        $total = $subtotal + $comision;
+        // TOTAL SIN COMISIÓN
+        $total = $subtotal;
 
-        return view('pago.form', [
-            'carrito' => $carrito,
-            'subtotal' => $subtotal,
-            'comision' => $comision,
-            'total' => $total
-        ]);
+        return view('pago.form', compact(
+            'carrito',
+            'subtotal',
+            'comision',
+            'total'
+        ));
     }
 
     /**
@@ -57,10 +61,13 @@ class PaymentController extends Controller
         }
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
+
+        // solo informativo
         $comision = round($subtotal * 0.05, 2);
-        $total = $subtotal + $comision;
 
         Stripe::setApiKey(config('services.stripe.secret'));
+        // Stripe cobra SOLO el subtotal
+        $total = $subtotal;
 
         $intent = PaymentIntent::create([
             'amount' => (int) round($total * 100),
@@ -69,7 +76,8 @@ class PaymentController extends Controller
             'metadata' => [
                 'cart' => json_encode($carrito),
                 'subtotal' => $subtotal,
-                'comision' => $comision
+                'comision' => $comision,
+                'comision_aplicada' => false,
             ],
         ]);
 
@@ -186,27 +194,39 @@ class PaymentController extends Controller
 
             if ($ticket->stock == 1) {
 
-                if ($ticket->status === 'sold') {
+                $existingInstance = TicketInstance::where('payment_intent_id', $paymentIntentId)
+                    ->where('ticket_id', $ticket->id)
+                    ->first();
 
+                if ($existingInstance) {
                     $boletos[] = $this->buildTicketData(
                         $ticket,
-                        null,
-                        $email,
-                        optional($ticket->purchased_at)->toDateTimeString(),
+                        $existingInstance,
+                        $existingInstance->email,
+                        $existingInstance->purchased_at,
                         $paymentIntentId
                     );
-
                     continue;
                 }
 
+                $instance = TicketInstance::create([
+                    'ticket_id' => $ticket->id,
+                    'email' => $email,
+                    'purchased_at' => $purchaseAt,
+                    'qr_hash' => (string) Str::uuid(),
+                    'payment_intent_id' => $paymentIntentId,
+                ]);
+
                 $ticket->update([
+                    'stock' => 0,
+                    'sold' => 1,
                     'status' => 'sold',
                     'purchased_at' => $purchaseAt,
                 ]);
 
                 $boletos[] = $this->buildTicketData(
                     $ticket,
-                    null,
+                    $instance,
                     $email,
                     $purchaseAtString,
                     $paymentIntentId
@@ -214,6 +234,7 @@ class PaymentController extends Controller
 
                 continue;
             }
+
 
             $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
                 ->where('ticket_id', $ticket->id)
@@ -255,9 +276,12 @@ class PaymentController extends Controller
             }
 
             $ticket->increment('sold', $qty);
-
-            if ($ticket->sold >= $ticket->stock) {
-                $ticket->update(['status' => 'sold']);
+            $ticket->decrement('stock', $qty);
+            if ($ticket->stock <= 0) {
+                $ticket->update([
+                    'stock' => 0,
+                    'status' => 'sold'
+                ]);
             }
         }
 
