@@ -7,8 +7,13 @@ use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use App\Models\Ticket;
 use App\Models\TicketInstance;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BoletosMail;
 
 
 class PaymentController extends Controller
@@ -75,147 +80,248 @@ class PaymentController extends Controller
 
 
    
-    public function success(Request $request)
-    {
-        $paymentIntentId = $request->query('pi');
-        $email = $request->query('email');
 
-        if (!$paymentIntentId) {
-            abort(400, 'Pago inválido');
-        }
+public function success(Request $request)
+{
+    $paymentIntentId = $request->query('pi');
+    $email = $request->query('email');
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+    if (!$paymentIntentId) {
+        abort(400, 'Pago inválido');
+    }
 
-        $intent = PaymentIntent::retrieve($paymentIntentId);
+    // 1️⃣ Generar boletos (YA LO TIENES)
+    $boletos = $this->generateBoletosFromPaymentIntent(
+        $paymentIntentId,
+        $email
+    );
 
-        if ($intent->status !== 'succeeded') {
-            abort(403, 'Pago no confirmado');
-        }
+    // 2️⃣ Generar PDF
+    $pdfContent = $this->generateBoletosPdf($boletos, $email);
 
-        $cart = json_decode($intent->metadata->cart ?? '[]', true);
+    // 3️⃣ Enviar correo (solo una vez)
+    Mail::to($email)->send(
+        new BoletosMail($pdfContent)
+    );
 
-        if (empty($cart)) {
-            abort(400, 'Carrito vacío');
-        }
+    // 4️⃣ Mostrar vista
+    return view('pago.success', compact('boletos', 'email'));
+}
 
-        /**
-         * Timestamp único para TODA la compra
-         */
-        $purchaseAt = now();
-        $purchaseAtString = $purchaseAt->toDateTimeString();
 
-        $qrs = [];
 
-        foreach ($cart as $item) {
 
-            $ticket = Ticket::findOrFail($item['id']);
-            $qty = max(1, (int) ($item['qty'] ?? 1));
 
-            /**
-             * ==================================================
-             * CASO 1 — BOLETO ÚNICO (VIP / ASIENTO)
-             * ==================================================
-             */
-            if ($ticket->stock == 1) {
+public function downloadPdf(Request $request)
+{
+    $paymentIntentId = $request->get('pi');
+    $email = $request->get('email');
 
-                // Ya vendido → solo regenerar QR
-                if ($ticket->status === 'sold') {
+    $boletos = $this->generateBoletosFromPaymentIntent(
+        $paymentIntentId,
+        $email
+    );
 
-                    $qrs[] = $this->makeQr([
-                        'type' => 'ticket',
-                        'ticket_id' => $ticket->id,
-                        'ticket_instance_id' => null,
-                        'email' => $email,
-                        'purchased_at' => optional($ticket->purchased_at)->toDateTimeString(),
-                    ]);
+    $pdf = Pdf::loadView('pdf.boletos', [
+        'boletos' => $boletos,
+        'email'   => $email,
+    ])->setPaper('A4');
 
-                    continue;
-                }
+    return $pdf->download("boletos-{$paymentIntentId}.pdf");
+}
 
-                // Marcar como vendido
-                $ticket->update([
-                    'status'       => 'sold',
-                    'purchased_at' => $purchaseAt,
-                ]);
+public function resendBoletos(Request $request)
+{
+    $paymentIntentId = $request->get('pi');
+    $email = $request->get('email');
 
-                $qrs[] = $this->makeQr([
-                    'type' => 'ticket',
-                    'ticket_id' => $ticket->id,
-                    'ticket_instance_id' => null,
-                    'email' => $email,
-                    'purchased_at' => $purchaseAtString,
-                ]);
+    $boletos = $this->generateBoletosFromPaymentIntent(
+        $paymentIntentId,
+        $email
+    );
+
+    $pdf = Pdf::loadView('pdf.boletos', compact('boletos'))->output();
+
+    Mail::to($email)->send(new BoletosMail($pdf));
+
+    return response()->json(['ok' => true]);
+}
+
+
+private function generateBoletosPdf(array $boletos, string $email)
+{
+    return Pdf::loadView('pdf.boletos', [
+        'boletos' => $boletos,
+        'email'   => $email,
+    ])->output();
+}
+
+
+
+    private function generateBoletosFromPaymentIntent(string $paymentIntentId, string $email): array
+{
+    Stripe::setApiKey(config('services.stripe.secret'));
+
+    $intent = PaymentIntent::retrieve($paymentIntentId);
+
+    if ($intent->status !== 'succeeded') {
+        abort(403, 'Pago no confirmado');
+    }
+
+    $cart = json_decode($intent->metadata->cart ?? '[]', true);
+
+    if (empty($cart)) {
+        abort(400, 'Carrito vacío');
+    }
+
+    $purchaseAt = now();
+    $purchaseAtString = $purchaseAt->toDateTimeString();
+
+    $boletos = [];
+
+    foreach ($cart as $item) {
+
+        $ticket = Ticket::findOrFail($item['id']);
+        $qty = max(1, (int) ($item['qty'] ?? 1));
+
+        if ($ticket->stock == 1) {
+
+            if ($ticket->status === 'sold') {
+
+                $boletos[] = $this->buildTicketData(
+                    $ticket,
+                    null,
+                    $email,
+                    optional($ticket->purchased_at)->toDateTimeString(),
+                    $paymentIntentId
+                );
 
                 continue;
             }
 
-            /**
-             * ==================================================
-             * CASO 2 — BOLETOS GENERALES (stock > 1)
-             * ==================================================
-             */
+            $ticket->update([
+                'status'       => 'sold',
+                'purchased_at' => $purchaseAt,
+            ]);
 
-            // Idempotencia por PaymentIntent
-            $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
-                ->where('ticket_id', $ticket->id)
-                ->get();
+            $boletos[] = $this->buildTicketData(
+                $ticket,
+                null,
+                $email,
+                $purchaseAtString,
+                $paymentIntentId
+            );
 
-            if ($existingInstances->isNotEmpty()) {
-
-                foreach ($existingInstances as $instance) {
-
-                    $qrs[] = $this->makeQr([
-                        'type' => 'ticket',
-                        'ticket_id' => $ticket->id,
-                        'ticket_instance_id' => $instance->id,
-                        'email' => $instance->email,
-                        'purchased_at' => $instance->purchased_at->toDateTimeString(),
-                    ]);
-                }
-
-                continue;
-            }
-
-            // Crear instancias nuevas
-            for ($i = 0; $i < $qty; $i++) {
-
-                $instance = TicketInstance::create([
-                    'ticket_id'         => $ticket->id,
-                    'email'             => $email,
-                    'purchased_at'      => $purchaseAt,
-                    'qr_hash'           => (string) Str::uuid(),
-                    'payment_intent_id' => $paymentIntentId,
-                ]);
-
-                $qrs[] = $this->makeQr([
-                    'type' => 'ticket',
-                    'ticket_id' => $ticket->id,
-                    'ticket_instance_id' => $instance->id,
-                    'email' => $email,
-                    'purchased_at' => $purchaseAtString,
-                ]);
-            }
-
-            // Actualizar contadores
-            $ticket->increment('sold', $qty);
-
-            if ($ticket->sold >= $ticket->stock) {
-                $ticket->update(['status' => 'sold']);
-            }
+            continue;
         }
 
-        return view('pago.success', [
-            'qrs' => $qrs,
+        $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
+            ->where('ticket_id', $ticket->id)
+            ->get();
+
+        if ($existingInstances->isNotEmpty()) {
+
+            foreach ($existingInstances as $instance) {
+
+                $boletos[] = $this->buildTicketData(
+                    $ticket,
+                    $instance,
+                    $instance->email,
+                    $instance->purchased_at,
+                    $paymentIntentId
+                );
+            }
+
+            continue;
+        }
+
+        for ($i = 0; $i < $qty; $i++) {
+
+            $instance = TicketInstance::create([
+                'ticket_id'         => $ticket->id,
+                'email'             => $email,
+                'purchased_at'      => $purchaseAt,
+                'qr_hash'           => (string) Str::uuid(),
+                'payment_intent_id' => $paymentIntentId,
+            ]);
+
+            $boletos[] = $this->buildTicketData(
+                $ticket,
+                $instance,
+                $email,
+                $purchaseAtString,
+                $paymentIntentId
+            );
+        }
+
+        $ticket->increment('sold', $qty);
+
+        if ($ticket->sold >= $ticket->stock) {
+            $ticket->update(['status' => 'sold']);
+        }
+    }
+
+    return $boletos;
+}
+
+private function buildTicketData(
+    Ticket $ticket,
+    ?TicketInstance $instance,
+    string $email,
+    string $purchasedAt,
+    string $paymentIntentId
+) {
+    return [
+        'event' => [
+            'name'       => $ticket->event->name ?? 'Evento - Box Azteca',
+            'date'      => '17 de enero de 2026',
+            'time'      => '7:00 PM',
+            'venue'     => 'Centro de Convenciones Siglo XXI',
+            'organizer' => 'Maxboxing',
+        ],
+        'ticket' => [
+            'name'   => $ticket->name,
+            'row'    => $ticket->row ?? null,
+            'seat'   => $ticket->seat ?? null,
+            'price'  => $ticket->total_price,
+        ],
+        'order' => [
+            'payment_intent' => $paymentIntentId,
+            'purchased_at'   => $purchasedAt,
+        ],
+        'user' => [
             'email' => $email,
-        ]);
+        ],
+        'qr' => $this->makeQr([
+            'type' => 'ticket',
+            'ticket_id' => $ticket->id,
+            'ticket_instance_id' => $instance?->id,
+            'hash' => $instance?->qr_hash,
+        ]),
+    ];
+}
+
+
+private function makeQr(array $payload): string
+{
+    $filename = 'qr_' . md5(json_encode($payload)) . '.png';
+    $path = 'qrs/' . $filename;
+
+    if (!Storage::disk('public')->exists($path)) {
+
+        $result = Builder::create()
+            ->writer(new PngWriter())
+            ->data(json_encode($payload))
+            ->size(220)
+            ->margin(10)
+            ->build();
+
+        Storage::disk('public')->put($path, $result->getString());
     }
 
-    private function makeQr(array $payload)
-    {
-        return QrCode::size(220)
-            ->format('svg')
-            ->generate(json_encode($payload));
-    }
+    return asset('storage/' . $path);
+}
+
 
 
     public function cancel()

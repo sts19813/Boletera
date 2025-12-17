@@ -8,85 +8,55 @@
 	<link rel="stylesheet" href="/assets/css/configurador.css">
 	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
-	<style>
-		.table {
-			font-family: 'Inter', sans-serif;
-			/* Fuente limpia como en la imagen */
-			font-size: 0.95rem;
-		}
 
-		.table th {
-			font-weight: 600;
-			color: #333;
-		}
+<br><br>
+<div class="container" style="margin-top: -100px">
+	{{-- 🔽 INSTRUCCIONES SELECCIÓN ASIENTOS --}}
+<div class="seat-instructions mb-6">
 
-		.table td {
-			vertical-align: middle;
-		}
+    <div class="seat-instructions-inner">
 
-		.table td,
-		.table th {
-			border: none !important;
-		}
+        <div class="seat-arrow">
+            <i class="ki-outline ki-arrow-down fs-2"></i>
+        </div>
 
-		.table-light {
-			font-weight: bold !important;
-			--bs-table-bg: #FFFFFF !important;
-		}
+        <div class="seat-text">
+			<div class="fw-bold fs-5">
+				Selecciona tus asientos preferidos
+			</div>
+			<div class="text-muted fs-7">
+				Una vez seleccionados, continúa con el pago para asegurar tu lugar
+			</div>
+		</div>
 
-		.text-primary {
-			color: #1a73e8 !important;
-			/* Azul tipo Google */
-		}
+        <div class="seat-arrow">
+            <i class="ki-outline ki-arrow-down fs-2"></i>
+        </div>
 
-		.fw-semibold {
-			font-weight: 600;
-		}
+    </div>
 
-		#divloteDescuento,
-		#divloteIntereses {
-			display: none
-		}
+    {{-- LEYENDA --}}
+    <div class="seat-legend mt-4">
+        <div class="legend-item">
+            <span class="legend-dot available"></span>
+            <span>Disponibles</span>
+        </div>
 
-		svg:focus,
-		svg g:focus,
-		svg path:focus,
-		svg rect:focus,
-		svg polygon:focus {
-			outline: none !important;
-			box-shadow: none !important;
-		}
+        <div class="legend-item">
+            <span class="legend-dot occupied"></span>
+            <span>Ocupados</span>
+        </div>
 
-		.btn-guardar-flotante {
-			position: fixed;
-			bottom: 30px;
-			right: 30px;
-			z-index: 1050;
-			/* por encima de tooltips o SVG */
-			padding: 12px 20px;
-			font-weight: 600;
-			border-radius: 8px;
-			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-			transition: all 0.2s ease-in-out;
-		}
+        <div class="legend-item">
+            <span class="legend-dot selected"></span>
+            <span>Seleccionado</span>
+        </div>
+    </div>
 
-		.btn-guardar-flotante:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
-		}
+</div>
 
-		/* Cursor siempre como flecha */
-		body, html, div, span, p, a, button, input, textarea, svg, g, path, polygon, rect {
-			cursor: default !important;
-			user-select: none; /* opcional: evita selección de texto si no quieres que se marque */
-		}
-	</style>
+</div>
 
-	@if(auth()->check() && auth()->user()->isAdmin())
-		<button id="btnGuardarAsientos" class="btn btn-warning btn-guardar-flotante">
-			Guardar Asientos
-		</button>
-	@endif
 
 	<div class="text-center">
 		<div style="position: relative; display: inline-block;">
@@ -103,57 +73,37 @@
 				</div>
 			@endif
 
-			{{-- 🔗 Iconos flotantes --}}
-			<div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 8px;">
-				@if ($lot->redirect_return)
-					<a href="{{ route('lots.iframe', $lot->redirect_return) }}" class="" title="Regresar">
-						<img src="{{ asset('assets/controes/Regresar.svg') }}" alt="Regresar" style="height:24px;">
-					</a>
-				@endif
-				@if ($lot->redirect_previous)
-					<a href="{{ route('lots.iframe', $lot->redirect_previous) }}" class="" title="Anterior">
-						<img src="{{ asset('assets/controes/Anterior.svg') }}" alt="Anterior" style="height:24px;">
-					</a>
-				@endif
-				@if ($lot->redirect_next)
-					<a href="{{ route('lots.iframe', $lot->redirect_next) }}" class="" title="Siguiente">
-						<img src="{{ asset('assets/controes/Siguiente.svg') }}" alt="Siguiente" style="height:24px;">
-					</a>
-				@endif
-			</div>
+			
 		</div>
 	</div>
 
 
     {{-- 🛒 CARRITO --}}
-<div id="cartPanel" style="
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    width: 300px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,.15);
-    padding: 16px;
-    z-index: 2000;
-    display: none;
-    font-family: 'Poppins', sans-serif;
-">
-    <h6 style="margin-bottom: 10px; font-weight:600">Boletos seleccionados</h6>
-
-    <ul id="cartItems" style="list-style:none; padding:0; margin:0"></ul>
-
-    <hr>
-
-    <div style="display:flex; justify-content:space-between; font-weight:600">
-        <span>Total</span>
-        <span id="cartTotal">$0</span>
+{{-- 🛒 CARRITO METRONIC DARK --}}
+<div id="cartPanel" class="kt-cart-panel shadow">
+    <div class="kt-cart-header">
+        <div class="d-flex align-items-center gap-2">
+            <i class="ki-duotone ki-basket fs-3 text-primary"></i>
+            <h6 class="mb-0 fw-semibold">Boletos seleccionados</h6>
+        </div>
     </div>
 
-    <button id="btnCheckout" class="btn btn-primary w-100 mt-3" disabled>
-        Continuar pago
-    </button>
+    <div class="kt-cart-body">
+        <ul id="cartItems" class="kt-cart-items"></ul>
+    </div>
+
+    <div class="kt-cart-footer">
+        <div class="d-flex justify-content-between mb-3 fw-semibold">
+            <span>Total</span>
+            <span id="cartTotal" class="text-primary">$0</span>
+        </div>
+
+        <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
+            Continuar pago
+        </button>
+    </div>
 </div>
+
 
 @endsection
 

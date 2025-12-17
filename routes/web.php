@@ -13,6 +13,9 @@ use App\Http\Controllers\View\StageViewController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\TicketResendController;
+
+
 
 Route::get('/', function () {
     return Auth::check()
@@ -141,6 +144,7 @@ Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear']
 // Checkout: crea sesión stripe (ejemplo con Checkout Sessions)
 Route::post('/cart/checkout', [App\Http\Controllers\CartController::class, 'checkout'])->name('cart.checkout');
 
+Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
 
 
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])

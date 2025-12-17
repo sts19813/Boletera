@@ -170,12 +170,13 @@ function updateCartUI() {
         // 🎫 SOLO si stock > 1
         if (ticket.stock > 1) {
             controls = `
-                <div style="display:flex; gap:6px; align-items:center">
+                <div class="cart-qty">
                     <button class="btn-minus" data-id="${ticket.id}">−</button>
                     <strong>${ticket.qty}</strong>
                     <button class="btn-plus" data-id="${ticket.id}">+</button>
                 </div>
             `;
+
 
         } else {
             controls = `<strong>1</strong>`;
@@ -184,7 +185,7 @@ function updateCartUI() {
         li.innerHTML = `
             <span>${ticket.name}</span>
             ${controls}
-            <span style="cursor:pointer">✕</span>
+            <span class="cart-remove">✕</span>
         `;
 
         // ❌ quitar

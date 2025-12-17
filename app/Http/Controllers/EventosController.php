@@ -279,7 +279,7 @@ class EventosController extends Controller
      */
     public function edit($id)
     {
-        $lot = Eventos::findOrFail($id);
+        $event = Eventos::findOrFail($id);
         $sourceType = $lot->source_type ?? 'adara';
         $projects = [];
         $phases = [];
@@ -288,6 +288,98 @@ class EventosController extends Controller
         $Eventos = Eventos::select('id', 'name')->get();
 
         return view('events.edit', compact('lot','projects','phases','stages','Eventos'));
+    }
+
+    /**
+ * Actualizar un evento existente
+ */
+    public function update(Request $request, $id)
+    {
+        $event = Eventos::findOrFail($id);
+
+        $request->validate([
+            'name'            => 'required|string|max:255',
+            'description'     => 'nullable|string',
+            'total_asientos'  => 'required|integer|min:1',
+
+            'event_date'      => 'required|date',
+            'status'          => 'required|in:activo,inactivo',
+            'source_type'     => 'required|in:adara,naboo',
+
+            'project_id'      => 'nullable|integer',
+            'phase_id'        => 'nullable|integer',
+            'stage_id'        => 'nullable|integer',
+
+            'modal_color'     => 'nullable|string|max:50',
+            'modal_selector'  => 'nullable|string|max:255',
+            'color_primario'  => 'nullable|string|max:50',
+            'color_acento'    => 'nullable|string|max:50',
+
+            'redirect_return'   => 'nullable|string|max:255',
+            'redirect_next'     => 'nullable|string|max:255',
+            'redirect_previous' => 'nullable|string|max:255',
+
+            'svg_image'       => 'nullable|mimes:svg,xml',
+            'png_image'       => 'nullable|image|mimes:png,jpg,jpeg',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            // Datos base
+            $data = $request->only([
+                'name',
+                'description',
+                'total_asientos',
+                'project_id',
+                'phase_id',
+                'stage_id',
+                'modal_color',
+                'modal_selector',
+                'color_primario',
+                'color_acento',
+                'redirect_return',
+                'redirect_next',
+                'redirect_previous',
+            ]);
+
+            // Campos adicionales
+            $data['event_date']  = $request->event_date;
+            $data['status']      = $request->status;
+            $data['source_type'] = $request->source_type;
+
+            // SVG (solo si se sube uno nuevo)
+            if ($request->hasFile('svg_image')) {
+                $data['svg_image'] = $this->fileUploadService
+                    ->upload($request->file('svg_image'), 'eventos-assets');
+            }
+
+            // PNG (solo si se sube uno nuevo)
+            if ($request->hasFile('png_image')) {
+                $data['png_image'] = $this->fileUploadService
+                    ->upload($request->file('png_image'), 'eventos-assets');
+            }
+
+            $event->update($data);
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.index')
+                ->with('success', 'Evento actualizado correctamente.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error al actualizar evento', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()
+                ->withErrors(['error' => 'Ocurrió un error al actualizar el evento'])
+                ->withInput();
+        }
     }
 
 

@@ -32,9 +32,173 @@
 				<link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
 				<link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
 
+
+
+				<style>
+    .event-header {
+    background: radial-gradient(circle at top left, #2b2b2b, #000);
+    padding: 80px 0 100px;
+    color: #fff;
+}
+
+
+.event-title {
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color:white;
+}
+
+.event-price {
+    font-size: 22px;
+    font-weight: 600;
+    color: #ff9f43;
+    margin-bottom: 20px;
+}
+
+.event-price span {
+    color: #b5b5b5;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.event-meta {
+    color: #d1d1d1;
+    font-size: 15px;
+}
+
+.event-meta div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.event-date {
+    width: 90px;
+    height: 110px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #8f5cff, #ff9f43);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: 0 15px 40px rgba(0,0,0,.4);
+}
+
+.event-date .day {
+    font-size: 36px;
+    line-height: 1;
+}
+
+.event-date .month {
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.btn-primary{
+    background: #7723FF !important;
+}
+
+.bodyform{
+    
+}
+
+</style>
+
+
 </head>
 
 <body>
+
+	{{-- HEADER EVENTO --}}
+<section class="event-header position-relative">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+
+            {{-- INFO EVENTO --}}
+            <div class="event-info">
+                <img src="/assets/logo.svg" alt="Stom Tickets" class="event-logo mb-6" style="width:180px;">
+
+                <h1 class="event-title">Box Azteca</h1>
+
+                
+
+                <div class="event-meta">
+                    <div>
+                        <i class="ki-duotone ki-time fs-5 me-2"></i>
+                        7:30 PM - 12:00 AM
+                    </div>
+                    <div>
+                        <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
+                        Centro de Convenciones Siglo XXI, Mérida
+                    </div>
+                </div>
+            </div>
+
+            {{-- FECHA --}}
+            <div class="event-date">
+                <span class="day">13</span>
+                <span class="month">DIC</span>
+            </div>
+
+        </div>
+    </div>
+
+    {{-- SWITCH DE TEMA --}}
+    <div class="position-absolute top-0 end-0 p-6">
+        <div class="theme-switcher"
+             data-kt-menu-trigger="click"
+             data-kt-menu-placement="bottom-end">
+
+            <button class="btn btn-icon btn-sm btn-dark">
+                <i class="ki-outline ki-sun fs-2"></i>
+            </button>
+
+            <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded
+                        menu-title-gray-700 menu-icon-gray-500
+                        menu-active-bg menu-state-color fw-semibold py-4 fs-base w-150px"
+                 data-kt-menu="true"
+                 data-kt-element="theme-mode-menu">
+
+                <div class="menu-item px-3 my-0">
+                    <a href="#" class="menu-link px-3 py-2"
+                       data-kt-element="mode"
+                       data-kt-value="light">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-sun fs-2"></i>
+                        </span>
+                        <span class="menu-title">Claro</span>
+                    </a>
+                </div>
+
+                <div class="menu-item px-3 my-0">
+                    <a href="#" class="menu-link px-3 py-2"
+                       data-kt-element="mode"
+                       data-kt-value="dark">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-moon fs-2"></i>
+                        </span>
+                        <span class="menu-title">Oscuro</span>
+                    </a>
+                </div>
+
+                <div class="menu-item px-3 my-0">
+                    <a href="#" class="menu-link px-3 py-2"
+                       data-kt-element="mode"
+                       data-kt-value="system">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-screen fs-2"></i>
+                        </span>
+                        <span class="menu-title">Sistema</span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
 
 
 				@yield('content')
