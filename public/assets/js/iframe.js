@@ -88,13 +88,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     paintGroup(group, ticketStatusColors.available);
                 } else {
                     addToCart(ticket);
-                    paintGroup(group, 'rgba(0,120,255,.6)');
+                    paintGroup(group, 'rgba(255, 138, 0,.6)');
                 }
 
                 return;
             }
 
-            // 🎫 General
             addToCart(ticket);
         });
     });

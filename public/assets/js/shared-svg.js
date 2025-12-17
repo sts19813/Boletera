@@ -4,8 +4,8 @@
  * =========================
  */
 const ticketStatusColors = {
-    available: 'rgba(52,199,89,.45)',
-    sold: 'rgba(200,0,0,.45)',
+    available: 'rgba(70, 72, 82, 0.6)',
+    sold: 'rgba(155, 89, 255, 0.6)',
     reserved: 'rgba(255,200,0,.6)',
     locked_sale: 'rgba(120,120,120,.8)'
 };

@@ -17,11 +17,18 @@ use App\Http\Controllers\TicketResendController;
 
 
 
-Route::get('/', function () {
+Route::get('/admin', function () {
     return Auth::check()
         ? redirect()->route('events.index')
         : view('login');
 });
+
+Route::get('/', function () {
+    return app(EventosController::class)
+        ->iframe(1);
+});
+
+
 // =========================
 // Autenticación con Google
 // =========================
