@@ -30,7 +30,7 @@ class PaymentController extends Controller
             abort(404, 'Carrito vacío');
         }
 
-        $subtotal = collect($carrito)->sum(fn ($i) => $i['price'] * ($i['qty'] ?? 1));
+        $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
 
         // comisión ejemplo
         $comision = round($subtotal * 0.05, 2);
@@ -56,7 +56,7 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Carrito vacío'], 400);
         }
 
-        $subtotal = collect($carrito)->sum(fn ($i) => $i['price'] * ($i['qty'] ?? 1));
+        $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
         $comision = round($subtotal * 0.05, 2);
         $total = $subtotal + $comision;
 
@@ -79,249 +79,254 @@ class PaymentController extends Controller
     }
 
 
-   
 
-public function success(Request $request)
-{
-    $paymentIntentId = $request->query('pi');
-    $email = $request->query('email');
 
-    if (!$paymentIntentId) {
-        abort(400, 'Pago inválido');
+    public function success(Request $request)
+    {
+        $paymentIntentId = $request->query('pi');
+        $email = $request->query('email');
+
+        if (!$paymentIntentId) {
+            abort(400, 'Pago inválido');
+        }
+
+        // 1️⃣ Generar boletos (YA LO TIENES)
+        $boletos = $this->generateBoletosFromPaymentIntent(
+            $paymentIntentId,
+            $email
+        );
+
+        // 2️⃣ Generar PDF
+        $pdfContent = $this->generateBoletosPdf($boletos, $email);
+
+        // 3️⃣ Enviar correo (solo una vez)
+        Mail::to($email)->send(
+            new BoletosMail($pdfContent)
+        );
+
+        // 4️⃣ Mostrar vista
+        return view('pago.success', compact('boletos', 'email'));
     }
 
-    // 1️⃣ Generar boletos (YA LO TIENES)
-    $boletos = $this->generateBoletosFromPaymentIntent(
-        $paymentIntentId,
-        $email
-    );
-
-    // 2️⃣ Generar PDF
-    $pdfContent = $this->generateBoletosPdf($boletos, $email);
-
-    // 3️⃣ Enviar correo (solo una vez)
-    Mail::to($email)->send(
-        new BoletosMail($pdfContent)
-    );
-
-    // 4️⃣ Mostrar vista
-    return view('pago.success', compact('boletos', 'email'));
-}
 
 
 
 
+    public function downloadPdf(Request $request)
+    {
+        $paymentIntentId = $request->get('pi');
+        $email = $request->get('email');
 
-public function downloadPdf(Request $request)
-{
-    $paymentIntentId = $request->get('pi');
-    $email = $request->get('email');
+        $boletos = $this->generateBoletosFromPaymentIntent(
+            $paymentIntentId,
+            $email
+        );
 
-    $boletos = $this->generateBoletosFromPaymentIntent(
-        $paymentIntentId,
-        $email
-    );
+        $pdf = Pdf::loadView('pdf.boletos', [
+            'boletos' => $boletos,
+            'email' => $email,
+        ])->setPaper('A4');
 
-    $pdf = Pdf::loadView('pdf.boletos', [
-        'boletos' => $boletos,
-        'email'   => $email,
-    ])->setPaper('A4');
+        return $pdf->download("boletos-{$paymentIntentId}.pdf");
+    }
 
-    return $pdf->download("boletos-{$paymentIntentId}.pdf");
-}
+    public function resendBoletos(Request $request)
+    {
+        $paymentIntentId = $request->get('pi');
+        $email = $request->get('email');
 
-public function resendBoletos(Request $request)
-{
-    $paymentIntentId = $request->get('pi');
-    $email = $request->get('email');
+        $boletos = $this->generateBoletosFromPaymentIntent(
+            $paymentIntentId,
+            $email
+        );
 
-    $boletos = $this->generateBoletosFromPaymentIntent(
-        $paymentIntentId,
-        $email
-    );
+        $pdf = Pdf::loadView('pdf.boletos', compact('boletos'))->output();
 
-    $pdf = Pdf::loadView('pdf.boletos', compact('boletos'))->output();
+        Mail::to($email)->send(new BoletosMail($pdf));
 
-    Mail::to($email)->send(new BoletosMail($pdf));
-
-    return response()->json(['ok' => true]);
-}
+        return response()->json(['ok' => true]);
+    }
 
 
-private function generateBoletosPdf(array $boletos, string $email)
-{
-    return Pdf::loadView('pdf.boletos', [
-        'boletos' => $boletos,
-        'email'   => $email,
-    ])->output();
-}
+    private function generateBoletosPdf(array $boletos, string $email)
+    {
+        return Pdf::loadView('pdf.boletos', [
+            'boletos' => $boletos,
+            'email' => $email,
+        ])->output();
+    }
 
 
 
     private function generateBoletosFromPaymentIntent(string $paymentIntentId, string $email): array
-{
-    Stripe::setApiKey(config('services.stripe.secret'));
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
 
-    $intent = PaymentIntent::retrieve($paymentIntentId);
+        $intent = PaymentIntent::retrieve($paymentIntentId);
 
-    if ($intent->status !== 'succeeded') {
-        abort(403, 'Pago no confirmado');
-    }
+        if ($intent->status !== 'succeeded') {
+            abort(403, 'Pago no confirmado');
+        }
 
-    $cart = json_decode($intent->metadata->cart ?? '[]', true);
+        $cart = json_decode($intent->metadata->cart ?? '[]', true);
 
-    if (empty($cart)) {
-        abort(400, 'Carrito vacío');
-    }
+        if (empty($cart)) {
+            abort(400, 'Carrito vacío');
+        }
 
-    $purchaseAt = now();
-    $purchaseAtString = $purchaseAt->toDateTimeString();
+        $purchaseAt = now();
+        $purchaseAtString = $purchaseAt->toDateTimeString();
 
-    $boletos = [];
+        $boletos = [];
 
-    foreach ($cart as $item) {
+        foreach ($cart as $item) {
 
-        $ticket = Ticket::findOrFail($item['id']);
-        $qty = max(1, (int) ($item['qty'] ?? 1));
+            $ticket = Ticket::findOrFail($item['id']);
+            $qty = max(1, (int) ($item['qty'] ?? 1));
 
-        if ($ticket->stock == 1) {
+            if ($ticket->stock == 1) {
 
-            if ($ticket->status === 'sold') {
+                if ($ticket->status === 'sold') {
+
+                    $boletos[] = $this->buildTicketData(
+                        $ticket,
+                        null,
+                        $email,
+                        optional($ticket->purchased_at)->toDateTimeString(),
+                        $paymentIntentId
+                    );
+
+                    continue;
+                }
+
+                $ticket->update([
+                    'status' => 'sold',
+                    'purchased_at' => $purchaseAt,
+                ]);
 
                 $boletos[] = $this->buildTicketData(
                     $ticket,
                     null,
                     $email,
-                    optional($ticket->purchased_at)->toDateTimeString(),
+                    $purchaseAtString,
                     $paymentIntentId
                 );
 
                 continue;
             }
 
-            $ticket->update([
-                'status'       => 'sold',
-                'purchased_at' => $purchaseAt,
-            ]);
+            $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
+                ->where('ticket_id', $ticket->id)
+                ->get();
 
-            $boletos[] = $this->buildTicketData(
-                $ticket,
-                null,
-                $email,
-                $purchaseAtString,
-                $paymentIntentId
-            );
+            if ($existingInstances->isNotEmpty()) {
 
-            continue;
-        }
+                foreach ($existingInstances as $instance) {
 
-        $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
-            ->where('ticket_id', $ticket->id)
-            ->get();
+                    $boletos[] = $this->buildTicketData(
+                        $ticket,
+                        $instance,
+                        $instance->email,
+                        $instance->purchased_at,
+                        $paymentIntentId
+                    );
+                }
 
-        if ($existingInstances->isNotEmpty()) {
+                continue;
+            }
 
-            foreach ($existingInstances as $instance) {
+            for ($i = 0; $i < $qty; $i++) {
+
+                $instance = TicketInstance::create([
+                    'ticket_id' => $ticket->id,
+                    'email' => $email,
+                    'purchased_at' => $purchaseAt,
+                    'qr_hash' => (string) Str::uuid(),
+                    'payment_intent_id' => $paymentIntentId,
+                ]);
 
                 $boletos[] = $this->buildTicketData(
                     $ticket,
                     $instance,
-                    $instance->email,
-                    $instance->purchased_at,
+                    $email,
+                    $purchaseAtString,
                     $paymentIntentId
                 );
             }
 
-            continue;
+            $ticket->increment('sold', $qty);
+
+            if ($ticket->sold >= $ticket->stock) {
+                $ticket->update(['status' => 'sold']);
+            }
         }
 
-        for ($i = 0; $i < $qty; $i++) {
-
-            $instance = TicketInstance::create([
-                'ticket_id'         => $ticket->id,
-                'email'             => $email,
-                'purchased_at'      => $purchaseAt,
-                'qr_hash'           => (string) Str::uuid(),
-                'payment_intent_id' => $paymentIntentId,
-            ]);
-
-            $boletos[] = $this->buildTicketData(
-                $ticket,
-                $instance,
-                $email,
-                $purchaseAtString,
-                $paymentIntentId
-            );
-        }
-
-        $ticket->increment('sold', $qty);
-
-        if ($ticket->sold >= $ticket->stock) {
-            $ticket->update(['status' => 'sold']);
-        }
+        return $boletos;
     }
 
-    return $boletos;
-}
-
-private function buildTicketData(
-    Ticket $ticket,
-    ?TicketInstance $instance,
-    string $email,
-    string $purchasedAt,
-    string $paymentIntentId
-) {
-    return [
-        'event' => [
-            'name'       => $ticket->event->name ?? 'Evento - Box Azteca',
-            'date'      => '17 de enero de 2026',
-            'time'      => '7:00 PM',
-            'venue'     => 'Centro de Convenciones Siglo XXI',
-            'organizer' => 'Maxboxing',
-        ],
-        'ticket' => [
-            'name'   => $ticket->name,
-            'row'    => $ticket->row ?? null,
-            'seat'   => $ticket->seat ?? null,
-            'price'  => $ticket->total_price,
-        ],
-        'order' => [
-            'payment_intent' => $paymentIntentId,
-            'purchased_at'   => $purchasedAt,
-        ],
-        'user' => [
-            'email' => $email,
-        ],
-        'qr' => $this->makeQr([
-            'type' => 'ticket',
-            'ticket_id' => $ticket->id,
-            'ticket_instance_id' => $instance?->id,
-            'hash' => $instance?->qr_hash,
-        ]),
-    ];
-}
-
-
-private function makeQr(array $payload): string
-{
-    $filename = 'qr_' . md5(json_encode($payload)) . '.png';
-    $path = 'qrs/' . $filename;
-
-    if (!Storage::disk('public')->exists($path)) {
-
-        $result = Builder::create()
-            ->writer(new PngWriter())
-            ->data(json_encode($payload))
-            ->size(220)
-            ->margin(10)
-            ->build();
-
-        Storage::disk('public')->put($path, $result->getString());
+    private function buildTicketData(
+        Ticket $ticket,
+        ?TicketInstance $instance,
+        string $email,
+        string $purchasedAt,
+        string $paymentIntentId
+    ) {
+        return [
+            'event' => [
+                'name' => $ticket->event->name ?? 'Evento - Box Azteca',
+                'date' => '17 de enero de 2026',
+                'time' => '7:00 PM',
+                'venue' => 'Centro de Convenciones Siglo XXI',
+                'organizer' => 'Maxboxing',
+            ],
+            'ticket' => [
+                'name' => $ticket->name,
+                'row' => $ticket->row ?? null,
+                'seat' => $ticket->seat ?? null,
+                'price' => $ticket->total_price,
+            ],
+            'order' => [
+                'payment_intent' => $paymentIntentId,
+                'purchased_at' => $purchasedAt,
+            ],
+            'user' => [
+                'email' => $email,
+            ],
+            'qr' => $this->makeQr([
+                'type' => 'ticket',
+                'ticket_id' => $ticket->id,
+                'ticket_instance_id' => $instance?->id,
+                'hash' => $instance?->qr_hash,
+            ]),
+        ];
     }
 
-    return asset('storage/' . $path);
-}
 
+    private function makeQr(array $payload): string
+    {
+        $filename = 'qr_' . md5(json_encode($payload)) . '.png';
+        $dir = public_path('qrs');
+
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $path = $dir . '/' . $filename;
+
+        if (!file_exists($path)) {
+
+            $result = Builder::create()
+                ->writer(new PngWriter())
+                ->data(json_encode($payload))
+                ->size(220)
+                ->margin(10)
+                ->build();
+
+            file_put_contents($path, $result->getString());
+        }
+
+        return asset('qrs/' . $filename);
+    }
 
 
     public function cancel()
