@@ -221,7 +221,9 @@ function updateCartUI() {
     });
 
     totalEl.textContent = `$${total.toLocaleString('es-MX')}`;
-    panel.style.display = window.cartState.items.length ? 'block' : 'none';
+    if (panel) {
+        panel.style.display = window.cartState.items.length ? 'block' : 'none';
+    }
     btn.disabled = window.cartState.items.length === 0;
 }
 

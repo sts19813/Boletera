@@ -69,6 +69,35 @@
    🛒 CART METRONIC PRO
 ========================= */
 
+/* ===============================
+   CARRITO STICKY RESPONSIVE
+================================ */
+
+.cart-sticky {
+    position: relative;
+}
+
+/* Desktop */
+@media (min-width: 992px) {
+    .cart-sticky {
+        position: sticky;
+        top: 110px; /* ajusta según tu header */
+    }
+}
+
+/* Mobile */
+@media (max-width: 991px) {
+    .cart-sticky {
+        position: static;
+        margin-top: 24px;
+    }
+
+    .kt-cart-items {
+        max-height: none;
+    }
+}
+
+
 .kt-cart-panel {
     animation: slideIn .25s ease-out;
 }
