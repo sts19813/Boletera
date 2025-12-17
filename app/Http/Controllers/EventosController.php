@@ -287,7 +287,7 @@ class EventosController extends Controller
 
         $Eventos = Eventos::select('id', 'name')->get();
 
-        return view('events.edit', compact('lot','projects','phases','stages','Eventos'));
+        return view('events.edit', compact('event','projects','phases','stages','Eventos'));
     }
 
     /**

@@ -138,8 +138,8 @@
 
             {{-- FECHA --}}
             <div class="event-date">
-                <span class="day">13</span>
-                <span class="month">DIC</span>
+                <span class="day">17</span>
+                <span class="month">ENE</span>
             </div>
 
         </div>
