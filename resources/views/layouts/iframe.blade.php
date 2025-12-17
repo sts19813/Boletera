@@ -43,7 +43,7 @@
     <style>
         .event-header {
             background: radial-gradient(circle at top left, #2b2b2b, #000);
-            padding: 80px 0 100px;
+            padding: 35px 0 100px;
             color: #fff;
         }
 
@@ -148,49 +148,7 @@
             </div>
         </div>
 
-        {{-- SWITCH DE TEMA --}}
-        <div class="position-absolute top-0 end-0 p-6">
-            <div class="theme-switcher" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
 
-                <button class="btn btn-icon btn-sm btn-dark">
-                    <i class="ki-outline ki-sun fs-2"></i>
-                </button>
-
-                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded
-                        menu-title-gray-700 menu-icon-gray-500
-                        menu-active-bg menu-state-color fw-semibold py-4 fs-base w-150px" data-kt-menu="true"
-                    data-kt-element="theme-mode-menu">
-
-                    <div class="menu-item px-3 my-0">
-                        <a href="#" class="menu-link px-3 py-2" data-kt-element="mode" data-kt-value="light">
-                            <span class="menu-icon">
-                                <i class="ki-outline ki-sun fs-2"></i>
-                            </span>
-                            <span class="menu-title">Claro</span>
-                        </a>
-                    </div>
-
-                    <div class="menu-item px-3 my-0">
-                        <a href="#" class="menu-link px-3 py-2" data-kt-element="mode" data-kt-value="dark">
-                            <span class="menu-icon">
-                                <i class="ki-outline ki-moon fs-2"></i>
-                            </span>
-                            <span class="menu-title">Oscuro</span>
-                        </a>
-                    </div>
-
-                    <div class="menu-item px-3 my-0">
-                        <a href="#" class="menu-link px-3 py-2" data-kt-element="mode" data-kt-value="system">
-                            <span class="menu-icon">
-                                <i class="ki-outline ki-screen fs-2"></i>
-                            </span>
-                            <span class="menu-title">Sistema</span>
-                        </a>
-                    </div>
-
-                </div>
-            </div>
-        </div>
     </section>
 
 

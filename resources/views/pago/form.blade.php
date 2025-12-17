@@ -92,7 +92,7 @@
 
                         <div id="card-errors" class="text-danger mb-4"></div>
 
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold" style="background: #7723FF !important;">
                             Completar compra
                         </button>
 
