@@ -62,22 +62,34 @@
                 {{-- MAPA --}}
                 <div class="text-center">
                     <div style="position: relative; display: inline-block; width:100%;">
+                        <div class="seat-map-wrapper">
+                            <div id="seatMap" class="seat-map">
+                                {{-- PNG --}}
+                                @if ($lot->png_image)
+                                    <img src="{{ asset('/' . $lot->png_image) }}" alt="Mapa" />
+                                @endif
 
-                        {{-- Imagen base PNG --}}
-                        @if ($lot->png_image)
-                            <img src="{{ asset('/' . $lot->png_image) }}" alt="PNG" style="width:100%; height:auto;">
-                        @endif
-
-                        {{-- SVG encima --}}
-                        @if ($lot->svg_image)
-                            <div style="position:absolute; top:0; left:0; width:100%;">
-                                {!! file_get_contents(public_path($lot->svg_image)) !!}
+                                {{-- SVG --}}
+                                @if ($lot->svg_image)
+                                    <div class="seat-svg">
+                                        {!! file_get_contents(public_path($lot->svg_image)) !!}
+                                    </div>
+                                @endif
                             </div>
-                        @endif
 
+                            {{-- CONTROLES MOBILE --}}
+                            <div class="seat-zoom-controls d-lg-none">
+                                <button id="zoomIn">+</button>
+                                <button id="zoomOut">−</button>
+                            </div>
+
+                            {{-- HINT --}}
+                            <div class="seat-zoom-hint d-lg-none">
+                                Usa dos dedos para acercar o alejar
+                            </div>
+                        </div>
                     </div>
                 </div>
-
             </div>
 
             {{-- ===================== --}}
@@ -108,17 +120,11 @@
                         <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
                             Continuar pago
                         </button>
-
                     </div>
-
                 </div>
-
             </div>
-
-
         </div>
     </div>
-
 @endsection
 
 @push('scripts')
@@ -145,7 +151,44 @@
         window.idDesarrollo = {{ $lot->id }};
         let redireccion = true;
     </script>
+    <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
 
     <script src="/assets/js/shared-svg.js"></script>
     <script src="/assets/js/iframe.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const seatMap = document.getElementById('seatMap');
+
+            const panzoom = Panzoom(seatMap, {
+                maxScale: 4,
+                minScale: 1,
+                step: 0.3,
+                contain: 'outside',
+                cursor: 'grab'
+            });
+
+            // Zoom con rueda (desktop)
+            seatMap.parentElement.addEventListener('wheel', panzoom.zoomWithWheel);
+
+            // Evitar que los clicks en asientos bloqueen el drag
+            seatMap.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('path, rect, polygon, circle')) {
+                    e.stopPropagation();
+                }
+            });
+
+            // Botones mobile
+            const zoomIn = document.getElementById('zoomIn');
+            const zoomOut = document.getElementById('zoomOut');
+
+            if (zoomIn && zoomOut) {
+                zoomIn.addEventListener('click', () => panzoom.zoomIn());
+                zoomOut.addEventListener('click', () => panzoom.zoomOut());
+            }
+        });
+    </script>
+
+
 @endpush

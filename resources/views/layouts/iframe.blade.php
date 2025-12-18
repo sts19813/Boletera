@@ -38,84 +38,13 @@
     <!-- Global Stylesheets -->
     <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/css/layout.css') }}" rel="stylesheet" type="text/css" />
 
     <script>
         // Forzar tema oscuro por defecto
         document.documentElement.setAttribute("data-bs-theme", "dark");
         localStorage.setItem("kt_theme_mode_value", "dark");
     </script>
-
-
-
-    <style>
-        .event-header {
-            background: radial-gradient(circle at top left, #2b2b2b, #000);
-            padding: 35px 0 100px;
-            color: #fff;
-        }
-
-
-        .event-title {
-            font-size: 42px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: white;
-        }
-
-        .event-price {
-            font-size: 22px;
-            font-weight: 600;
-            color: #ff9f43;
-            margin-bottom: 20px;
-        }
-
-        .event-price span {
-            color: #b5b5b5;
-            font-size: 14px;
-            font-weight: 400;
-        }
-
-        .event-meta {
-            color: #d1d1d1;
-            font-size: 15px;
-        }
-
-        .event-meta div {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .event-date {
-            width: 90px;
-            height: 110px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #8f5cff, #ff9f43);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, .4);
-        }
-
-        .event-date .day {
-            font-size: 36px;
-            line-height: 1;
-        }
-
-        .event-date .month {
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
-
-        .btn-primary {
-            background: #7723FF !important;
-        }
-
-        .bodyform {}
-    </style>
-
 
 </head>
 
@@ -131,9 +60,6 @@
                     <img src="/assets/logo.svg" alt="Stom Tickets" class="event-logo mb-6" style="width:180px;">
 
                     <h1 class="event-title">Box Azteca</h1>
-
-
-
                     <div class="event-meta">
                         <div>
                             <i class="ki-duotone ki-time fs-5 me-2"></i>
@@ -157,8 +83,6 @@
 
 
     </section>
-
-
 
     @yield('content')
 
