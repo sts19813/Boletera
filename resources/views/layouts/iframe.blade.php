@@ -2,31 +2,40 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <title>@yield('title', 'Stom tickets')</title>
-
-    <!-- Meta -->
     <meta name="description"
         content="Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
-    <meta name="keywords"
-        content="box, eventos, stom" />
+    <meta name="keywords" content="boletos, eventos, conciertos, festivales, stom tickets" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:type" content="article" />
-    <meta property="og:title" content="StomTickets - Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
-    <meta property="og:site_name" content="Stom Tickets" />
-    <link rel="canonical" href="https://preview.keenthemes.com/metronic8" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="{{ url()->current() }}" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon.png') }}">
+
+    <!-- Open Graph / Social Share -->
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Stom Tickets" />
+    <meta property="og:title" content="Stom Tickets - Compra tus boletos en línea" />
+    <meta property="og:description"
+        content="Compra tus boletos en línea con STOM TICKETS. Conciertos, festivales, deportes y eventos exclusivos en México." />
+    <meta property="og:url" content="{{ url()->current() }}" />
+
+    <meta property="og:image" content="{{ asset('og-image.png') }}" />
+    <meta property="og:image:secure_url" content="{{ asset('og-image.png') }}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
     <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 
-    <!-- Vendor Stylesheets (para páginas específicas, opcional) -->
-    <link href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}" rel="stylesheet"
-        type="text/css" />
-    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet"
-        type="text/css" />
+    <!-- Vendor Stylesheets -->
+    <link href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
 
-    <!-- Global Stylesheets Bundle (obligatorios) -->
+    <!-- Global Stylesheets -->
     <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
 
