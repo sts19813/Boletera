@@ -3,13 +3,14 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>@yield('title', 'Dashboard')</title>
+    <title>@yield('title', 'Stom tickets')</title>
 
     <!-- Meta -->
     <meta name="description"
-        content="The most advanced Bootstrap 5 Admin Theme with 40 unique prebuilt layouts on Themeforest trusted by 100,000 beginners and professionals." />
+        content="Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
     <meta name="keywords"
-        content="metronic, bootstrap, bootstrap 5, admin themes, web design, web development, free templates" />
+        content="box, eventos, stom" />
+    <link rel="icon" type="image/png" href="//stomtickets.com/cdn/shop/files/favicon-stomtickets.png?crop=center&amp;height=32&amp;v=1727761893&amp;width=32">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />

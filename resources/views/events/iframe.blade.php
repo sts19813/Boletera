@@ -1,6 +1,6 @@
 @extends('layouts.iframe')
 
-@section('title', 'Configurador de Lote')
+@section('title', 'Stom Tickets')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 @section('content')
