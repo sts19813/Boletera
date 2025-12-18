@@ -15,10 +15,10 @@
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="StomTickets - Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
-    <meta property="og:url" content="https://stomtickets.com/" />
     <meta property="og:site_name" content="Stom Tickets" />
     <link rel="canonical" href="https://preview.keenthemes.com/metronic8" />
- <link rel="canonical" href="https://stomtickets.com/"><link rel="icon" type="image/png" href="//stomtickets.com/cdn/shop/files/favicon-stomtickets.png?crop=center&height=32&v=1727761893&width=32"><link rel="preconnect" href="https://fonts.shopifycdn.com" crossorigin><title>
+    <link rel="icon" type="image/png" href="//stomtickets.com/cdn/shop/files/favicon-stomtickets.png?crop=center&height=32&v=1727761893&width=32">
+    <!-- Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 
     <!-- Vendor Stylesheets (para páginas específicas, opcional) -->
