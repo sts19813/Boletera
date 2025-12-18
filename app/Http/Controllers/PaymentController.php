@@ -298,7 +298,7 @@ class PaymentController extends Controller
         return [
             'event' => [
                 'name' => $ticket->event->name ?? 'Evento - Box Azteca',
-                'date' => '17 de enero de 2026',
+                'date' => '17 de Enero de 2026',
                 'time' => '7:00 PM',
                 'venue' => 'Centro de Convenciones Siglo XXI',
                 'organizer' => 'Maxboxing',

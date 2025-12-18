@@ -182,7 +182,13 @@ function updateCartUI() {
         }
 
         li.innerHTML = `
-            <span>${ticket.name}</span>
+            <div style="flex:1;">
+                <div>${ticket.name}</div>
+                <div class="cart-item-price">
+                    $${ticket.total_price.toLocaleString('es-MX')} c/u
+                </div>
+            </div>
+
             ${controls}
             <span class="cart-remove">✕</span>
         `;

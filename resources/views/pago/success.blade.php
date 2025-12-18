@@ -34,36 +34,43 @@
 								{{ $boleto['event']['date'] }} · {{ $boleto['event']['time'] }}
 							</div>
 
-							<div class="row mb-6">
+							<div class="row mb-6 text-start">
 								<div class="col-6">
 									<div class="fw-semibold">Boleto</div>
-									<div>{{ $boleto['ticket']['name'] }}</div>
+									<div class="text-muted">{{ $boleto['ticket']['name'] }}</div>
 								</div>
 								<div class="col-6">
 									<div class="fw-semibold">Precio</div>
-									<div>${{ number_format($boleto['ticket']['price'], 2) }}</div>
+									<div class="text-muted">${{ number_format($boleto['ticket']['price'], 2) }}</div>
 								</div>
 							</div>
 
-							<div class="row mb-6">
+							<div class="row mb-6 text-start">
 								<div class="col-6">
-									<div class="fw-semibold">Asiento</div>
-									<div>
-										{{ $boleto['ticket']['row'] ?? 'General' }}
-										{{ $boleto['ticket']['seat'] }}
+									<div class="fw-semibold">Fecha</div>
+									<div class="text-muted">
+										{{ $boleto['event']['date'] }}
 									</div>
 								</div>
 								<div class="col-6">
 									<div class="fw-semibold">Comprador</div>
-									<div>{{ $boleto['user']['email'] }}</div>
+									<div class="text-muted">{{ $boleto['user']['email'] }}</div>
+								</div>
+							</div>
+
+							<div class="row mb-6 text-start">
+								<div class="col-6">
+									<div class="fw-semibold">Organizador</div>
+									<div class="text-muted">{{ $boleto['event']['organizer'] }}</div>
+								</div>
+								<div class="col-6">
+									<div class="fw-semibold">Lugar</div>
+									<div class="text-muted">{{ $boleto['event']['venue'] }}</div>
 								</div>
 							</div>
 
 							<div class="text-center my-6">
-								<img src="{{ $boleto['qr'] }}" width="160">
-
-
-
+								<img src="{{ $boleto['qr'] }}" width="200">
 							</div>
 
 							<div class="text-muted text-center fs-8">

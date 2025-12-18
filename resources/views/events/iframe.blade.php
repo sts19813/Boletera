@@ -78,7 +78,7 @@
                             </div>
 
                             {{-- CONTROLES MOBILE --}}
-                            <div class="seat-zoom-controls d-lg-none">
+                            <div class="seat-zoom-controls">
                                 <button id="zoomIn">+</button>
                                 <button id="zoomOut">−</button>
                             </div>

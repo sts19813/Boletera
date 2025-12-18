@@ -60,8 +60,36 @@
 }
 
 .btn-primary {
-    background: #7723FF !important;
+    background-color: #7723FF !important;
+    border-color: #7723FF !important;
+    color: #fff !important;
 }
+
+/* HOVER */
+.btn-primary:hover {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+}
+
+.btn-check:active+.btn.btn-primary, .btn-check:checked+.btn.btn-primary, .btn.btn-primary.active, .btn.btn-primary.show, .btn.btn-primary:active:not(.btn-active), .btn.btn-primary:focus:not(.btn-active), .btn.btn-primary:hover:not(.btn-active), .show>.btn.btn-primary {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+}
+
+/* FOCUS / ACTIVE (opcional pero recomendado) */
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+}
+
 
 @media (max-width: 600px) {
 
