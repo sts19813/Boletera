@@ -19,6 +19,10 @@ class TicketInstance extends Model
         'payment_intent_id'
     ];
 
+    protected $casts = [
+        'purchased_at' => 'datetime',
+    ];
+
     protected static function boot()
     {
         parent::boot();

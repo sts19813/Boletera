@@ -14,7 +14,8 @@ use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TicketResendController;
-
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\TaquillaController;
 
 
 Route::get('/admin', function () {
@@ -45,7 +46,7 @@ Route::get('/google-auth/callback', function () {
     $user = User::updateOrCreate(
         ['google_id' => $user_google->id],
         [
-            'name'  => $user_google->name,
+            'name' => $user_google->name,
             'email' => $user_google->email,
         ]
     );
@@ -70,7 +71,7 @@ Route::get('/lang/{lang}', function ($lang) {
 // Rutas del panel admin
 // =========================
 Route::middleware(['auth', AdminMiddleware::class])
-        ->group(function () {
+    ->group(function () {
 
 
         // =========================
@@ -94,13 +95,13 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])
             ->name('events.destroy');
 
-        Route::get('/dashboards', [EventosController::class, 'index'])->name('dashboards.index');
+        Route::get('/dashboards', action: [EventosController::class, 'index'])->name('dashboards.index');
 
         Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])
             ->name('events.configurator');
 
 
-         Route::post('/evets/fetch', [EventosController::class, 'fetch'])
+        Route::post('/evets/fetch', [EventosController::class, 'fetch'])
             ->name('events.fetch');
 
 
@@ -109,7 +110,7 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])
             ->name('eventsSettings.store');
 
-  
+
         //perfil
         Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
         Route::post('/perfil/actualizar', [ProfileController::class, 'update'])->name('profile.update');
@@ -117,16 +118,25 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::post('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
 
 
-        
+
         // Catálogo
         Route::get('/projects', [ProjectViewController::class, 'index'])->name('projects.index');
         Route::get('/phases', [PhaseViewController::class, 'index'])->name('phases.index');
         Route::get('/stages', [StageViewController::class, 'index'])->name('stages.index');
         Route::get('/tickets', [TicketViewController::class, 'index'])->name('tickets.index');
-        
 
 
-});
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('admin.dashboard');
+
+        Route::get('/dashboard/data', [DashboardController::class, 'data'])
+            ->name('admin.dashboard.data');
+
+        Route::get('/taquilla', [TaquillaController::class, 'index']);
+        Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
+
+        Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
+    });
 
 
 Route::get('/checkout', [PaymentController::class, 'checkout'])->name('checkout');

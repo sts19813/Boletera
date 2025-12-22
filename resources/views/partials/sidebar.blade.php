@@ -14,7 +14,7 @@
 
                 <!--begin: Desarrollos -->
                 <div class="menu-item">
-                    <a class="menu-link {{ request()->is('/') ? 'active' : '' }}" href="/">
+                    <a class="menu-link {{ request()->is('/events') ? 'active' : '' }}" href="/events">
                         <span class="menu-icon">
                             <i class="ki-outline ki-home-2 fs-2"></i>
                         </span>
@@ -82,7 +82,7 @@
 
                 <!-- Dashboard -->
                 <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
-                    <a class="menu-link {{ request()->is('dashboards*') ? 'active' : '' }}" href="/dashboards">
+                    <a class="menu-link {{ request()->is('dashboard*') ? 'active' : '' }}" href="/dashboard">
                         <span class="menu-icon"><i class="ki-outline ki-chart-line fs-2"></i></span>
                         <span class="menu-title">{{ __('messages.dashboards') }}</span>
                     </a>

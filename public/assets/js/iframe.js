@@ -41,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     window.updateQty = function (ticketId, delta) {
-        debugger
         const item = getCartItem(ticketId);
         if (!item) return;
 

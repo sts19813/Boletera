@@ -1,7 +1,9 @@
 /* =========================
    🛒 CART METRONIC THEME-AWARE
 ========================= */
-
+:root {
+    --bs-primary: #7723FF !important;
+}
 .kt-cart-panel {
     position: fixed;
     top: 90px;
@@ -458,6 +460,10 @@ body, html, div, span, p, a, button, input, textarea, svg, g, path, polygon, rec
 .cart-item-price {
     font-size: .75rem;
     color: var(--bs-gray-600);
+}
+#cartTotal{
+    color: #f5f5f5 !important;
+    font-size: 1.25rem !important;
 }
 
 /* =========================
