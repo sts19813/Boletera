@@ -67,6 +67,7 @@ return [
 
     'timezone' => 'America/Mexico_City',
 
+    
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
