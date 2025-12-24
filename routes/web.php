@@ -136,6 +136,11 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
 
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
+    
+        Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])
+            ->name('admin.dashboard.boletos');
+
+    
     });
 
 

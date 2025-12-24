@@ -56,9 +56,9 @@ class DashboardController extends Controller
         // Gráfica: ventas por día
         // ================================
         $chartData = TicketInstance::select(
-                DB::raw('DATE(purchased_at) as date'),
-                DB::raw('COUNT(*) as total')
-            )
+            DB::raw('DATE(purchased_at) as date'),
+            DB::raw('COUNT(*) as total')
+        )
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -82,4 +82,27 @@ class DashboardController extends Controller
             'chart' => $chartData,
         ]);
     }
+
+    /**
+     * Listado completo de boletos vendidos
+     */
+    public function boletos()
+    {
+        $boletos = TicketInstance::with('ticket')
+            ->orderBy('purchased_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'boleto' => $item->ticket->name ?? '-',
+                    'email' => $item->email ?? 'Taquilla',
+                    'metodo' => $item->payment_method,
+                    'referencia' => $item->reference,
+                    'fecha' => $item->purchased_at->format('d/m/Y H:i:s'),
+                ];
+            });
+
+        return response()->json($boletos);
+    }
+
 }
