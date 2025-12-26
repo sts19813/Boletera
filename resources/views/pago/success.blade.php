@@ -74,7 +74,7 @@
 							</div>
 
 							<div class="text-muted text-center fs-8">
-								Orden: {{ $boleto['order']['payment_intent'] }}
+								Orden: {{ $boleto['order']['payment_intent'] ?? 'N/A' }}
 							</div>
 
 						</div>

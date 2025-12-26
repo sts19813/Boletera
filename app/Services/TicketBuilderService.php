@@ -17,20 +17,11 @@ class TicketBuilderService
      */
     public function build(
         Ticket $ticket,
-        ?TicketInstance $instance,
+        TicketInstance $instance,
         string $email,
-        string|\DateTimeInterface $purchasedAt,
+        $purchasedAt,
         string $reference
     ): array {
-
-
-        if ($purchasedAt instanceof Carbon) {
-            $purchasedAt = $purchasedAt->format('Y-m-d H:i:s');
-        } elseif ($purchasedAt instanceof \DateTimeInterface) {
-            $purchasedAt = $purchasedAt->format('Y-m-d H:i:s');
-        } elseif (empty($purchasedAt)) {
-            $purchasedAt = now()->format('Y-m-d H:i:s');
-        }
         return [
             'event' => [
                 'name' => $ticket->event->name ?? 'Evento - Box Azteca',
@@ -39,24 +30,24 @@ class TicketBuilderService
                 'venue' => 'Centro de Convenciones Siglo XXI',
                 'organizer' => 'Maxboxing',
             ],
-
             'ticket' => [
-                'id' => $ticket->id,
                 'name' => $ticket->name,
                 'row' => $ticket->row ?? null,
                 'seat' => $ticket->seat ?? null,
                 'price' => $ticket->total_price,
             ],
-
             'order' => [
-                'reference' => $reference,
+                'reference' => $instance?->reference,
+                'sale_channel' => $instance?->sale_channel,
+                'payment_method' => $instance?->payment_method,
+                'payment_intent' => $instance?->payment_intent_id 
+                    ?? $instance?->reference 
+                    ?? 'N/A',
                 'purchased_at' => $purchasedAt,
             ],
-
             'user' => [
                 'email' => $email,
             ],
-
             'qr' => $this->makeQr([
                 'type' => 'ticket',
                 'ticket_id' => $ticket->id,
@@ -66,24 +57,14 @@ class TicketBuilderService
         ];
     }
 
-    /**
-     * Genera o reutiliza QR
-     */
     private function makeQr(array $payload): string
     {
         $filename = 'qr_' . md5(json_encode($payload)) . '.png';
-        $dir = public_path('qrs');
-
-        if (!file_exists($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $path = $dir . '/' . $filename;
+        $path = public_path('qrs/' . $filename);
 
         if (!file_exists($path)) {
-
-            $result = Builder::create()
-                ->writer(new PngWriter())
+            $result = \Endroid\QrCode\Builder\Builder::create()
+                ->writer(new \Endroid\QrCode\Writer\PngWriter())
                 ->data(json_encode($payload))
                 ->size(220)
                 ->margin(10)

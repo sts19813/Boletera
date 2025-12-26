@@ -30,41 +30,57 @@ class TaquillaController extends Controller
     public function sell(Request $request)
     {
         $request->validate([
-            'ticket_id' => 'required|exists:tickets,id',
-            'payment_method' => 'required|in:efectivo,tarjeta',
+            'cart' => 'required|array|min:1',
             'email' => 'nullable|email',
         ]);
 
-        $ticket = Ticket::lockForUpdate()->findOrFail($request->ticket_id);
+        $reference = 'TAQ-' . now()->format('YmdHis');
+        $boletos = [];
 
-        if ($ticket->stock <= 0) {
-            abort(409, 'Asiento ya vendido');
+        foreach ($request->cart as $item) {
+
+            $ticket = Ticket::lockForUpdate()->findOrFail($item['id']);
+            $qty = max(1, (int) ($item['qty'] ?? 1));
+
+            if ($ticket->stock < $qty) {
+                abort(409, 'Stock insuficiente');
+            }
+
+            for ($i = 0; $i < $qty; $i++) {
+
+                $instance = TicketInstance::create([
+                        'ticket_id' => $ticket->id,
+                        'email' => 'taquilla@local',
+                        'purchased_at' => now(),
+                        'qr_hash' => (string) Str::uuid(),
+                        'reference' => $reference,
+                        'sale_channel' => 'taquilla',
+                        'payment_method' => 'cash',
+                ]);
+
+                $boletos[] = $this->ticketBuilder->build(
+                    $ticket,
+                    $instance,
+                    $instance->email,
+                    $instance->purchased_at,
+                    $reference
+                );
+            }
+
+            $ticket->increment('sold', $qty);
+            $ticket->decrement('stock', $qty);
+
+            if ($ticket->stock <= 0) {
+                $ticket->update(['status' => 'sold']);
+            }
         }
 
-        $reference = 'TAQ-' . now()->format('YmdHis');
-
-        $instance = TicketInstance::create([
-            'ticket_id' => $ticket->id,
-            'email' => $request->email,
-            'purchased_at' => now(),
-            'qr_hash' => (string) Str::uuid(),
-            'sale_channel' => 'taquilla',
-            'payment_method' => $request->payment_method,
-            'reference' => $reference,
+        return view('pago.success', [
+            'boletos' => $boletos,
+            'email' => $request->email ?? 'taquilla@local',
         ]);
-
-        // Marcar ticket como vendido
-        $ticket->update([
-            'stock' => 0,
-            'sold' => 1,
-            'status' => 'sold',
-            'purchased_at' => now(),
-        ]);
-
-        return redirect()
-            ->route('taquilla.pdf', $instance)
-            ->with('success', 'Boleto generado correctamente');
     }
+
 
     public function pdf(TicketInstance $instance)
     {

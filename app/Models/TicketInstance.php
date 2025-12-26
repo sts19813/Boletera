@@ -11,12 +11,15 @@ class TicketInstance extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = [
+     protected $fillable = [
         'ticket_id',
         'email',
         'purchased_at',
         'qr_hash',
-        'payment_intent_id'
+        'payment_intent_id',
+        'reference',
+        'sale_channel',
+        'payment_method',
     ];
 
     protected $casts = [

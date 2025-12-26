@@ -120,6 +120,12 @@
                         <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
                             Continuar pago
                         </button>
+
+                         @if(auth()->check() && auth()->user()->is_admin)
+                            <button id="btnTaquilla" class="btn btn-dark w-100 fw-bold mt-3">
+                                Venta en taquilla
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -188,6 +194,29 @@
                 zoomOut.addEventListener('click', () => panzoom.zoomOut());
             }
         });
+
+        document.getElementById('btnTaquilla')?.addEventListener('click', () => {
+
+            fetch('/taquilla/sell', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.Laravel.csrfToken
+                },
+                body: JSON.stringify({
+                    cart: window.cartState.items,
+                    email: 'taquilla@local'
+                })
+            })
+            .then(res => res.text())
+            .then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+            })
+            .catch(() => alert('Error en venta de taquilla'));
+        });
+
     </script>
 
 

@@ -215,6 +215,9 @@ class PaymentController extends Controller
                     'purchased_at' => $purchaseAt,
                     'qr_hash' => (string) Str::uuid(),
                     'payment_intent_id' => $paymentIntentId,
+                    'reference' => $paymentIntentId,
+                    'sale_channel' => 'stripe',
+                    'payment_method' => 'card',
                 ]);
 
                 $ticket->update([
@@ -264,6 +267,9 @@ class PaymentController extends Controller
                     'purchased_at' => $purchaseAt,
                     'qr_hash' => (string) Str::uuid(),
                     'payment_intent_id' => $paymentIntentId,
+                    'reference' => $paymentIntentId,
+                    'sale_channel' => 'stripe',
+                    'payment_method' => 'card',
                 ]);
 
                 $boletos[] = $this->buildTicketData(
