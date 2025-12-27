@@ -356,7 +356,6 @@
                 payButton.textContent = 'Completar compra';
             }
         });
-
     });
 </script>
 @endpush
