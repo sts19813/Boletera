@@ -92,7 +92,10 @@
 
                         <div id="card-errors" class="text-danger mb-4"></div>
 
-                        <button type="submit" class="btn btn-primary w-100 fw-bold" style="background: #7723FF !important;">
+                        <button  type="button"
+                            id="payButton"
+                            class="btn btn-primary w-100 fw-bold"
+                            style="background: #7723FF !important;">
                             Completar compra
                         </button>
 
@@ -180,7 +183,7 @@
     // Detectar tema actual (Metronic)
     // ===============================
     function getCurrentTheme() {
-        let mode = document.documentElement.getAttribute('data-theme-mode');
+        const mode = document.documentElement.getAttribute('data-theme-mode');
 
         if (mode === 'system') {
             return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -228,9 +231,9 @@
         const stripe = Stripe('{{ config('services.stripe.key') }}');
         const elements = stripe.elements();
 
-        let cardNumber = elements.create('cardNumber', { style: getStripeStyle() });
-        let cardExpiry = elements.create('cardExpiry', { style: getStripeStyle() });
-        let cardCvc = elements.create('cardCvc', { style: getStripeStyle() });
+        const cardNumber = elements.create('cardNumber', { style: getStripeStyle() });
+        const cardExpiry = elements.create('cardExpiry', { style: getStripeStyle() });
+        const cardCvc = elements.create('cardCvc', { style: getStripeStyle() });
 
         cardNumber.mount('#card-number');
         cardExpiry.mount('#card-expiry');
@@ -252,60 +255,108 @@
         });
 
         // ===============================
-        // Crear Payment Intent
+        // Elementos UI
+        // ===============================
+        const payButton = document.getElementById('payButton');
+        const errorBox = document.getElementById('card-errors');
+
+        // Bloquear botón hasta tener clientSecret
+        payButton.disabled = true;
+
+        let clientSecret = null;
+
+        // ===============================
+        // Crear PaymentIntent (SAFE Safari)
         // ===============================
         fetch('{{ route('pago.intent') }}', {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             }
         })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error('No se pudo crear el PaymentIntent');
+            }
+            return res.json();
+        })
         .then(data => {
+            if (!data.clientSecret) {
+                throw new Error('clientSecret no recibido');
+            }
 
-            const clientSecret = data.clientSecret;
-            const form = document.getElementById('payment-form');
+            clientSecret = data.clientSecret;
+            payButton.disabled = false;
+        })
+        .catch(err => {
+            console.error(err);
+            errorBox.textContent =
+                'No se pudo inicializar el pago. Recarga la página e intenta de nuevo.';
+        });
 
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
+        // ===============================
+        // Click Pagar (NO submit)
+        // ===============================
+        payButton.addEventListener('click', async function () {
 
-                const email = document.getElementById('buyerEmail').value;
-                const emailConfirm = document.getElementById('buyerEmailConfirm').value;
-                const name = document.getElementById('buyerName').value;
-                const phone = document.getElementById('buyerPhone').value;
+            if (!clientSecret) return;
 
-                if (email !== emailConfirm) {
-                    document.getElementById('card-errors').textContent =
-                        'Los correos no coinciden';
-                    return;
-                }
+            errorBox.textContent = '';
 
-                stripe.confirmCardPayment(clientSecret, {
+            const email = document.getElementById('buyerEmail').value;
+            const emailConfirm = document.getElementById('buyerEmailConfirm').value;
+            const name = document.getElementById('buyerName').value;
+            const phone = document.getElementById('buyerPhone').value;
+
+            if (!email || !emailConfirm || !name || !phone) {
+                errorBox.textContent = 'Completa todos los campos requeridos';
+                return;
+            }
+
+            if (email !== emailConfirm) {
+                errorBox.textContent = 'Los correos no coinciden';
+                return;
+            }
+
+            payButton.disabled = true;
+            payButton.textContent = 'Procesando...';
+
+            try {
+                const result = await stripe.confirmCardPayment(clientSecret, {
                     payment_method: {
                         card: cardNumber,
                         billing_details: {
-                            name: name,
-                            email: email,
-                            phone: phone
+                            name,
+                            email,
+                            phone
                         }
                     }
-                }).then(result => {
-
-                    if (result.error) {
-                        document.getElementById('card-errors').textContent =
-                            result.error.message;
-                        return;
-                    }
-
-                    if (result.paymentIntent.status === 'succeeded') {
-                        window.location.href =
-                            "{{ route('pago.success') }}?pi=" +
-                            result.paymentIntent.id +
-                            "&email=" + encodeURIComponent(email);
-                    }
                 });
-            });
+
+                if (result.error) {
+                    errorBox.textContent = result.error.message;
+                    payButton.disabled = false;
+                    payButton.textContent = 'Completar compra';
+                    return;
+                }
+
+                if (result.paymentIntent.status === 'succeeded') {
+                    window.location.href =
+                        "{{ route('pago.success') }}?pi=" +
+                        result.paymentIntent.id +
+                        "&email=" + encodeURIComponent(email);
+                }
+
+            } catch (e) {
+                console.error(e);
+                errorBox.textContent =
+                    'Ocurrió un error inesperado. Intenta nuevamente.';
+                payButton.disabled = false;
+                payButton.textContent = 'Completar compra';
+            }
         });
+
     });
 </script>
 @endpush
