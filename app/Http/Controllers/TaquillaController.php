@@ -29,9 +29,19 @@ class TaquillaController extends Controller
 
     public function sell(Request $request)
     {
+
+        $esCortesia = $request->boolean('cortesia');
+
+        if ($esCortesia) {
+            $email = 'CORTESIA';
+        } else {
+            $email = $request->input('email') ?: 'taquilla@local';
+        }
+
+
         $request->validate([
             'cart' => 'required|array|min:1',
-            'email' => 'nullable|email',
+            'email' => 'nullable|string',
         ]);
 
         $reference = 'TAQ-' . now()->format('YmdHis');
@@ -49,13 +59,13 @@ class TaquillaController extends Controller
             for ($i = 0; $i < $qty; $i++) {
 
                 $instance = TicketInstance::create([
-                        'ticket_id' => $ticket->id,
-                        'email' => 'taquilla@local',
-                        'purchased_at' => now(),
-                        'qr_hash' => (string) Str::uuid(),
-                        'reference' => $reference,
-                        'sale_channel' => 'taquilla',
-                        'payment_method' => 'cash',
+                    'ticket_id' => $ticket->id,
+                    'email' => $email,
+                    'purchased_at' => now(),
+                    'qr_hash' => (string) Str::uuid(),
+                    'reference' => $reference,
+                    'sale_channel' => 'taquilla',
+                    'payment_method' => 'cash',
                 ]);
 
                 $boletos[] = $this->ticketBuilder->build(

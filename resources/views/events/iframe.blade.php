@@ -121,7 +121,24 @@
                             Continuar pago
                         </button>
 
-                         @if(auth()->check() && auth()->user()->is_admin)
+                        @if(auth()->check() && auth()->user()->is_admin)
+
+                            <div class="mt-3">
+                                <label class="form-label fw-bold">Tipo de venta</label>
+                                <select id="ventaTipo" class="form-select">
+                                    <option value="normal" selected>Venta normal</option>
+                                    <option value="cortesia">Cortesía</option>
+                                </select>
+                            </div>
+
+                            <div class="mt-2">
+                                <label class="form-label fw-bold">
+                                    Nombre o correo <span class="text-muted">(opcional)</span>
+                                </label>
+                                <input type="text" id="ventaNombre" class="form-control"
+                                    placeholder="Ej. Juan Pérez o invitado@gmail.com">
+                            </div>
+
                             <button id="btnTaquilla" class="btn btn-dark w-100 fw-bold mt-3">
                                 Venta en taquilla
                             </button>
@@ -197,6 +214,21 @@
 
         document.getElementById('btnTaquilla')?.addEventListener('click', () => {
 
+            const tipoVenta = document.getElementById('ventaTipo').value;
+            const nombreInput = document.getElementById('ventaNombre').value.trim();
+
+            const esCortesia = tipoVenta === 'cortesia';
+
+            let email;
+
+            if (nombreInput) {
+                email = nombreInput;
+            } else if (esCortesia) {
+                email = 'CORTESIA';
+            } else {
+                email = 'taquilla@local';
+            }
+
             fetch('/taquilla/sell', {
                 method: 'POST',
                 headers: {
@@ -205,16 +237,17 @@
                 },
                 body: JSON.stringify({
                     cart: window.cartState.items,
-                    email: 'taquilla@local'
+                    cortesia: esCortesia,
+                    email: email
                 })
             })
-            .then(res => res.text())
-            .then(html => {
-                document.open();
-                document.write(html);
-                document.close();
-            })
-            .catch(() => alert('Error en venta de taquilla'));
+                .then(res => res.text())
+                .then(html => {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                })
+                .catch(() => alert('Error en venta de taquilla'));
         });
 
     </script>
