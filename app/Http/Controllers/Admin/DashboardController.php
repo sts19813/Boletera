@@ -24,25 +24,45 @@ class DashboardController extends Controller
     public function data(Request $request)
     {
         // ================================
+        // QUERY BASE (CON FILTRO)
+        // ================================
+        $query = TicketInstance::query();
+
+        if ($request->from && $request->to) {
+            $query->whereBetween('ticket_instances.purchased_at', [
+                $request->from . ' 00:00:00',
+                $request->to . ' 23:59:59'
+            ]);
+        }
+
+        // ================================
         // KPIs
         // ================================
-        $totalBoletos = TicketInstance::count();
+        $totalBoletos = (clone $query)->count();
 
-        $ingresosTotales = TicketInstance::join('tickets', 'ticket_instances.ticket_id', '=', 'tickets.id')
+        $ingresosTotales = (clone $query)
+            ->join('tickets', 'ticket_instances.ticket_id', '=', 'tickets.id')
             ->where('ticket_instances.email', '!=', 'CORTESIA')
             ->sum('tickets.total_price');
 
+        $ventasHoy = (clone $query)
+            ->whereDate('ticket_instances.purchased_at', Carbon::today())
+            ->count();
 
-        $ventasHoy = TicketInstance::whereDate('purchased_at', Carbon::today())->count();
-        $boletosCortesia = TicketInstance::where('email', 'CORTESIA')->count();
+        $boletosCortesia = (clone $query)
+            ->where('ticket_instances.email', 'CORTESIA')
+            ->count();
 
-        $ultimaVenta = TicketInstance::latest('purchased_at')->first();
+        $ultimaVenta = (clone $query)
+            ->latest('ticket_instances.purchased_at')
+            ->first();
 
         // ================================
-        // Últimas 5 ventas
+        // ÚLTIMAS 5 VENTAS
         // ================================
-        $ultimasVentas = TicketInstance::with('ticket')
-            ->latest('purchased_at')
+        $ultimasVentas = (clone $query)
+            ->with('ticket')
+            ->latest('ticket_instances.purchased_at')
             ->take(5)
             ->get()
             ->map(function ($item) {
@@ -56,22 +76,31 @@ class DashboardController extends Controller
             });
 
         // ================================
-        // Gráfica: ventas por día
+        // GRÁFICA: VENTAS POR DÍA
         // ================================
-        $chartData = TicketInstance::select(
-            DB::raw('DATE(purchased_at) as date'),
-            DB::raw('COUNT(*) as total')
-        )
+        $chartData = (clone $query)
+            ->select(
+                DB::raw('DATE(ticket_instances.purchased_at) as date'),
+                DB::raw("SUM(CASE WHEN ticket_instances.email = 'CORTESIA' THEN 1 ELSE 0 END) as cortesia"),
+                DB::raw("SUM(CASE WHEN ticket_instances.email != 'CORTESIA' THEN 1 ELSE 0 END) as pagados"),
+                DB::raw("COUNT(*) as total")
+            )
             ->groupBy('date')
             ->orderBy('date')
             ->get()
             ->map(function ($row) {
                 return [
                     'date' => $row->date,
-                    'value' => (int) $row->total,
+                    'pagados' => (int) $row->pagados,
+                    'cortesia' => (int) $row->cortesia,
+                    'total' => (int) $row->total,
+                    'isToday' => $row->date === now()->toDateString(),
                 ];
             });
 
+        // ================================
+        // RESPONSE
+        // ================================
         return response()->json([
             'cards' => [
                 'total_boletos' => $totalBoletos,
