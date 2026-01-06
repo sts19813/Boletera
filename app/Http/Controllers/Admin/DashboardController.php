@@ -29,9 +29,12 @@ class DashboardController extends Controller
         $totalBoletos = TicketInstance::count();
 
         $ingresosTotales = TicketInstance::join('tickets', 'ticket_instances.ticket_id', '=', 'tickets.id')
+            ->where('ticket_instances.email', '!=', 'CORTESIA')
             ->sum('tickets.total_price');
 
+
         $ventasHoy = TicketInstance::whereDate('purchased_at', Carbon::today())->count();
+        $boletosCortesia = TicketInstance::where('email', 'CORTESIA')->count();
 
         $ultimaVenta = TicketInstance::latest('purchased_at')->first();
 
@@ -77,6 +80,7 @@ class DashboardController extends Controller
                 'ultima_venta' => $ultimaVenta
                     ? $ultimaVenta->purchased_at->format('d/m/Y H:i')
                     : '-',
+                'cortesia' => $boletosCortesia,
             ],
             'ultimas_ventas' => $ultimasVentas,
             'chart' => $chartData,

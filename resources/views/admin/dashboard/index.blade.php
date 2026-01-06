@@ -20,11 +20,12 @@
                 <div class="card-body">
                     <span class="text-gray-500 fs-7">Ingresos totales</span>
                     <div id="card_ingresos" class="fs-2 fw-bold text-success">$0.00</div>
+                    <small class="text-gray-500">Las cortesias no están consideradas</small>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3">
+        <div class="col-xl-2">
             <div class="card card-stats">
                 <div class="card-body">
                     <span class="text-gray-500 fs-7">Ventas hoy</span>
@@ -33,7 +34,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3">
+        <div class="col-xl-2">
             <div class="card card-stats">
                 <div class="card-body">
                     <span class="text-gray-500 fs-7">Última venta</span>
@@ -41,6 +42,15 @@
                 </div>
             </div>
         </div>
+        <div class="col-xl-2">
+            <div class="card card-stats">
+                <div class="card-body">
+                    <span class="text-gray-500 fs-7">Boletos de cortesía</span>
+                    <div id="card_cortesia" class="fs-2 fw-bold text-warning">0</div>
+                </div>
+            </div>
+        </div>
+
 
     </div>
 
@@ -133,17 +143,19 @@
                     document.getElementById('card_ingresos').innerText = '$' + data.cards.ingresos;
                     document.getElementById('card_hoy').innerText = data.cards.ventas_hoy;
                     document.getElementById('card_ultima').innerText = data.cards.ultima_venta;
+                    document.getElementById('card_cortesia').innerText = data.cards.cortesia;
+
 
                     // Tabla últimas ventas
                     let rows = '';
                     data.ultimas_ventas.forEach(v => {
                         rows += `
-                            <tr>
-                                <td>${v.email}</td>
-                                <td>$${v.precio}</td>
-                                <td>${v.fecha}</td>
-                            </tr>
-                        `;
+                                <tr>
+                                    <td>${v.email}</td>
+                                    <td>$${v.precio}</td>
+                                    <td>${v.fecha}</td>
+                                </tr>
+                            `;
                     });
                     document.getElementById('tablaVentas').innerHTML = rows;
 
@@ -151,42 +163,91 @@
                     am5.ready(function () {
 
                         var root = am5.Root.new("chartVentas");
-                        root.setThemes([am5themes_Animated.new(root)]);
+
+                        root.setThemes([
+                            am5themes_Animated.new(root)
+                        ]);
 
                         var chart = root.container.children.push(
                             am5xy.XYChart.new(root, {
                                 panX: false,
                                 panY: false,
+                                wheelX: "none",
+                                wheelY: "none",
                                 layout: root.verticalLayout
                             })
                         );
 
+                        // ===============================
+                        // CURSOR (hover interactivo)
+                        // ===============================
+                        var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+                            behavior: "none"
+                        }));
+                        cursor.lineY.set("visible", false);
+
+                        // ===============================
+                        // AXIS X
+                        // ===============================
                         var xAxis = chart.xAxes.push(
                             am5xy.CategoryAxis.new(root, {
                                 categoryField: "date",
-                                renderer: am5xy.AxisRendererX.new(root, {})
+                                renderer: am5xy.AxisRendererX.new(root, {
+                                    minGridDistance: 30
+                                }),
+                                tooltip: am5.Tooltip.new(root, {})
                             })
                         );
 
+                        xAxis.data.setAll(data.chart);
+
+                        // ===============================
+                        // AXIS Y
+                        // ===============================
                         var yAxis = chart.yAxes.push(
                             am5xy.ValueAxis.new(root, {
                                 renderer: am5xy.AxisRendererY.new(root, {})
                             })
                         );
 
+                        // ===============================
+                        // SERIES
+                        // ===============================
                         var series = chart.series.push(
                             am5xy.ColumnSeries.new(root, {
                                 name: "Ventas",
                                 xAxis: xAxis,
                                 yAxis: yAxis,
                                 valueYField: "value",
-                                categoryXField: "date"
+                                categoryXField: "date",
+                                tooltip: am5.Tooltip.new(root, {
+                                    labelText: "[bold]{valueY}[/] boletos"
+                                })
                             })
                         );
 
-                        xAxis.data.setAll(data.chart);
+                        series.columns.template.setAll({
+                            cornerRadiusTL: 6,
+                            cornerRadiusTR: 6,
+                            strokeOpacity: 0,
+                            tooltipY: 0
+                        });
+
+                        // Hover effect
+                        series.columns.template.states.create("hover", {
+                            fillOpacity: 0.8
+                        });
+
                         series.data.setAll(data.chart);
+
+                        // ===============================
+                        // ANIMATION
+                        // ===============================
+                        series.appear(800);
+                        chart.appear(1000, 100);
+
                     });
+
                 });
 
         });
@@ -205,15 +266,15 @@
 
                     data.forEach(b => {
                         rows += `
-                        <tr>
-                            <td>${b.id}</td>
-                            <td>${b.boleto}</td>
-                            <td>${b.email}</td>
-                            <td class="text-capitalize">${b.metodo}</td>
-                            <td>${b.referencia}</td>
-                            <td>${b.fecha}</td>
-                        </tr>
-                    `;
+                            <tr>
+                                <td>${b.id}</td>
+                                <td>${b.boleto}</td>
+                                <td>${b.email}</td>
+                                <td class="text-capitalize">${b.metodo}</td>
+                                <td>${b.referencia}</td>
+                                <td>${b.fecha}</td>
+                            </tr>
+                        `;
                     });
 
                     document.getElementById('tablaBoletos').innerHTML = rows;
