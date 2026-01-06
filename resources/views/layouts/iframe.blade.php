@@ -2,6 +2,16 @@
 <html lang="en">
 
 <head>
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || []; w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            }); var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-W848MPWG');</script>
+    <!-- End Google Tag Manager -->
     <meta name="description"
         content="Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
     <meta name="keywords" content="boletos, eventos, conciertos, festivales, stom tickets" />
@@ -32,8 +42,10 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 
     <!-- Vendor Stylesheets -->
-    <link href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}" rel="stylesheet"
+        type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet"
+        type="text/css" />
 
     <!-- Global Stylesheets -->
     <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
@@ -50,6 +62,10 @@
 
 <body>
 
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W848MPWG" height="0" width="0"
+            style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     {{-- HEADER EVENTO --}}
     <section class="event-header position-relative">
         <div class="container">
