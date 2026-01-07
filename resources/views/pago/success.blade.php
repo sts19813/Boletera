@@ -20,15 +20,34 @@
 					<i class="ki-duotone ki-download fs-5 me-2"></i>
 					Descargar boletos en PDF
 				</button>
+				{{-- BOTONES GOOGLE WALLET --}}
+				<div class="mt-6 no-print">
+
+					<h4 class="fw-bold mb-4">Agregar boletos a Google Wallet</h4>
+
+					@foreach ($boletos as $boleto)
+						@if(!empty($boleto['wallet']['instance_id']))
+								<a
+									href="{{ route('wallet.add', $boleto['wallet']['instance_id']) }}"
+									target="_blank"
+									class="btn btn-dark fw-bold d-inline-flex align-items-center gap-2 px-4 py-2 mb-6"
+								>
+									<i class="bi bi-wallet2 fs-5"></i>
+									Agregar a Google Wallet {{ $boleto['ticket']['name'] }}
+								</a>					
+						@endif
+					@endforeach
+
+				</div>
+
 				<p class="text-gray-600 mb-6">
 					Tu compra se realizó correctamente.<br>
 					Presenta este QR el día del evento.
 				</p>
 
-				@foreach ($boletos as $boleto)
+				@foreach ($boletos as $index => $boleto)
 					<div class="card card-flush shadow-sm mb-10 printable-ticket">
-						<div class="card-body">
-
+						<div class="card-body">		
 							<h3 class="fw-bold mb-1">{{ $boleto['event']['name'] }}</h3>
 							<div class="text-muted mb-4">
 								{{ $boleto['event']['date'] }} · {{ $boleto['event']['time'] }}
@@ -47,21 +66,8 @@
 
 							<div class="row mb-6 text-start">
 								<div class="col-6">
-									<div class="fw-semibold">Fecha</div>
-									<div class="text-muted">
-										{{ $boleto['event']['date'] }}
-									</div>
-								</div>
-								<div class="col-6">
 									<div class="fw-semibold">Comprador</div>
 									<div class="text-muted">{{ $boleto['user']['email'] }}</div>
-								</div>
-							</div>
-
-							<div class="row mb-6 text-start">
-								<div class="col-6">
-									<div class="fw-semibold">Organizador</div>
-									<div class="text-muted">{{ $boleto['event']['organizer'] }}</div>
 								</div>
 								<div class="col-6">
 									<div class="fw-semibold">Lugar</div>

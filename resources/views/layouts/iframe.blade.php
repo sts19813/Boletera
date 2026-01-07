@@ -94,6 +94,11 @@
                             <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
                             Centro de Convenciones Siglo XXI, Mérida
                         </div>
+                        <div style="max-width: 950px">
+                           <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
+                            Las mesas VIP están diseñadas para un máximo de 6 personas. Al adquirir una mesa VIP, se entrega un único boleto con código QR, el cual es válido para el acceso de hasta 6 personas y puede ser escaneado hasta seis veces, una por cada asistente.
+                        </div>
+
                     </div>
                 </div>
 

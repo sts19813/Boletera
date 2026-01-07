@@ -16,7 +16,8 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TicketResendController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\TaquillaController;
-
+use App\Http\Controllers\WalletTestController;
+use App\Http\Controllers\CheckinController;
 
 Route::get('/admin', function () {
     return Auth::check()
@@ -141,6 +142,9 @@ Route::middleware(['auth', AdminMiddleware::class])
             ->name('admin.dashboard.boletos');
 
     
+                    
+        Route::get('/checkin', [CheckinController::class, 'index']);
+        Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
     });
 
 
@@ -171,6 +175,13 @@ Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
 
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])
     ->name('eventPublic.index');
+
+Route::get(
+    '/wallet/{instance}',
+    [WalletTestController::class, 'testWallet']
+)->name('wallet.add');
+
+
 
 // =========================
 // Auth Routes

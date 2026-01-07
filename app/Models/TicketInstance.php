@@ -20,6 +20,7 @@ class TicketInstance extends Model
         'reference',
         'sale_channel',
         'payment_method',
+        'used_at'
     ];
 
     protected $casts = [
