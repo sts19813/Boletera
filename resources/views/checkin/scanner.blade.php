@@ -31,12 +31,7 @@
 		<h2 class="fw-bold mb-3">Escanear boletos</h2>
 		<p class="text-muted mb-4">Apunta la cámara al QR del boleto</p>
 
-		<!-- Botón requerido para habilitar vibración en Android -->
-		<button id="startScanner" class="btn btn-primary mb-4">
-			Iniciar escáner
-		</button>
-
-		<div id="scanner-wrapper" class="scanner-wrapper d-none">
+		<div id="scanner-wrapper" class="scanner-wrapper">
 			<div id="reader"></div>
 		</div>
 
@@ -48,11 +43,6 @@
 	<script>
 
 		const scannerWrapper = document.getElementById('scanner-wrapper');
-		const resultBox = document.getElementById('result');
-		const startButton = document.getElementById('startScanner');
-
-		let scanningLocked = false;
-		let userActivated = false;
 
 		function setScannerState(state) {
 			scannerWrapper.classList.remove(
@@ -65,6 +55,8 @@
 				scannerWrapper.classList.add('scanner-' + state);
 			}
 		}
+		const resultBox = document.getElementById('result');
+		let scanningLocked = false;
 
 		function showResult(type, message) {
 			resultBox.className = `alert alert-${type}`;
@@ -72,113 +64,88 @@
 			resultBox.classList.remove('d-none');
 		}
 
-		/* Vibraciones simples y seguras */
-		function vibrateSuccess() {
-			if (navigator.vibrate && userActivated) {
-				navigator.vibrate(200);
-			}
-		}
-
-		function vibrateWarning() {
-			if (navigator.vibrate && userActivated) {
-				navigator.vibrate(300);
-			}
-		}
-
-		function vibrateError() {
-			if (navigator.vibrate && userActivated) {
-				navigator.vibrate(400);
-			}
-		}
-
 		const qrScanner = new Html5Qrcode("reader");
 
-		startButton.addEventListener('click', async () => {
-			userActivated = true;
-			startButton.remove();
-			scannerWrapper.classList.remove('d-none');
+		qrScanner.start(
+			{ facingMode: "environment" },
+			{ fps: 10, qrbox: 250 },
+			async (decodedText) => {
 
-			await qrScanner.start(
-				{ facingMode: "environment" },
-				{ fps: 10, qrbox: 250 },
-				async (decodedText) => {
+				if (scanningLocked) return;
+				scanningLocked = true;
 
-					if (scanningLocked) return;
-					scanningLocked = true;
+				let payload;
 
-					let payload;
-
-					try {
-						payload = JSON.parse(decodedText);
-					} catch {
-						setScannerState('error');
-						showResult('danger', 'QR inválido');
-						scanningLocked = false;
-						return;
-					}
-
-					const res = await fetch('/checkin/validate', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-CSRF-TOKEN': '{{ csrf_token() }}'
-						},
-						body: JSON.stringify(payload)
-					});
-
-					const data = await res.json();
-
-					if (data.status === 'success') {
-
-						setScannerState('success');
-						vibrateSuccess();
-
-						showResult(
-							'success',
-							'✅ <strong>Acceso permitido</strong><br>' +
-							(data.email ? data.email + '<br>' : '') +
-							(data.progress ? '<strong>Progreso:</strong> ' + data.progress + '<br>' : '') +
-							'<small>Hora: ' + data.used_at + '</small>'
-						);
-
-					} else if (data.status === 'used') {
-
-						setScannerState('warning');
-						vibrateWarning();
-
-						let historyHtml = '';
-
-						if (data.history && data.history.length) {
-							historyHtml = '<hr><ul class="list-unstyled mb-0">' +
-								data.history.map(h =>
-									`<li>✔ ${h.numero} — ${h.hora}</li>`
-								).join('') +
-								'</ul>';
-						}
-
-						showResult(
-							'warning',
-							'⚠️ <strong>' + data.message + '</strong>' +
-							historyHtml
-						);
-
-					} else {
-
-						setScannerState('error');
-						vibrateError();
-
-						showResult('danger', '❌ ' + data.message);
-					}
-
-					await qrScanner.pause();
-
-					setTimeout(() => {
-						setScannerState(null);
-						scanningLocked = false;
-						qrScanner.resume();
-					}, 3000);
+				try {
+					payload = JSON.parse(decodedText);
+				} catch {
+					showResult('danger', 'QR inválido');
+					scanningLocked = false;
+					return;
 				}
-			);
-		});
+
+				const res = await fetch('/checkin/validate', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': '{{ csrf_token() }}'
+					},
+					body: JSON.stringify(payload)
+				});
+
+				const data = await res.json();
+
+				if (data.status === 'success') {
+					setScannerState('success');					
+					showResult(
+						'success',
+						'✅ <strong>Acceso permitido</strong><br>' +
+						(data.email ? data.email + '<br>' : '') +
+						(data.progress ? '<strong>Progreso:</strong> ' + data.progress + '<br>' : '') +
+						'<small>Hora: ' + data.used_at + '</small>'
+					);
+					if (navigator.vibrate) navigator.vibrate(200);
+
+				} else if (data.status === 'used') {
+
+					setScannerState('warning');
+					
+
+
+					let historyHtml = '';
+
+					if (data.history && data.history.length) {
+						historyHtml = '<hr><ul class="list-unstyled mb-0">' +
+							data.history.map(h =>
+								`<li>✔ ${h.numero} — ${h.hora}</li>`
+							).join('') +
+							'</ul>';
+					}
+
+					showResult(
+						'warning',
+						'⚠️ <strong>' + data.message + '</strong>' +
+						historyHtml
+					);
+
+				} else {
+
+					setScannerState('error');
+					
+
+					showResult('danger', '❌ ' + data.message);
+				}
+
+
+				await qrScanner.pause();
+
+				// ⏱️ tiempo REAL de lectura
+				setTimeout(() => {
+					setScannerState(null);       // apaga color
+					scanningLocked = false;
+					qrScanner.resume();
+				}, 3000);
+			}
+		);
 	</script>
 @endsection
