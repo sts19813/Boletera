@@ -1,18 +1,60 @@
 @extends('layouts.app')
 
 @section('content')
+
+	<style>
+		.scanner-wrapper {
+			border: 6px solid #dee2e6;
+			border-radius: 12px;
+			padding: 8px;
+			transition: border-color 0.3s ease, box-shadow 0.3s ease;
+		}
+
+		.scanner-success {
+			border-color: #198754;
+			box-shadow: 0 0 20px rgba(25, 135, 84, 0.6);
+		}
+
+		.scanner-error {
+			border-color: #dc3545;
+			box-shadow: 0 0 20px rgba(220, 53, 69, 0.6);
+		}
+
+		.scanner-warning {
+			border-color: #ffc107;
+			box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+		}
+	</style>
+
 	<div class="container py-5 text-center">
 
 		<h2 class="fw-bold mb-3">Escanear boletos</h2>
 		<p class="text-muted mb-4">Apunta la cámara al QR del boleto</p>
 
-		<div id="reader" style="width:100%; margin:auto;"></div>
+		<div id="scanner-wrapper" class="scanner-wrapper">
+			<div id="reader"></div>
+		</div>
+
 		<div id="result" class="alert mt-4 d-none"></div>
 
 	</div>
 
 	<script src="https://unpkg.com/html5-qrcode"></script>
 	<script>
+
+		const scannerWrapper = document.getElementById('scanner-wrapper');
+
+		function setScannerState(state) {
+			scannerWrapper.classList.remove(
+				'scanner-success',
+				'scanner-error',
+				'scanner-warning'
+			);
+
+			if (state) {
+				scannerWrapper.classList.add('scanner-' + state);
+			}
+		}
 		const resultBox = document.getElementById('result');
 		let scanningLocked = false;
 
@@ -54,6 +96,7 @@
 				const data = await res.json();
 
 				if (data.status === 'success') {
+					setScannerState('success');					
 					showResult(
 						'success',
 						'✅ <strong>Acceso permitido</strong><br>' +
@@ -61,8 +104,13 @@
 						(data.progress ? '<strong>Progreso:</strong> ' + data.progress + '<br>' : '') +
 						'<small>Hora: ' + data.used_at + '</small>'
 					);
+					if (navigator.vibrate) navigator.vibrate(200);
 
 				} else if (data.status === 'used') {
+
+					setScannerState('warning');
+					if (navigator.vibrate) navigator.vibrate([100, 80, 100]);
+
 
 					let historyHtml = '';
 
@@ -81,16 +129,22 @@
 					);
 
 				} else {
+
+					setScannerState('error');
+					if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
 					showResult('danger', '❌ ' + data.message);
 				}
+
 
 				await qrScanner.pause();
 
 				// ⏱️ tiempo REAL de lectura
 				setTimeout(() => {
+					setScannerState(null);       // apaga color
 					scanningLocked = false;
 					qrScanner.resume();
-				}, 4000);
+				}, 3000);
 			}
 		);
 	</script>
