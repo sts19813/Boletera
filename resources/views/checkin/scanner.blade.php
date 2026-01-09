@@ -6,7 +6,7 @@
 		<h2 class="fw-bold mb-3">Escanear boletos</h2>
 		<p class="text-muted mb-4">Apunta la cámara al QR del boleto</p>
 
-		<div id="reader" style="width:100%; max-width:420px; margin:auto;"></div>
+		<div id="reader" style="width:100%; margin:auto;"></div>
 		<div id="result" class="alert mt-4 d-none"></div>
 
 	</div>
@@ -57,16 +57,29 @@
 					showResult(
 						'success',
 						'✅ <strong>Acceso permitido</strong><br>' +
-						data.email +
-						'<br><small>Hora: ' + data.used_at + '</small>'
+						(data.email ? data.email + '<br>' : '') +
+						(data.progress ? '<strong>Progreso:</strong> ' + data.progress + '<br>' : '') +
+						'<small>Hora: ' + data.used_at + '</small>'
 					);
 
 				} else if (data.status === 'used') {
+
+					let historyHtml = '';
+
+					if (data.history && data.history.length) {
+						historyHtml = '<hr><ul class="list-unstyled mb-0">' +
+							data.history.map(h =>
+								`<li>✔ ${h.numero} — ${h.hora}</li>`
+							).join('') +
+							'</ul>';
+					}
+
 					showResult(
 						'warning',
-						'⚠️ <strong>Boleto ya utilizado</strong><br>' +
-						'Usado a las: ' + data.used_at
+						'⚠️ <strong>' + data.message + '</strong>' +
+						historyHtml
 					);
+
 				} else {
 					showResult('danger', '❌ ' + data.message);
 				}

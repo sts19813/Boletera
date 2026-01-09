@@ -26,7 +26,8 @@ class Ticket extends Model
         'available_until',
         'purchased_at',
         'description',
-        'is_courtesy'
+        'is_courtesy',
+        'max_checkins'
     ];
 
     protected $casts = [

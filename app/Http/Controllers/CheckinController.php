@@ -25,11 +25,14 @@ class CheckinController extends Controller
 			'hash' => 'required|string',
 		]);
 
-		$ticket = TicketInstance::where('id', $request->ticket_instance_id)
+		$ticket = TicketInstance::with('ticket')
+			->where('id', $request->ticket_instance_id)
 			->where('qr_hash', $request->hash)
 			->first();
 
-		// ❌ BOLETO INVÁLIDO
+		/**
+		 * ❌ BOLETO INVÁLIDO
+		 */
 		if (!$ticket) {
 			TicketCheckin::create([
 				'ticket_instance_id' => $request->ticket_instance_id,
@@ -46,38 +49,53 @@ class CheckinController extends Controller
 			], 404);
 		}
 
-		// ⚠️ YA USADO
-		if ($ticket->used_at) {
+		/**
+		 * Datos del boleto
+		 */
+		$maxCheckins = $ticket->ticket->max_checkins ?? 1;
+
+		$usedCount = TicketCheckin::where('ticket_instance_id', $ticket->id)
+			->where('result', 'success')
+			->count();
+
+		/**
+		 * ⚠️ CUPO AGOTADO
+		 */
+		if ($usedCount >= $maxCheckins) {
 
 			TicketCheckin::create([
 				'ticket_instance_id' => $ticket->id,
 				'hash' => $request->hash,
 				'result' => 'used',
-				'message' => 'Boleto ya utilizado',
+				'message' => 'Cupo agotado',
 				'scanned_at' => now(),
 				'scanner_ip' => $request->ip(),
 			]);
 
 			$history = TicketCheckin::where('ticket_instance_id', $ticket->id)
-				->orderBy('scanned_at', 'desc')
+				->where('result', 'success')
+				->orderBy('scanned_at')
 				->get()
-				->map(fn($h) => [
+				->map(fn($h, $i) => [
+					'numero' => ($i + 1) . '/' . $maxCheckins,
 					'hora' => $h->scanned_at->format('d/m/Y H:i:s'),
-					'resultado' => $h->result,
 				]);
 
 			return response()->json([
 				'status' => 'used',
-				'message' => 'Este boleto ya fue utilizado',
-				'used_at' => $ticket->used_at->format('d/m/Y H:i:s'),
+				'message' => 'Este boleto ya alcanzó su límite',
 				'history' => $history
 			]);
 		}
 
-		// ✅ PRIMER USO
-		$ticket->update([
-			'used_at' => now()
-		]);
+		/**
+		 * ✅ ACCESO PERMITIDO
+		 */
+		if (!$ticket->used_at) {
+			$ticket->update([
+				'used_at' => now() // primer acceso
+			]);
+		}
 
 		TicketCheckin::create([
 			'ticket_instance_id' => $ticket->id,
@@ -92,7 +110,9 @@ class CheckinController extends Controller
 			'status' => 'success',
 			'message' => 'Acceso permitido',
 			'email' => $ticket->email,
+			'progress' => ($usedCount + 1) . '/' . $maxCheckins,
 			'used_at' => $ticket->used_at->format('d/m/Y H:i:s'),
 		]);
 	}
+
 }
