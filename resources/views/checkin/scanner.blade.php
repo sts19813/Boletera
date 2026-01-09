@@ -7,7 +7,6 @@
 	<p class="text-muted mb-4">Apunta la cámara al QR del boleto</p>
 
 	<div id="reader" style="width:100%; max-width:420px; margin:auto;"></div>
-
 	<div id="result" class="alert mt-4 d-none"></div>
 
 </div>

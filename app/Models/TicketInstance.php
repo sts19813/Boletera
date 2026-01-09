@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class TicketInstance extends Model
-
 {
+    protected $primaryKey = 'id';
     protected $keyType = 'string';
     public $incrementing = false;
 
@@ -25,6 +25,7 @@ class TicketInstance extends Model
 
     protected $casts = [
         'purchased_at' => 'datetime',
+        'used_at' => 'datetime', // ← IMPORTANTE para el check-in
     ];
 
     protected static function boot()
