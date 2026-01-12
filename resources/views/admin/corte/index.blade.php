@@ -31,7 +31,7 @@
                     <th>Total Web</th>
                     <th>Cash taquilla</th>
                     <th>Total Cash</th>
-                    <th>Card taquilla</th>
+                    <th>Clip taquilla</th>
                     <th>Total Card</th>
                     <th>Total(global)</th>
                 </tr>
