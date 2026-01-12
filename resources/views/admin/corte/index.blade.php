@@ -3,21 +3,18 @@
 @section('title', 'Corte de Ventas')
 
 @section('content')
+
+
+<div class="d-flex align-items-center justify-content-between mb-6">
+    <h3 class="fw-bold mb-0">Corte de Ventas</h3>
+
+    <a href="{{ route('admin.corte.export.general') }}"
+       class="btn btn-primary">
+        Exportar Corte
+    </a>
+</div>
 <div class="card card-flush">
-    <div class="card-header align-items-center py-5 gap-2 gap-md-5">
-        <div class="card-title">
-            <h3 class="fw-bold">Corte de Ventas</h3>
-        </div>
-
-       <div class="card-toolbar">
-            <a href="{{ route('admin.corte.export.general') }}"
-            class="btn btn-primary">
-                Exportar Corte
-            </a>
-        </div>
-
-    </div>
-
+    
     <div class="card-body pt-0">
         <table class="table align-middle table-row-dashed fs-6 gy-5">
             <thead>
