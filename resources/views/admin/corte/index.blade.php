@@ -32,7 +32,7 @@
                     <th>Cash taquilla</th>
                     <th>Total Cash</th>
                     <th>Clip taquilla</th>
-                    <th>Total Card</th>
+                    <th>Total Clip</th>
                     <th>Total(global)</th>
                 </tr>
                 </thead>
