@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\TaquillaController;
 use App\Http\Controllers\WalletTestController;
 use App\Http\Controllers\CheckinController;
+use App\Http\Controllers\Admin\CorteController;
 
 Route::get('/admin', function () {
     return Auth::check()
@@ -132,6 +133,9 @@ Route::middleware(['auth', AdminMiddleware::class])
 
         Route::get('/dashboard/data', [DashboardController::class, 'data'])
             ->name('admin.dashboard.data');
+
+        Route::get('/corte', [CorteController::class, 'index'])->name('admin.corte.index');
+        Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])->name('admin.corte.export.general');
 
         Route::get('/taquilla', [TaquillaController::class, 'index']);
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);

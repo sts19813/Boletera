@@ -12,7 +12,7 @@ return [
     'dashboards' => 'Dashboards',
     'busqueda_masiva' => 'Búsqueda masiva',
     'financiamiento' => 'Modelos de financiamiento',
-    'bitacora' => 'Bitácora',
+    'bitacora' => 'Corte de caja',
     'migrar_info' => 'Migrar info a Naboo',
     'configuraciones' => 'Configuraciones',
     'usuarios' => 'Usuarios',

@@ -91,7 +91,7 @@
         
                 <!--begin: Bitácora -->
                 <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
-                    <a class="menu-link {{ request()->is('bitacora*') ? 'active' : '' }}" href="/bitacora">
+                    <a class="menu-link {{ request()->is('corte*') ? 'active' : '' }}" href="/corte">
                         <span class="menu-icon">
                             <i class="ki-outline ki-notepad fs-2"></i>
                         </span>

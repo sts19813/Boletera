@@ -31,11 +31,11 @@ class Ticket extends Model
     ];
 
     protected $casts = [
-        'is_courtesy'     => 'boolean',
-        'total_price'     => 'decimal:2',
-        'available_from'  => 'datetime',
+        'is_courtesy' => 'boolean',
+        'total_price' => 'decimal:2',
+        'available_from' => 'datetime',
         'available_until' => 'datetime',
-        'purchased_at'    => 'datetime',
+        'purchased_at' => 'datetime',
     ];
 
     // Genera UUID automáticamente
@@ -66,4 +66,10 @@ class Ticket extends Model
     {
         return $query->whereNotNull('purchased_at');
     }
+
+    public function instances()
+    {
+        return $this->hasMany(TicketInstance::class);
+    }
+
 }

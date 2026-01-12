@@ -12,7 +12,7 @@ return [
     'dashboards' => 'Dashboards',
     'busqueda_masiva' => 'Mass Search',
     'financiamiento' => 'Financing Models',
-    'bitacora' => 'Log',
+    'bitacora' => 'cash register cut',
     'migrar_info' => 'Migrate Info a Naboo',
     'configuraciones' => 'Settings',
     'usuarios' => 'Users',
