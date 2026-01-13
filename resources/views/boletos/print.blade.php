@@ -24,7 +24,7 @@
 function autoPrint() {
     setTimeout(() => {
         window.focus();
-        window.print();
+        
     }, 500);
 }
 </script>
