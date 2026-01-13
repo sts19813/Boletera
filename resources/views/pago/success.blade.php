@@ -16,10 +16,35 @@
 				</div>
 
 				<h2 class="fw-bold mb-3">¡Pago confirmado!</h2>
-				<button onclick="downloadTicketsPDF()" class="btn btn-light-primary fw-bold mb-6">
-					<i class="ki-duotone ki-download fs-5 me-2"></i>
-					Descargar boletos en PDF
-				</button>
+				
+
+				 @if(!auth()->check() || !auth()->user()->is_admin)
+					<button onclick="downloadTicketsPDF()" class="btn btn-light-primary fw-bold mb-6">
+						<i class="ki-duotone ki-download fs-5 me-2"></i>
+						Descargar boletos en PDF
+					</button>
+                 @endif
+
+
+				@if(auth()->check() && auth()->user()->is_admin)
+					@php
+						$reference = $boletos[0]['order']['payment_intent'] ?? null;
+					@endphp
+
+					@if($reference)
+						<a
+							href="{{ route('boletos.print', ['ref' => $reference]) }}"
+							class="btn btn-light-primary fw-bold mb-6"
+							target="_blank"
+						>
+							<i class="ki-duotone ki-printer fs-5 me-2"></i>
+							Imprimir boletos
+						</a>
+
+					@endif
+				@endif
+								
+
 				{{-- BOTONES GOOGLE WALLET --}}
 				<div class="mt-6 no-print">
 

@@ -19,6 +19,7 @@ use App\Http\Controllers\TaquillaController;
 use App\Http\Controllers\WalletTestController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\Admin\CorteController;
+use App\Http\Controllers\Admin\TicketReprintController;
 
 Route::get('/admin', function () {
     return Auth::check()
@@ -141,18 +142,23 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
 
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
-    
+
         Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])
             ->name('admin.dashboard.boletos');
-
-    
-                    
         Route::get('/checkin', [CheckinController::class, 'index']);
         Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
+
+        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])
+            ->name('admin.ticket_instances.index');
+
+        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])
+            ->name('admin.ticket_instances.reprint');
+
+        Route::get('/boletos/print', [TicketReprintController::class, 'print'])
+            ->name('boletos.print');
+
     });
 
-
-Route::get('/checkout', [PaymentController::class, 'checkout'])->name('checkout');
 
 Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form');
 
@@ -184,6 +190,9 @@ Route::get(
     '/wallet/{instance}',
     [WalletTestController::class, 'testWallet']
 )->name('wallet.add');
+
+Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])
+    ->name('boletos.reprint');
 
 
 

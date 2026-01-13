@@ -117,51 +117,13 @@ class PaymentController extends Controller
     }
 
 
-
-
-
-    public function downloadPdf(Request $request)
-    {
-        $paymentIntentId = $request->get('pi');
-        $email = $request->get('email');
-
-        $boletos = $this->generateBoletosFromPaymentIntent(
-            $paymentIntentId,
-            $email
-        );
-
-        $pdf = Pdf::loadView('pdf.boletos', [
-            'boletos' => $boletos,
-            'email' => $email,
-        ])->setPaper('A4');
-
-        return $pdf->download("boletos-{$paymentIntentId}.pdf");
-    }
-
-    public function resendBoletos(Request $request)
-    {
-        $paymentIntentId = $request->get('pi');
-        $email = $request->get('email');
-
-        $boletos = $this->generateBoletosFromPaymentIntent(
-            $paymentIntentId,
-            $email
-        );
-
-        $pdf = Pdf::loadView('pdf.boletos', compact('boletos'))->output();
-
-        Mail::to($email)->send(new BoletosMail($pdf));
-
-        return response()->json(['ok' => true]);
-    }
-
-
     private function generateBoletosPdf(array $boletos, string $email)
     {
         return Pdf::loadView('pdf.boletos', [
             'boletos' => $boletos,
             'email' => $email,
-        ])->output();
+        ])->setPaper([0, 0, 380, 600])->output();
+
     }
 
 
@@ -361,6 +323,76 @@ class PaymentController extends Controller
         return asset('qrs/' . $filename);
     }
 
+    public function reprint(Request $request)
+    {
+        $reference = $request->get('ref');
+        $email = $request->get('email') ?: 'taquilla@local';
+
+        if (!$reference) {
+            abort(400, 'Referencia requerida');
+        }
+
+        // Buscar boletos EXISTENTES
+        $instances = TicketInstance::where(function ($q) use ($reference) {
+            $q->where('payment_intent_id', $reference)
+                ->orWhere('reference', $reference);
+        })->get();
+
+
+        if ($instances->isEmpty()) {
+            abort(404, 'Boletos no encontrados');
+        }
+
+        $boletos = $instances->map(
+            fn($instance) =>
+            $this->buildTicketDataFromInstance($instance, $email)
+        )->toArray();
+
+        $pdf = Pdf::loadView('pdf.boletos', [
+            'boletos' => $boletos,
+            'email' => $email,
+        ])->setPaper([0, 0, 380, 600]);
+
+        return $pdf->download("boletos-{$reference}.pdf");
+    }
+
+    private function buildTicketDataFromInstance(
+        TicketInstance $instance,
+        string $email
+    ): array {
+        return [
+            'event' => [
+                'name' => $instance->ticket->event->name ?? 'Box Azteca',
+                'date' => '17 de Enero de 2026',
+                'time' => '7:00 PM',
+                'venue' => 'Centro de Convenciones Siglo XXI',
+                'organizer' => 'Maxboxing',
+            ],
+            'ticket' => [
+                'name' => $instance->ticket->name,
+                'row' => $instance->ticket->row,
+                'seat' => $instance->ticket->seat,
+                'price' => $instance->ticket->total_price,
+            ],
+            'order' => [
+                'payment_intent' => $instance->payment_intent_id
+                    ?: $instance->reference,
+                'purchased_at' => $instance->purchased_at,
+            ],
+            'user' => [
+                'email' => $instance->email ?? $email,
+            ],
+            'qr' => asset('qrs/qr_' . md5(json_encode([
+                'type' => 'ticket',
+                'ticket_id' => $instance->ticket_id,
+                'ticket_instance_id' => $instance->id,
+                'hash' => $instance->qr_hash,
+            ])) . '.png'),
+            'wallet' => [
+                'instance_id' => $instance->id,
+            ],
+        ];
+    }
 
     public function cancel()
     {

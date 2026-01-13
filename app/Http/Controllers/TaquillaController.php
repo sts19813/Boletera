@@ -29,20 +29,26 @@ class TaquillaController extends Controller
 
     public function sell(Request $request)
     {
-
-        $esCortesia = $request->boolean('cortesia');
-
-        if ($esCortesia) {
-            $email = 'CORTESIA';
-        } else {
-            $email = $request->input('email') ?: 'taquilla@local';
-        }
-
-
         $request->validate([
             'cart' => 'required|array|min:1',
             'email' => 'nullable|string',
+            'payment_method' => 'required|in:cash,card,cortesia',
         ]);
+
+        // Método recibido desde frontend
+        $paymentInput = $request->input('payment_method');
+
+        // Determinar si es cortesía
+        $esCortesia = $paymentInput === 'cortesia';
+
+        // Normalizar método de pago para BD
+        // IMPORTANTE: en BD NO se guarda "cortesia"
+        $paymentMethod = $esCortesia ? 'cash' : $paymentInput;
+
+        // Email final
+        $email = $esCortesia
+            ? 'CORTESIA'
+            : ($request->input('email') ?: 'taquilla@local');
 
         $reference = 'TAQ-' . now()->format('YmdHis');
         $boletos = [];
@@ -65,7 +71,7 @@ class TaquillaController extends Controller
                     'qr_hash' => (string) Str::uuid(),
                     'reference' => $reference,
                     'sale_channel' => 'taquilla',
-                    'payment_method' => 'cash',
+                    'payment_method' => $paymentMethod, // cash | card
                 ]);
 
                 $boletos[] = $this->ticketBuilder->build(
@@ -87,7 +93,7 @@ class TaquillaController extends Controller
 
         return view('pago.success', [
             'boletos' => $boletos,
-            'email' => $request->email ?? 'taquilla@local',
+            'email' => $email,
         ]);
     }
 

@@ -1,63 +1,145 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <style>
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 12px;
-        }
-        .ticket {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-        }
-        .title {
-            font-size: 16px;
-            font-weight: bold;
-        }
-        .muted {
-            color: #666;
-        }
-        .qr {
-            text-align: center;
-            margin-top: 15px;
-        }
-    </style>
+<meta charset="UTF-8">
+
+<style>
+    body {
+        font-family: DejaVu Sans, sans-serif;
+        font-size: 12px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .ticket {
+        margin-bottom: 20px;
+        page-break-inside: avoid;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .event-name {
+        font-size: 25px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .event-meta {
+        font-size: 14px;
+        color: #000;
+        margin-top: 4px;
+    }
+
+    .divider {
+        border-top: 1px dashed #aaa;
+        margin: 12px 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    td {
+        padding: 6px 4px;
+        vertical-align: top;
+    }
+
+    .label {
+        font-size: 15px;
+        text-transform: uppercase;
+        color: #000;
+    }
+
+    .value {
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    .qr {
+        text-align: center;
+        margin-top: 14px;
+    }
+
+    .qr img {
+        width: 280px;
+    }
+
+    .footer {
+        text-align: center;
+        font-size: 14px;
+        color: #000;
+        margin-top: 10px;
+    }
+
+</style>
 </head>
+
 <body>
 
 @foreach($boletos as $boleto)
-    <div class="ticket">
 
-        <div class="title">{{ $boleto['event']['name'] }}</div>
-        <div class="muted">
-            {{ $boleto['event']['date'] }} · {{ $boleto['event']['time'] }}
+<div class="ticket">
+
+    {{-- HEADER --}}
+    <div class="header">
+        <div class="event-name">{{ $boleto['event']['name'] }}</div>
+        <div class="event-meta">
+            {{ $boleto['event']['date'] }} · {{ $boleto['event']['time'] }}<br>
+            {{ $boleto['event']['venue'] }}
         </div>
-
-        <hr>
-
-        <p>
-            <strong>Boleto:</strong> {{ $boleto['ticket']['name'] }}<br>
-            <strong>Precio:</strong> ${{ number_format($boleto['ticket']['price'], 2) }} MXN<br>
-            <strong>Asiento:</strong>
-            {{ $boleto['ticket']['row'] ?? 'General' }}
-            {{ $boleto['ticket']['seat'] }}
-        </p>
-
-        <p>
-            <strong>Comprador:</strong> {{ $boleto['user']['email'] }}<br>
-            <strong>Orden:</strong> {{ $boleto['order']['payment_intent'] }}
-        </p>
-
-        <div class="qr">
-          <img src="{{ public_path(parse_url($boleto['qr'], PHP_URL_PATH)) }}" width="160">
-
-        
-        </div>
-
     </div>
+
+    <div class="divider"></div>
+
+    {{-- INFO --}}
+    <table>
+        <tr>
+            <td width="50%">
+                <div class="label">Boleto</div>
+                <div class="value">{{ $boleto['ticket']['name'] }}</div>
+            </td>
+            <td width="50%">
+                <div class="label">Precio</div>
+                <div class="value">${{ number_format($boleto['ticket']['price'], 2) }} MXN</div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <div class="label">Asiento</div>
+                <div class="value">
+                    {{ $boleto['ticket']['row'] ?? 'General' }}
+                    {{ $boleto['ticket']['seat'] }}
+                </div>
+            </td>
+            <td>
+                <div class="label">Comprador</div>
+                <div class="value">{{ $boleto['user']['email'] }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="divider"></div>
+
+    {{-- QR --}}
+    <div class="qr">
+        <img
+            src="{{ public_path(parse_url($boleto['qr'], PHP_URL_PATH)) }}"
+            alt="QR"
+        >
+    </div>
+
+    <div class="footer">
+        Orden: {{ $boleto['order']['payment_intent'] }}<br>
+        Presenta este QR el día del evento
+    </div>
+
+</div>
 @endforeach
 
 </body>

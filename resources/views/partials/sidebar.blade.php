@@ -27,7 +27,7 @@
 
                 <!--begin: iFrames / Reportes -->
                 <div class="menu-item">
-                    <a class="menu-link {{ request()->is('reports*') ? 'active' : '' }}" href="/reports">
+                    <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}" href="/ticket-instances">
                         <span class="menu-icon">
                             <i class="ki-outline ki-element-7 fs-2"></i>
                         </span>

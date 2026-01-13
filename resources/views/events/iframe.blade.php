@@ -5,6 +5,13 @@
 
 @section('content')
 
+<style>
+    .btn-metodo.active {
+    outline: 3px solid rgba(0,0,0,.2);
+}
+
+</style>
+
     <link rel="stylesheet" href="/assets/css/configurador.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -117,21 +124,40 @@
                             <span id="cartTotal" class="text-primary">$0</span>
                         </div>
 
-                        <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
-                            Continuar pago
-                        </button>
+                        @if(!auth()->check() || !auth()->user()->is_admin)
+                            <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
+                                Continuar pago
+                            </button>
+                        @endif
 
                         @if(auth()->check() && auth()->user()->is_admin)
 
+                            <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold d-none" disabled>
+                                Continuar pago
+                            </button>
+
                             <div class="mt-3">
-                                <label class="form-label fw-bold">Tipo de venta</label>
-                                <select id="ventaTipo" class="form-select">
-                                    <option value="normal" selected>Venta normal</option>
-                                    <option value="cortesia">Cortesía</option>
-                                </select>
+                                <label class="form-label fw-bold mb-2">Tipo de venta</label>
+
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success btn-lg fw-bold btn-metodo"
+                                        data-metodo="cash">
+                                        💵 Efectivo
+                                    </button>
+
+                                    <button class="btn btn-primary btn-lg fw-bold btn-metodo"
+                                        data-metodo="card">
+                                        💳 Tarjeta
+                                    </button>
+
+                                    <button class="btn btn-secondary btn-lg fw-bold btn-metodo d-none"
+                                        data-metodo="cortesia">
+                                        🎟️ Cortesía
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="mt-2">
+                            <div class="mt-3">
                                 <label class="form-label fw-bold">
                                     Nombre o correo <span class="text-muted">(opcional)</span>
                                 </label>
@@ -139,9 +165,6 @@
                                     placeholder="Ej. Juan Pérez o invitado@gmail.com">
                             </div>
 
-                            <button id="btnTaquilla" class="btn btn-dark w-100 fw-bold mt-3">
-                                Venta en taquilla
-                            </button>
                         @endif
                     </div>
                 </div>
@@ -212,35 +235,39 @@
             }
         });
 
-        document.getElementById('btnTaquilla')?.addEventListener('click', () => {
+       
 
-            const tipoVenta = document.getElementById('ventaTipo').value;
-            const nombreInput = document.getElementById('ventaNombre').value.trim();
+        document.querySelectorAll('.btn-metodo').forEach(btn => {
+            btn.addEventListener('click', () => {
 
-            const esCortesia = tipoVenta === 'cortesia';
+                const metodoPago = btn.dataset.metodo; // cash | card | cortesia
+                const nombreInput = document.getElementById('ventaNombre').value.trim();
 
-            let email;
+                const esCortesia = metodoPago === 'cortesia';
 
-            if (nombreInput) {
-                email = nombreInput;
-            } else if (esCortesia) {
-                email = 'CORTESIA';
-            } else {
-                email = 'taquilla@local';
-            }
+                let email;
 
-            fetch('/taquilla/sell', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.Laravel.csrfToken
-                },
-                body: JSON.stringify({
-                    cart: window.cartState.items,
-                    cortesia: esCortesia,
-                    email: email
+                if (nombreInput) {
+                    email = nombreInput;
+                } else if (esCortesia) {
+                    email = 'CORTESIA';
+                } else {
+                    email = 'taquilla@local';
+                }
+
+                fetch('/taquilla/sell', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': window.Laravel.csrfToken
+                    },
+                    body: JSON.stringify({
+                        cart: window.cartState.items,
+                        cortesia: esCortesia,
+                        email: email,
+                        payment_method: metodoPago
+                    })
                 })
-            })
                 .then(res => res.text())
                 .then(html => {
                     document.open();
@@ -248,6 +275,7 @@
                     document.close();
                 })
                 .catch(() => alert('Error en venta de taquilla'));
+            });
         });
 
     </script>
