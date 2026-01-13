@@ -353,7 +353,9 @@ class PaymentController extends Controller
             'email' => $email,
         ])->setPaper([0, 0, 380, 600]);
 
-        return $pdf->download("boletos-{$reference}.pdf");
+        return response($pdf->output(), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="boletos.pdf"');
     }
 
     private function buildTicketDataFromInstance(
