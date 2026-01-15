@@ -16,7 +16,7 @@ class TicketReprintController extends Controller
         $instances = TicketInstance::with([
             'ticket',
             'ticket.stage',
-        ])->orderByDesc('purchased_at')->get();
+        ])->orderByDesc('created_at')->get();
 
 
         return view('admin.ticket_instances.index', compact('instances'));
