@@ -72,6 +72,7 @@
 $(document).ready(function () {
     $('#kt_ticket_instances').DataTable({
         pageLength: 25,
+        ordering: false,
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json"
         }
