@@ -122,7 +122,7 @@ class PaymentController extends Controller
         return Pdf::loadView('pdf.boletos', [
             'boletos' => $boletos,
             'email' => $email,
-        ])->setPaper([0, 0, 380, 600])->output();
+        ])->setPaper([0, 0, 400, 700])->output();
 
     }
 
