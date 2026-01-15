@@ -16,14 +16,14 @@
 				</div>
 
 				<h2 class="fw-bold mb-3">¡Pago confirmado!</h2>
-				
 
-				 @if(!auth()->check() || !auth()->user()->is_admin)
+
+				@if(!auth()->check() || !auth()->user()->is_admin)
 					<button onclick="downloadTicketsPDF()" class="btn btn-light-primary fw-bold mb-6">
 						<i class="ki-duotone ki-download fs-5 me-2"></i>
 						Descargar boletos en PDF
 					</button>
-                 @endif
+				@endif
 
 
 				@if(auth()->check() && auth()->user()->is_admin)
@@ -32,18 +32,15 @@
 					@endphp
 
 					@if($reference)
-						<a
-							href="{{ route('boletos.print', ['ref' => $reference]) }}"
-							class="btn btn-light-primary fw-bold mb-6"
-							target="_blank"
-						>
+						<a href="{{ route('boletos.reprint', ['ref' => $reference]) }}" class="btn btn-light-primary fw-bold mb-6"
+							target="_blank" id="btnAutoPrint">
 							<i class="ki-duotone ki-printer fs-5 me-2"></i>
 							Imprimir boletos
 						</a>
-
 					@endif
 				@endif
-								
+
+
 
 				{{-- BOTONES GOOGLE WALLET --}}
 				<div class="mt-6 no-print">
@@ -52,14 +49,11 @@
 
 					@foreach ($boletos as $boleto)
 						@if(!empty($boleto['wallet']['instance_id']))
-								<a
-									href="{{ route('wallet.add', $boleto['wallet']['instance_id']) }}"
-									target="_blank"
-									class="btn btn-dark fw-bold d-inline-flex align-items-center gap-2 px-4 py-2 mb-6"
-								>
-									<i class="bi bi-wallet2 fs-5"></i>
-									Agregar a Google Wallet {{ $boleto['ticket']['name'] }}
-								</a>					
+							<a href="{{ route('wallet.add', $boleto['wallet']['instance_id']) }}" target="_blank"
+								class="btn btn-dark fw-bold d-inline-flex align-items-center gap-2 px-4 py-2 mb-6">
+								<i class="bi bi-wallet2 fs-5"></i>
+								Agregar a Google Wallet {{ $boleto['ticket']['name'] }}
+							</a>
 						@endif
 					@endforeach
 
@@ -72,7 +66,7 @@
 
 				@foreach ($boletos as $index => $boleto)
 					<div class="card card-flush shadow-sm mb-10 printable-ticket">
-						<div class="card-body">		
+						<div class="card-body">
 							<h3 class="fw-bold mb-1">{{ $boleto['event']['name'] }}</h3>
 							<div class="text-muted mb-4">
 								{{ $boleto['event']['date'] }} · {{ $boleto['event']['time'] }}
@@ -184,5 +178,15 @@
 			pdf.save('boletos.pdf');
 		}
 	</script>
+	@if(auth()->check() && auth()->user()->is_admin && !empty($reference))
+		<script>
+			document.addEventListener('DOMContentLoaded', function () {
+				const btn = document.getElementById('btnAutoPrint');
+				if (btn) {
+					btn.click();
+				}
+			});
+		</script>
+	@endif
 
 @endsection

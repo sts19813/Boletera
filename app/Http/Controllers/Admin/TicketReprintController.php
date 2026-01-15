@@ -22,23 +22,16 @@ class TicketReprintController extends Controller
         return view('admin.ticket_instances.index', compact('instances'));
     }
 
-    public function print(Request $request)
-    {
+    public function reprint(
+        Request $request,
+        TicketBuilderService $builder
+    ) {
         $reference = $request->get('ref');
 
         abort_if(!$reference, 400);
 
-        $pdf = route('boletos.reprint', ['ref' => $reference]);
+        $instance = TicketInstance::where('reference', $reference)->firstOrFail();
 
-        return view('boletos.print', compact('pdf'));
-    }
-
-
-    public function reprint(
-        TicketInstance $instance,
-        TicketBuilderService $builder,
-        TicketPdfService $pdfService
-    ) {
         $ticket = $instance->ticket;
         $email = $instance->email ?? 'taquilla@local';
 
@@ -50,11 +43,11 @@ class TicketReprintController extends Controller
             reference: $instance->reference
         );
 
-        $pdf = Pdf::loadView('pdf.boletos', [
+        return Pdf::loadView('pdf.boletos', [
             'boletos' => [$boleto],
             'email' => $email,
-        ])->setPaper([0, 0, 380, 600]);
-
-        return $pdf->download("boleto-{$instance->id}.pdf");
+        ])
+            ->setPaper([0, 0, 400, 700])
+            ->stream("boleto-{$instance->reference}.pdf");
     }
 }

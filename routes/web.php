@@ -154,8 +154,9 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])
             ->name('admin.ticket_instances.reprint');
 
-        Route::get('/boletos/print', [TicketReprintController::class, 'print'])
-            ->name('boletos.print');
+        Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])
+            ->name('boletos.reprint');
+
 
     });
 

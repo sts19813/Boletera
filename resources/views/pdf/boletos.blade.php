@@ -65,8 +65,16 @@
         margin-top: 14px;
     }
 
+    .logoStom {
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    .logoStom img {
+        width: 250px;
+    }
     .qr img {
-        width: 280px;
+        width: 380px;
     }
 
     .footer {
@@ -137,6 +145,10 @@
     <div class="footer">
         Orden: {{ $boleto['order']['payment_intent'] }}<br>
         Presenta este QR el día del evento
+    </div>
+
+    <div class="logoStom">
+        <img src="{{ public_path('assets/logoInvert.png') }}" alt="Logo">
     </div>
 
 </div>

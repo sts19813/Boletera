@@ -351,7 +351,7 @@ class PaymentController extends Controller
         $pdf = Pdf::loadView('pdf.boletos', [
             'boletos' => $boletos,
             'email' => $email,
-        ])->setPaper([0, 0, 380, 600]);
+        ])->setPaper([0, 0, 400, 700]);
 
         return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
