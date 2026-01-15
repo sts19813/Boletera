@@ -23,15 +23,9 @@ class TicketReprintController extends Controller
     }
 
     public function reprint(
-        Request $request,
+        TicketInstance $instance,
         TicketBuilderService $builder
     ) {
-        $reference = $request->get('ref');
-
-        abort_if(!$reference, 400);
-
-        $instance = TicketInstance::where('reference', $reference)->firstOrFail();
-
         $ticket = $instance->ticket;
         $email = $instance->email ?? 'taquilla@local';
 
