@@ -16,16 +16,22 @@ class TicketReprintController extends Controller
         $instances = TicketInstance::with([
             'ticket',
             'ticket.stage',
-        ])->orderByDesc('created_at')->get();
+        ])->orderByDesc('purchased_at')->get();
 
 
         return view('admin.ticket_instances.index', compact('instances'));
     }
 
     public function reprint(
-        TicketInstance $instance,
+        Request $request,
         TicketBuilderService $builder
     ) {
+        $reference = $request->get('ref');
+
+        abort_if(!$reference, 400);
+
+        $instance = TicketInstance::where('reference', $reference)->firstOrFail();
+
         $ticket = $instance->ticket;
         $email = $instance->email ?? 'taquilla@local';
 
@@ -44,5 +50,4 @@ class TicketReprintController extends Controller
             ->setPaper([0, 0, 400, 700])
             ->stream("boleto-{$instance->reference}.pdf");
     }
-
 }
