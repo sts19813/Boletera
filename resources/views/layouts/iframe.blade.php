@@ -88,7 +88,7 @@
                     <div class="event-meta">
                         <div>
                             <i class="ki-duotone ki-time fs-5 me-2"></i>
-                            7:30 PM - 12:00 AM
+                            6:00 PM - 12:00 AM
                         </div>
                         <div>
                             <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
