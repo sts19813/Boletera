@@ -14,10 +14,17 @@ use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BoletosMail;
+use App\Services\TicketBuilderService;
 
 
 class PaymentController extends Controller
 {
+
+    public function __construct(
+        private TicketBuilderService $ticketBuilder
+    ) {
+    }
+
     /**
      * Vista de pago (DOMINIO PROPIO)
      */
@@ -161,11 +168,11 @@ class PaymentController extends Controller
                     ->first();
 
                 if ($existingInstance) {
-                    $boletos[] = $this->buildTicketData(
+                    $boletos[] = $this->ticketBuilder->build(
                         $ticket,
-                        $existingInstance,
-                        $existingInstance->email,
-                        $existingInstance->purchased_at,
+                        $instance,
+                        $email,
+                        $purchaseAtString,
                         $paymentIntentId
                     );
                     continue;
@@ -189,7 +196,7 @@ class PaymentController extends Controller
                     'purchased_at' => $purchaseAt,
                 ]);
 
-                $boletos[] = $this->buildTicketData(
+                $boletos[] = $this->ticketBuilder->build(
                     $ticket,
                     $instance,
                     $email,
@@ -209,11 +216,11 @@ class PaymentController extends Controller
 
                 foreach ($existingInstances as $instance) {
 
-                    $boletos[] = $this->buildTicketData(
+                    $boletos[] = $this->ticketBuilder->build(
                         $ticket,
                         $instance,
-                        $instance->email,
-                        $instance->purchased_at,
+                        $email,
+                        $purchaseAtString,
                         $paymentIntentId
                     );
                 }
@@ -234,7 +241,7 @@ class PaymentController extends Controller
                     'payment_method' => 'card',
                 ]);
 
-                $boletos[] = $this->buildTicketData(
+                $boletos[] = $this->ticketBuilder->build(
                     $ticket,
                     $instance,
                     $email,
@@ -256,72 +263,6 @@ class PaymentController extends Controller
         return $boletos;
     }
 
-    private function buildTicketData(
-        Ticket $ticket,
-        ?TicketInstance $instance,
-        string $email,
-        string $purchasedAt,
-        string $paymentIntentId
-    ) {
-        return [
-            'event' => [
-                'name' => $ticket->event->name ?? 'Evento - Box Azteca',
-                'date' => '17 de Enero de 2026',
-                'time' => '6:00 PM',
-                'venue' => 'Centro de Convenciones Siglo XXI',
-                'organizer' => 'Maxboxing',
-            ],
-            'ticket' => [
-                'name' => $ticket->name,
-                'row' => $ticket->row ?? null,
-                'seat' => $ticket->seat ?? null,
-                'price' => $ticket->total_price,
-            ],
-            'order' => [
-                'payment_intent' => $paymentIntentId,
-                'purchased_at' => $purchasedAt,
-            ],
-            'user' => [
-                'email' => $email,
-            ],
-            'qr' => $this->makeQr([
-                'type' => 'ticket',
-                'ticket_id' => $ticket->id,
-                'ticket_instance_id' => $instance?->id,
-                'hash' => $instance?->qr_hash,
-            ], ),
-            'wallet' => [
-                'instance_id' => $instance?->id,
-            ],
-        ];
-    }
-
-
-    private function makeQr(array $payload): string
-    {
-        $filename = 'qr_' . md5(json_encode($payload)) . '.png';
-        $dir = public_path('qrs');
-
-        if (!file_exists($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $path = $dir . '/' . $filename;
-
-        if (!file_exists($path)) {
-
-            $result = Builder::create()
-                ->writer(new PngWriter())
-                ->data(json_encode($payload))
-                ->size(220)
-                ->margin(10)
-                ->build();
-
-            file_put_contents($path, $result->getString());
-        }
-
-        return asset('qrs/' . $filename);
-    }
 
     public function reprint(Request $request)
     {
@@ -345,7 +286,13 @@ class PaymentController extends Controller
 
         $boletos = $instances->map(
             fn($instance) =>
-            $this->buildTicketDataFromInstance($instance, $email)
+            $this->ticketBuilder->build(
+                $instance->ticket,
+                $instance,
+                $email,
+                $instance->purchased_at,
+                $instance->payment_intent_id ?? $instance->reference
+            )
         )->toArray();
 
         $pdf = Pdf::loadView('pdf.boletos', [
@@ -356,44 +303,6 @@ class PaymentController extends Controller
         return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="boletos.pdf"');
-    }
-
-    private function buildTicketDataFromInstance(
-        TicketInstance $instance,
-        string $email
-    ): array {
-        return [
-            'event' => [
-                'name' => $instance->ticket->event->name ?? 'Box Azteca',
-                'date' => '17 de Enero de 2026',
-                'time' => '6:00 PM',
-                'venue' => 'Centro de Convenciones Siglo XXI',
-                'organizer' => 'Maxboxing',
-            ],
-            'ticket' => [
-                'name' => $instance->ticket->name,
-                'row' => $instance->ticket->row,
-                'seat' => $instance->ticket->seat,
-                'price' => $instance->ticket->total_price,
-            ],
-            'order' => [
-                'payment_intent' => $instance->payment_intent_id
-                    ?: $instance->reference,
-                'purchased_at' => $instance->purchased_at,
-            ],
-            'user' => [
-                'email' => $instance->email ?? $email,
-            ],
-            'qr' => asset('qrs/qr_' . md5(json_encode([
-                'type' => 'ticket',
-                'ticket_id' => $instance->ticket_id,
-                'ticket_instance_id' => $instance->id,
-                'hash' => $instance->qr_hash,
-            ])) . '.png'),
-            'wallet' => [
-                'instance_id' => $instance->id,
-            ],
-        ];
     }
 
     public function cancel()

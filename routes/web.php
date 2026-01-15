@@ -156,8 +156,6 @@ Route::middleware(['auth', AdminMiddleware::class])
 
         Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])
             ->name('boletos.reprint');
-
-
     });
 
 
@@ -194,9 +192,6 @@ Route::get(
 
 Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])
     ->name('boletos.reprint');
-
-
-
 // =========================
 // Auth Routes
 // =========================

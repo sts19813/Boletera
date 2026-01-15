@@ -53,7 +53,7 @@
                         </td>
 
                         <td class="text-end">
-                            <a href="{{ route('admin.ticket_instances.reprint', $instance) }}"
+                            <a target="_blank" href="{{ route('admin.ticket_instances.reprint', $instance) }}"
                                class="btn btn-sm btn-light-primary">
                                 Reimprimir
                             </a>

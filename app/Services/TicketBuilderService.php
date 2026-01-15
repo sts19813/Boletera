@@ -54,6 +54,9 @@ class TicketBuilderService
                 'ticket_instance_id' => $instance?->id,
                 'hash' => $instance?->qr_hash,
             ]),
+            'wallet' => [
+                'instance_id' => $instance?->id,
+            ],
         ];
     }
 
