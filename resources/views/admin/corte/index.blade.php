@@ -5,87 +5,115 @@
 @section('content')
 
 
-<div class="d-flex align-items-center justify-content-between mb-6">
-    <h3 class="fw-bold mb-0">Corte de Ventas</h3>
+    <div class="d-flex align-items-center justify-content-between mb-6">
+        <h3 class="fw-bold mb-0">Corte de Ventas</h3>
 
-    <a href="{{ route('admin.corte.export.general') }}"
-       class="btn btn-primary">
-        Exportar Corte
-    </a>
-</div>
-<div class="card card-flush">
-    
-    <div class="card-body pt-0">
-        <table class="table align-middle table-row-dashed fs-6 gy-5">
-            <thead>
-                <tr class="text-gray-500 fw-bold fs-7 text-uppercase">
-                    <th>Tipo</th>
-                    <th>Precio</th>
-                    <th>Boletos entregados</th>
-                    <th>Cortesías</th>
-                    <th>Pagados</th>
-                    <th>Web stripe</th>
-                    <th>Total Web</th>
-                    <th>Cash taquilla</th>
-                    <th>Total Cash</th>
-                    <th>Clip taquilla</th>
-                    <th>Total Clip</th>
-                    <th>Total(global)</th>
-                </tr>
+        <div class="card card-flush mb-6">
+            <div class="card-body">
+                <form method="GET" class="row g-4 align-items-end">
+
+                    <div class="col-md-4">
+                        <label class="form-label">Desde</label>
+                        <input type="datetime-local" name="from" class="form-control" value="{{ request('from') }}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Hasta</label>
+                        <input type="datetime-local" name="to" class="form-control" value="{{ request('to') }}">
+                    </div>
+
+                    <div class="col-md-4 d-flex gap-2">
+                        <button class="btn btn-primary">
+                            Filtrar
+                        </button>
+
+                        <a href="{{ route('admin.corte.index') }}" class="btn btn-light">
+                            Limpiar
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+
+        <a href="{{ route('admin.corte.export.general', request()->query()) }}" class="btn btn-primary">
+            Exportar Corte
+        </a>
+    </div>
+    <div class="card card-flush">
+
+        <div class="card-body pt-0">
+            <table class="table align-middle table-row-dashed fs-6 gy-5">
+                <thead>
+                    <tr class="text-gray-500 fw-bold fs-7 text-uppercase">
+                        <th>Tipo</th>
+                        <th>Precio</th>
+                        <th>Boletos entregados</th>
+                        <th>Cortesías</th>
+                        <th>Pagados</th>
+                        <th>Web stripe</th>
+                        <th>Total Web</th>
+                        <th>Cash taquilla</th>
+                        <th>Total Cash</th>
+                        <th>Clip taquilla</th>
+                        <th>Total Clip</th>
+                        <th>Total(global)</th>
+                    </tr>
                 </thead>
                 <tbody>
-                @foreach($corte as $row)
-                <tr>
-                    <td>{{ $row['tipo'] }}</td>
-                    <td>${{ number_format($row['precio_unitario'], 2) }}</td>
-                    <td>{{ $row['vendidos'] }}</td>
-                    <td class="text-warning fw-bold">{{ $row['cortesias'] }}</td>
-                    <td>{{ $row['pagados'] }}</td>
+                    @foreach($corte as $row)
+                        <tr>
+                            <td>{{ $row['tipo'] }}</td>
+                            <td>${{ number_format($row['precio_unitario'], 2) }}</td>
+                            <td>{{ $row['vendidos'] }}</td>
+                            <td class="text-warning fw-bold">{{ $row['cortesias'] }}</td>
+                            <td>{{ $row['pagados'] }}</td>
 
-                    <td>{{ $row['web_qty'] }}</td>
-                    <td class="text-info fw-bold">
-                        ${{ number_format($row['web_total'], 2) }}
-                    </td>
+                            <td>{{ $row['web_qty'] }}</td>
+                            <td class="text-info fw-bold">
+                                ${{ number_format($row['web_total'], 2) }}
+                            </td>
 
 
-                    <td>{{ $row['cash_qty'] }}</td>
-                    <td class="text-success">
-                        ${{ number_format($row['cash_total'], 2) }}
-                    </td>
+                            <td>{{ $row['cash_qty'] }}</td>
+                            <td class="text-success">
+                                ${{ number_format($row['cash_total'], 2) }}
+                            </td>
 
-                    <td>{{ $row['card_qty'] }}</td>
-                    <td class="text-primary">
-                        ${{ number_format($row['card_total'], 2) }}
-                    </td>
+                            <td>{{ $row['card_qty'] }}</td>
+                            <td class="text-primary">
+                                ${{ number_format($row['card_total'], 2) }}
+                            </td>
 
-                    <td class="fw-bold">
-                        ${{ number_format($row['total_generado'], 2) }}
-                    </td>
-                </tr>
-                @endforeach
+                            <td class="fw-bold">
+                                ${{ number_format($row['total_generado'], 2) }}
+                            </td>
+                        </tr>
+                    @endforeach
 
-                <tr class="fw-bold bg-light">
-                    <td>TOTAL</td>
-                    <td></td>
-                    <td>{{ $totales['vendidos'] }}</td>
-                    <td>{{ $totales['cortesias'] }}</td>
-                    <td>{{ $totales['pagados'] }}</td>
+                    <tr class="fw-bold bg-light">
+                        <td>TOTAL</td>
+                        <td></td>
+                        <td>{{ $totales['vendidos'] }}</td>
+                        <td>{{ $totales['cortesias'] }}</td>
+                        <td>{{ $totales['pagados'] }}</td>
 
-                    <td>{{ $totales['web_qty'] }}</td>
-                    <td>${{ number_format($totales['web_total'], 2) }}</td>
+                        <td>{{ $totales['web_qty'] }}</td>
+                        <td>${{ number_format($totales['web_total'], 2) }}</td>
 
-                    <td>{{ $totales['cash_qty'] }}</td>
-                    <td>${{ number_format($totales['cash_total'], 2) }}</td>
+                        <td>{{ $totales['cash_qty'] }}</td>
+                        <td>${{ number_format($totales['cash_total'], 2) }}</td>
 
-                    <td>{{ $totales['card_qty'] }}</td>
-                    <td>${{ number_format($totales['card_total'], 2) }}</td>
+                        <td>{{ $totales['card_qty'] }}</td>
+                        <td>${{ number_format($totales['card_total'], 2) }}</td>
 
-                    <td>${{ number_format($totales['gran_total'], 2) }}</td>
-                </tr>
+                        <td>${{ number_format($totales['gran_total'], 2) }}</td>
+                    </tr>
 
-            </tbody>
+                </tbody>
 
-        </table>
+            </table>
+        </div>
     </div>
-</div>
 @endsection

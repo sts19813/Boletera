@@ -7,12 +7,16 @@ use App\Models\Ticket;
 use App\Models\TicketInstance;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\Request;
 
 class CorteController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $data = $this->getCorteData();
+        $data = $this->getCorteData(
+            $request->from,
+            $request->to
+        );
 
         return view('admin.corte.index', [
             'corte' => $data['rows'],
@@ -20,9 +24,12 @@ class CorteController extends Controller
         ]);
     }
 
-    public function exportGeneral()
+    public function exportGeneral(Request $request)
     {
-        $data = $this->getCorteData();
+        $data = $this->getCorteData(
+            $request->from,
+            $request->to
+        );
         $corte = $data['rows'];
         $totales = $data['totales'];
 
@@ -93,61 +100,74 @@ class CorteController extends Controller
      * CORTE AGRUPADO POR TIPO
      * ===============================
      */
-    protected function getCorteData()
+    protected function getCorteData($from = null, $to = null)
     {
-        $rows = Ticket::query()
-            ->leftJoin('ticket_instances as ti', 'ti.ticket_id', '=', 'tickets.id')
+        $query = Ticket::query()
+            ->leftJoin('ticket_instances as ti', 'ti.ticket_id', '=', 'tickets.id');
+
+        // ===============================
+        // Filtros por fecha y hora
+        // ===============================
+        if ($from) {
+            $query->where('ti.created_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->where('ti.created_at', '<=', $to);
+        }
+
+        $rows = $query
             ->select([
-                    'tickets.type',
+                'tickets.type',
 
-                    DB::raw('MAX(tickets.total_price) as precio_unitario'),
-                    DB::raw('COUNT(ti.id) as vendidos'),
+                DB::raw('MAX(tickets.total_price) as precio_unitario'),
+                DB::raw('COUNT(ti.id) as vendidos'),
 
-                    // Web (Stripe)
-                    DB::raw("
-                    SUM(
-                        CASE
-                            WHEN ti.sale_channel = 'stripe'
-                                 AND ti.email NOT LIKE '%CORTESIA%'
-                            THEN 1 ELSE 0
-                        END
-                    ) as web_qty
-                "),
+                // Web (Stripe)
+                DB::raw("
+                SUM(
+                    CASE
+                        WHEN ti.sale_channel = 'stripe'
+                             AND ti.email NOT LIKE '%CORTESIA%'
+                        THEN 1 ELSE 0
+                    END
+                ) as web_qty
+            "),
 
-                    // Cortesías
-                    DB::raw("
-                    SUM(
-                        CASE
-                            WHEN ti.email LIKE '%CORTESIA%'
-                            THEN 1 ELSE 0
-                        END
-                    ) as cortesias
-                "),
+                // Cortesías
+                DB::raw("
+                SUM(
+                    CASE
+                        WHEN ti.email LIKE '%CORTESIA%'
+                        THEN 1 ELSE 0
+                    END
+                ) as cortesias
+            "),
 
-                    // Taquilla cash
-                    DB::raw("
-                    SUM(
-                        CASE
-                            WHEN ti.sale_channel = 'taquilla'
-                                 AND ti.payment_method = 'cash'
-                                 AND ti.email NOT LIKE '%CORTESIA%'
-                            THEN 1 ELSE 0
-                        END
-                    ) as taquilla_cash_qty
-                "),
+                // Taquilla cash
+                DB::raw("
+                SUM(
+                    CASE
+                        WHEN ti.sale_channel = 'taquilla'
+                             AND ti.payment_method = 'cash'
+                             AND ti.email NOT LIKE '%CORTESIA%'
+                        THEN 1 ELSE 0
+                    END
+                ) as taquilla_cash_qty
+            "),
 
-                    // Taquilla card
-                    DB::raw("
-                    SUM(
-                        CASE
-                            WHEN ti.sale_channel = 'taquilla'
-                                 AND ti.payment_method = 'card'
-                                 AND ti.email NOT LIKE '%CORTESIA%'
-                            THEN 1 ELSE 0
-                        END
-                    ) as taquilla_card_qty
-                "),
-                ])
+                // Taquilla card
+                DB::raw("
+                SUM(
+                    CASE
+                        WHEN ti.sale_channel = 'taquilla'
+                             AND ti.payment_method = 'card'
+                             AND ti.email NOT LIKE '%CORTESIA%'
+                        THEN 1 ELSE 0
+                    END
+                ) as taquilla_card_qty
+            "),
+            ])
             ->groupBy('tickets.type')
             ->orderBy('tickets.type')
             ->get()
