@@ -19,4 +19,9 @@ class TicketCheckin extends Model
     protected $casts = [
         'scanned_at' => 'datetime',
     ];
+
+    public function ticketInstance()
+    {
+        return $this->belongsTo(TicketInstance::class);
+    }
 }

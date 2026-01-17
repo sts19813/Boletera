@@ -43,4 +43,9 @@ class TicketInstance extends Model
     {
         return $this->belongsTo(Ticket::class);
     }
+
+    public function checkins()
+    {
+        return $this->hasMany(TicketCheckin::class);
+    }
 }

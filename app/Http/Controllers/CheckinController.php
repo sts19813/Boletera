@@ -115,4 +115,30 @@ class CheckinController extends Controller
 		]);
 	}
 
+
+	public function stats()
+	{
+		$total = TicketInstance::count();
+
+		$scanned = TicketCheckin::where('result', 'success')
+			->distinct('ticket_instance_id')
+			->count('ticket_instance_id');
+
+		$courtesyScanned = TicketInstance::whereHas('ticket', function ($q) {
+			$q->where('email', 'CORTESIA'); // 👈 ajusta si tu campo es otro
+		})
+			->whereHas('checkins', function ($q) {
+				$q->where('result', 'success');
+			})
+			->count();
+
+		$pending = $total - $scanned;
+
+		return view('checkin.stats', compact(
+			'total',
+			'scanned',
+			'courtesyScanned',
+			'pending'
+		));
+	}
 }

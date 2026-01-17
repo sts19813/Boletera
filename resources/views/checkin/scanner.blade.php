@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.checkin')
 
 @section('content')
 
@@ -29,6 +29,12 @@
 	<div class="container py-5 text-center">
 
 		<h2 class="fw-bold mb-3">Escanear boletos</h2>
+		<div class="d-flex justify-content-end mb-3">
+			<a href="{{ route('checkin.stats') }}" class="btn btn-sm btn-primary">
+				📊 Ver estadísticas
+			</a>
+		</div>
+
 		<p class="text-muted mb-4">Apunta la cámara al QR del boleto</p>
 
 		<div id="scanner-wrapper" class="scanner-wrapper">
@@ -96,7 +102,7 @@
 				const data = await res.json();
 
 				if (data.status === 'success') {
-					setScannerState('success');					
+					setScannerState('success');
 					showResult(
 						'success',
 						'✅ <strong>Acceso permitido</strong><br>' +
@@ -109,7 +115,7 @@
 				} else if (data.status === 'used') {
 
 					setScannerState('warning');
-					
+
 
 
 					let historyHtml = '';
@@ -131,7 +137,7 @@
 				} else {
 
 					setScannerState('error');
-					
+
 
 					showResult('danger', '❌ ' + data.message);
 				}

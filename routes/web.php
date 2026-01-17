@@ -148,6 +148,9 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/checkin', [CheckinController::class, 'index']);
         Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
 
+        Route::get('/checkin/stats', [CheckinController::class, 'stats'])
+            ->name('checkin.stats');
+
         Route::get('/ticket-instances', [TicketReprintController::class, 'index'])
             ->name('admin.ticket_instances.index');
 
