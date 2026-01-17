@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8" />
     <title>@yield('title', 'Check-in')</title>
@@ -39,17 +40,26 @@
 
 <body>
 
-<div class="checkin-page">
-    <div class="w-100">
-        @yield('content')
+    <div class="container">
+        <a href="#" class="app-sidebar-logo">
+            <img alt="Logo" src="/assets/logo.svg" class="theme-light-show"
+                style="width:180px;filter: invert(1); text-align: center;" />
+        </a>
     </div>
-</div>
 
-<!-- Global JS -->
-<script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
-<script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
 
-@stack('scripts')
+    <div class="checkin-page">
+        <div class="w-100">
+            @yield('content')
+        </div>
+    </div>
+
+    <!-- Global JS -->
+    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+    <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
+
+    @stack('scripts')
 
 </body>
+
 </html>
