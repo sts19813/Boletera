@@ -22,8 +22,24 @@
             background-color: #f5f8fa;
         }
 
-        .checkin-page {
+        .checkin-wrapper {
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .checkin-header {
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .checkin-header img {
+            max-width: 180px;
+            height: auto;
+        }
+
+        .checkin-content {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -40,26 +56,31 @@
 
 <body>
 
-    <div class="container">
-        <a href="#" class="app-sidebar-logo">
-            <img alt="Logo" src="/assets/logo.svg" class="theme-light-show"
-                style="width:180px;filter: invert(1); text-align: center;" />
-        </a>
+<div class="checkin-wrapper">
+
+    <!-- LOGO -->
+    <div class="checkin-header">
+        <img
+            src="{{ asset('assets/logo.svg') }}"
+            alt="Logo"
+            class="theme-light-show" style="filter: invert(1);"
+        >
     </div>
 
-
-    <div class="checkin-page">
+    <!-- CONTENIDO -->
+    <div class="checkin-content">
         <div class="w-100">
             @yield('content')
         </div>
     </div>
 
-    <!-- Global JS -->
-    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
-    <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
+</div>
 
-    @stack('scripts')
+<!-- Global JS -->
+<script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+<script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
+
+@stack('scripts')
 
 </body>
-
 </html>
