@@ -66,6 +66,8 @@
                     </div>
                 </div>
 
+                <!--
+
                 {{-- MAPA --}}
                 <div class="text-center">
                     <div style="position: relative; display: inline-block; width:100%;">
@@ -98,6 +100,7 @@
                     </div>
                 </div>
             </div>
+            --- FIN IZQUIERDA -->
 
             {{-- ===================== --}}
             {{-- DERECHA: CARRITO --}}
