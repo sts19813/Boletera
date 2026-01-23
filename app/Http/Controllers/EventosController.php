@@ -20,7 +20,7 @@ class EventosController extends Controller
      * Constructor
      * Inyecta los servicios necesarios
      */
-    public function __construct( FileUploadService $fileUploadService)
+    public function __construct(FileUploadService $fileUploadService)
     {
         $this->fileUploadService = $fileUploadService;
     }
@@ -66,9 +66,9 @@ class EventosController extends Controller
      */
     public function create()
     {
-       
+
         $Eventos = Eventos::select('id', 'name')->get();
-        return view('events.create', compact( 'Eventos'));
+        return view('events.create', compact('Eventos'));
     }
 
     /**
@@ -77,121 +77,142 @@ class EventosController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'            => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'total_asientos'  => 'required|integer|min:1',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
 
-            'event_date'      => 'required|date',
-            'status'          => 'required|string|in:activo,inactivo',
+            'event_date' => 'required|date',
+            'hora_inicio' => 'nullable',
+            'hora_fin' => 'nullable',
 
-            'source_type'     => 'required|string|in:adara,naboo',
+            'total_asientos' => 'required|integer|min:1',
+            'has_seat_mapping' => 'required|boolean',
 
-            'project_id'      => 'nullable|integer',
-            'phase_id'        => 'nullable|integer',
-            'stage_id'        => 'nullable|integer',
+            'project_id' => 'nullable|integer',
+            'phase_id' => 'nullable|integer',
+            'stage_id' => 'nullable|integer',
 
-            'modal_color'     => 'nullable|string|max:50',
-            'modal_selector'  => 'nullable|string|max:255',
-            'color_primario'  => 'nullable|string|max:50',
-            'color_acento'    => 'nullable|string|max:50',
+            'modal_color' => 'nullable|string|max:50',
+            'modal_selector' => 'nullable|string|max:255',
+            'color_primario' => 'nullable|string|max:50',
+            'color_acento' => 'nullable|string|max:50',
 
-            'redirect_return'   => 'nullable|string|max:255',
-            'redirect_next'     => 'nullable|string|max:255',
+            'redirect_return' => 'nullable|string|max:255',
+            'redirect_next' => 'nullable|string|max:255',
             'redirect_previous' => 'nullable|string|max:255',
 
-            'svg_image'       => 'nullable|mimes:svg,xml',
-            'png_image'       => 'nullable|image|mimes:png,jpg,jpeg',
+            'svg_image' => 'nullable|mimes:svg,xml',
+            'png_image' => 'nullable|image|mimes:png,jpg,jpeg',
         ]);
 
-        // Mapeo limpio y correcto según tu modelo
-        $data = $request->only([
-            'name',
-            'description',
-            'total_asientos',
-            'project_id',
-            'phase_id',
-            'stage_id',
-            'modal_color',
-            'modal_selector',
-            'color_primario',
-            'color_acento',
-            'redirect_return',
-            'redirect_next',
-            'redirect_previous',
-        ]);
+        DB::beginTransaction();
 
-        // Campos extra que tienes en el formulario pero no en el modelo
-        // Si ya los agregaste en migración, habilítalos en $fillable del modelo
-        $data['event_date'] = $request->event_date ?? null;
-        $data['status']     = $request->status ?? 'activo';
-        $data['source_type'] = $request->source_type ?? 'naboo';
+        try {
 
-        // Subida de imágenes
-        if ($request->hasFile('svg_image')) {
-            $data['svg_image'] = $this->fileUploadService
-                ->upload($request->file('svg_image'), 'eventos-assets');
+            $data = $request->only([
+                'name',
+                'description',
+                'location',
+                'event_date',
+                'hora_inicio',
+                'hora_fin',
+                'total_asientos',
+                'has_seat_mapping',
+                'project_id',
+                'phase_id',
+                'stage_id',
+                'modal_color',
+                'modal_selector',
+                'color_primario',
+                'color_acento',
+                'redirect_return',
+                'redirect_next',
+                'redirect_previous',
+            ]);
+
+            // Upload SVG
+            if ($request->hasFile('svg_image')) {
+                $data['svg_image'] = $this->fileUploadService
+                    ->upload($request->file('svg_image'), 'eventos-assets');
+            }
+
+            // Upload PNG
+            if ($request->hasFile('png_image')) {
+                $data['png_image'] = $this->fileUploadService
+                    ->upload($request->file('png_image'), 'eventos-assets');
+            }
+
+            Eventos::create($data);
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.index')
+                ->with('success', 'Evento creado correctamente.');
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            Log::error('Error al crear evento', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()
+                ->withErrors(['error' => 'Ocurrió un error al crear el evento'])
+                ->withInput();
         }
-
-        if ($request->hasFile('png_image')) {
-            $data['png_image'] = $this->fileUploadService
-                ->upload($request->file('png_image'), 'eventos-assets');
-        }
-
-        Eventos::create($data);
-
-        return redirect()
-            ->route('events.index')
-            ->with('success', 'Evento creado correctamente.');
     }
 
-//guarda el mapeo de los boletos del configurador
+
+    //guarda el mapeo de los boletos del configurador
     public function storeSettings(Request $request)
     {
         try {
             // Validación
             $request->validate([
-                'project_id'   => 'nullable|integer',
-                'phase_id'     => 'nullable|integer',
-                'stage_id'     => 'nullable|integer',
-                'lot_id'       => 'nullable|string',
-                'polygonId'    => 'nullable|string',
-                'redirect'     => 'nullable|boolean',
+                'project_id' => 'nullable|integer',
+                'phase_id' => 'nullable|integer',
+                'stage_id' => 'nullable|integer',
+                'lot_id' => 'nullable|string',
+                'polygonId' => 'nullable|string',
+                'redirect' => 'nullable|boolean',
                 'redirect_url' => 'nullable|string',
-                'desarrollo_id'=> 'required|uuid',
-                'color'        => 'nullable|string|max:9',
+                'desarrollo_id' => 'required|uuid',
+                'color' => 'nullable|string|max:9',
                 'color_active' => 'nullable|string|max:9',
             ]);
-    
+
             // Solo tomar redirect_url si está marcado
             $redirectChecked = $request->has('redirect') && $request->redirect;
             $redirectUrl = $redirectChecked ? $request->redirect_url : null;
-    
+
             // Crear registro
             $lote = TicketSvgMapping::create([
                 'evento_id' => $request->desarrollo_id,
-                'project_id'    => $request->project_id ?: null,
-                'phase_id'      => $request->phase_id ?: null,
-                'stage_id'      => $request->stage_id ?: null,
-                'ticket_id'       => $request->lot_id ?: null,
-                'svg_selector'   => $request->polygonId,
-                'redirect'      => $redirectChecked,
-                'redirect_url'  => $redirectUrl,
-                'color'         => $redirectChecked ? $request->color : null,
-                'color_active'  => $redirectChecked ? $request->color_active : null,
+                'project_id' => $request->project_id ?: null,
+                'phase_id' => $request->phase_id ?: null,
+                'stage_id' => $request->stage_id ?: null,
+                'ticket_id' => $request->lot_id ?: null,
+                'svg_selector' => $request->polygonId,
+                'redirect' => $redirectChecked,
+                'redirect_url' => $redirectUrl,
+                'color' => $redirectChecked ? $request->color : null,
+                'color_active' => $redirectChecked ? $request->color_active : null,
             ]);
-    
+
             return response()->json([
                 'success' => true,
                 'lote' => $lote
             ]);
-    
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Devolver errores de validación en JSON
             return response()->json([
                 'success' => false,
                 'errors' => $e->errors()
             ], 422);
-    
+
         } catch (\Exception $e) {
             // Captura cualquier otro error
             return response()->json([
@@ -206,7 +227,7 @@ class EventosController extends Controller
      */
     public function getPhases($id)
     {
-       
+
     }
 
     /**
@@ -214,7 +235,7 @@ class EventosController extends Controller
      */
     public function getStages($projectId, $phaseId)
     {
-      
+
     }
 
     /**
@@ -230,20 +251,20 @@ class EventosController extends Controller
         $lots = [];
         $dbLotes = [];
 
-    
+
         $projects = Eventos::all();
 
         $lots = Ticket::where('stage_id', $lot->stage_id)->get();
         $dbLotes = TicketSvgMapping::where([
-                        'evento_id' => $lot->id,
-                        'project_id' => $lot->project_id,
-                        'phase_id' => $lot->phase_id,
-                        'stage_id' => $lot->stage_id
-                    ])->get();
-   
+            'evento_id' => $lot->id,
+            'project_id' => $lot->project_id,
+            'phase_id' => $lot->phase_id,
+            'stage_id' => $lot->stage_id
+        ])->get();
 
-        return view('events.configurator', compact('lot','projects','lots','dbLotes','Eventos'))
-               ->with('sourceType', $sourceType);
+
+        return view('events.configurator', compact('lot', 'projects', 'lots', 'dbLotes', 'Eventos'))
+            ->with('sourceType', $sourceType);
     }
 
     /**
@@ -269,7 +290,7 @@ class EventosController extends Controller
 
 
 
-         return view('events.iframe', compact('lot','projects','lots','dbLotes'));
+        return view('events.iframe', compact('lot', 'projects', 'lots', 'dbLotes'));
     }
 
     /**
@@ -285,51 +306,58 @@ class EventosController extends Controller
 
         $Eventos = Eventos::select('id', 'name')->get();
 
-        return view('events.edit', compact('event','projects','phases','stages','Eventos'));
+        return view('events.edit', compact('event', 'projects', 'phases', 'stages', 'Eventos'));
     }
 
     /**
- * Actualizar un evento existente
- */
+     * Actualizar un evento existente
+     */
     public function update(Request $request, $id)
     {
         $event = Eventos::findOrFail($id);
 
         $request->validate([
-            'name'            => 'required|string|max:255',
-            'description'     => 'nullable|string',
-            'total_asientos'  => 'required|integer|min:1',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
 
-            'event_date'      => 'required|date',
-            'status'          => 'required|in:activo,inactivo',
-            'source_type'     => 'required|in:adara,naboo',
+            'event_date' => 'required|date',
+            'hora_inicio' => 'nullable',
+            'hora_fin' => 'nullable',
 
-            'project_id'      => 'nullable|integer',
-            'phase_id'        => 'nullable|integer',
-            'stage_id'        => 'nullable|integer',
+            'total_asientos' => 'required|integer|min:1',
+            'has_seat_mapping' => 'required|boolean',
 
-            'modal_color'     => 'nullable|string|max:50',
-            'modal_selector'  => 'nullable|string|max:255',
-            'color_primario'  => 'nullable|string|max:50',
-            'color_acento'    => 'nullable|string|max:50',
+            'project_id' => 'nullable|integer',
+            'phase_id' => 'nullable|integer',
+            'stage_id' => 'nullable|integer',
 
-            'redirect_return'   => 'nullable|string|max:255',
-            'redirect_next'     => 'nullable|string|max:255',
+            'modal_color' => 'nullable|string|max:50',
+            'modal_selector' => 'nullable|string|max:255',
+            'color_primario' => 'nullable|string|max:50',
+            'color_acento' => 'nullable|string|max:50',
+
+            'redirect_return' => 'nullable|string|max:255',
+            'redirect_next' => 'nullable|string|max:255',
             'redirect_previous' => 'nullable|string|max:255',
 
-            'svg_image'       => 'nullable|mimes:svg,xml',
-            'png_image'       => 'nullable|image|mimes:png,jpg,jpeg',
+            'svg_image' => 'nullable|mimes:svg,xml',
+            'png_image' => 'nullable|image|mimes:png,jpg,jpeg',
         ]);
 
         DB::beginTransaction();
 
         try {
 
-            // Datos base
             $data = $request->only([
                 'name',
                 'description',
+                'location',
+                'event_date',
+                'hora_inicio',
+                'hora_fin',
                 'total_asientos',
+                'has_seat_mapping',
                 'project_id',
                 'phase_id',
                 'stage_id',
@@ -342,18 +370,13 @@ class EventosController extends Controller
                 'redirect_previous',
             ]);
 
-            // Campos adicionales
-            $data['event_date']  = $request->event_date;
-            $data['status']      = $request->status;
-            $data['source_type'] = $request->source_type;
-
-            // SVG (solo si se sube uno nuevo)
+            // SVG nuevo (si se sube)
             if ($request->hasFile('svg_image')) {
                 $data['svg_image'] = $this->fileUploadService
                     ->upload($request->file('svg_image'), 'eventos-assets');
             }
 
-            // PNG (solo si se sube uno nuevo)
+            // PNG nuevo (si se sube)
             if ($request->hasFile('png_image')) {
                 $data['png_image'] = $this->fileUploadService
                     ->upload($request->file('png_image'), 'eventos-assets');
@@ -367,10 +390,12 @@ class EventosController extends Controller
                 ->route('events.index')
                 ->with('success', 'Evento actualizado correctamente.');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
             DB::rollBack();
 
             Log::error('Error al actualizar evento', [
+                'event_id' => $event->id,
                 'error' => $e->getMessage()
             ]);
 
@@ -379,6 +404,7 @@ class EventosController extends Controller
                 ->withInput();
         }
     }
+
 
 
     /**

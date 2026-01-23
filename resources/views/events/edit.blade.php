@@ -168,7 +168,7 @@
             ================================ -->
             <div class="card shadow-sm mb-5">
                 <div class="card-header">
-                    <h4 class="card-title fw-bold">Imágenes</h4>
+                    <h4 class="card-title fw-bold">Imágenes (para el mapeo de boletos con los asientos)</h4>
                 </div>
 
                 <div class="card-body">
