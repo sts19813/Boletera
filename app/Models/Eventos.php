@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Eventos extends Model
 {
-    use HasFactory,HasUuids;
+    use HasFactory, HasUuids;
     // UUID como primary key
     protected $keyType = 'string';
     public $incrementing = false;
@@ -16,7 +16,12 @@ class Eventos extends Model
     protected $fillable = [
         'name',
         'description',
+        'event_date',
+        'hora_inicio',
+        'hora_fin',
+        'location',
         'total_asientos',
+        'has_seat_mapping',
         'project_id',
         'phase_id',
         'stage_id',
@@ -29,5 +34,10 @@ class Eventos extends Model
         'redirect_previous',
         'svg_image',
         'png_image'
+    ];
+
+    protected $casts = [
+        'event_date' => 'date',
+        'has_seat_mapping' => 'boolean',
     ];
 }

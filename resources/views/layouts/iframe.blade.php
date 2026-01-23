@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-       <meta name="description"
+    <meta name="description"
         content="Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
     <meta name="keywords" content="boletos, eventos, conciertos, festivales, stom tickets" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -53,42 +53,7 @@
 <body>
 
     {{-- HEADER EVENTO --}}
-    <section class="event-header position-relative">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-start flex-wrap">
-
-                {{-- INFO EVENTO --}}
-                <div class="event-info">
-                    <img src="/assets/logo.svg" alt="Stom Tickets" class="event-logo mb-6" style="width:180px;">
-
-                    <h1 class="event-title">Box Azteca</h1>
-                    <div class="event-meta">
-                        <div>
-                            <i class="ki-duotone ki-time fs-5 me-2"></i>
-                            6:00 PM - 12:00 AM
-                        </div>
-                        <div>
-                            <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
-                            Centro de Convenciones Siglo XXI, Mérida
-                        </div>
-                        <div style="max-width: 950px">
-                           <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
-                            Las mesas VIP están diseñadas para un máximo de 6 personas. Al adquirir una mesa VIP, se entrega un único boleto con código QR, el cual es válido para el acceso de hasta 6 personas y puede ser escaneado hasta seis veces, una por cada asistente.
-                        </div>
-                    </div>
-                </div>
-
-                {{-- FECHA --}}
-                <div class="event-date">
-                    <span class="day">17</span>
-                    <span class="month">ENE</span>
-                </div>
-            </div>
-        </div>
-
-
-    </section>
-
+    
     @yield('content')
 
 

@@ -5,6 +5,7 @@
 
 @section('content')
 
+<x-event-header :evento="$lot" />
 <style>
     .btn-metodo.active {
     outline: 3px solid rgba(0,0,0,.2);

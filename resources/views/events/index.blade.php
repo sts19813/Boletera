@@ -3,6 +3,10 @@
 @section('title', 'Eventos')
 
 @section('content')
+
+
+
+
 <div class="d-flex flex-column flex-column-fluid">
 
     <!-- Encabezado -->
