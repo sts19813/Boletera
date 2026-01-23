@@ -66,7 +66,7 @@
                     </div>
                 </div>
 
-                <!--
+                
 
                 {{-- MAPA --}}
                 <div class="text-center">
@@ -100,7 +100,7 @@
                     </div>
                 </div>
             </div>
-            --- FIN IZQUIERDA -->
+            
 
             {{-- ===================== --}}
             {{-- DERECHA: CARRITO --}}
@@ -197,7 +197,7 @@
         window.projects = @json($projects);
         window.dbLotes = @json($dbLotes);
 
-        window.idDesarrollo = {{ $lot->id }};
+        window.idDesarrollo = @json($lot->id);
         let redireccion = true;
     </script>
     <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>

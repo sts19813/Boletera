@@ -17,9 +17,6 @@ Route::apiResource('stages', StageController::class);
 // Lotes
 Route::apiResource('tickets', LotController::class);
 
-
-
 Route::post('/tickets/import', [TicketViewController::class, 'import']);
-
 Route::put('/tickets/{ticket}/status', [LotController::class, 'updateStatus']);
 Route::post('/tickets/{ticket}/chepina', [LotController::class, 'uploadChepina']);

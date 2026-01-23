@@ -2,26 +2,7 @@
 <html lang="en">
 
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HPF7EK17R3"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-HPF7EK17R3');
-    </script>
-    <!-- Google Tag Manager -->
-    <script>(function (w, d, s, l, i) {
-            w[l] = w[l] || []; w[l].push({
-                'gtm.start':
-                    new Date().getTime(), event: 'gtm.js'
-            }); var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-W848MPWG');</script>
-    <!-- End Google Tag Manager -->
-    <meta name="description"
+       <meta name="description"
         content="Compra tus boletos en línea con STOM TICKETS. Encuentra entradas para conciertos, festivales, deportes y eventos exclusivos en Yucatán y toda México. Compra fácil, segura y con soporte personalizado." />
     <meta name="keywords" content="boletos, eventos, conciertos, festivales, stom tickets" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -71,10 +52,6 @@
 
 <body>
 
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W848MPWG" height="0" width="0"
-            style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
     {{-- HEADER EVENTO --}}
     <section class="event-header position-relative">
         <div class="container">
@@ -98,7 +75,6 @@
                            <i class="ki-duotone ki-geolocation fs-5 me-2"></i>
                             Las mesas VIP están diseñadas para un máximo de 6 personas. Al adquirir una mesa VIP, se entrega un único boleto con código QR, el cual es válido para el acceso de hasta 6 personas y puede ser escaneado hasta seis veces, una por cada asistente.
                         </div>
-
                     </div>
                 </div>
 
@@ -107,7 +83,6 @@
                     <span class="day">17</span>
                     <span class="month">ENE</span>
                 </div>
-
             </div>
         </div>
 

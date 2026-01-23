@@ -28,9 +28,11 @@ return new class extends Migration
             $table->dateTime('available_from')->nullable();
             $table->dateTime('available_until')->nullable();
             $table->text('description')->nullable();
-
+            $table->timestamp('purchased_at')->nullable();
             // Indica si es cortesía
             $table->boolean('is_courtesy')->default(false);
+
+            $table->unsignedInteger('max_checkins')->default(1);
 
             $table->timestamps();
         });

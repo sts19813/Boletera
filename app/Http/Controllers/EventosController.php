@@ -157,7 +157,7 @@ class EventosController extends Controller
                 'polygonId'    => 'nullable|string',
                 'redirect'     => 'nullable|boolean',
                 'redirect_url' => 'nullable|string',
-                'desarrollo_id'=> 'required|integer',
+                'desarrollo_id'=> 'required|uuid',
                 'color'        => 'nullable|string|max:9',
                 'color_active' => 'nullable|string|max:9',
             ]);
@@ -252,8 +252,6 @@ class EventosController extends Controller
     public function iframe($id)
     {
         $lot = Eventos::findOrFail($id);
-        $sourceType = $lot->source_type ?? 'adara';
-
         $projects = Eventos::all();
 
         $lots = [];

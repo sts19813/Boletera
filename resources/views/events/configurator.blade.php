@@ -125,7 +125,7 @@
 		window.dbLotes = @json($dbLotes);
 
 		window.projects = @json($projects);
-		window.idDesarrollo = {{ $lot->id }};
+		window.idDesarrollo = @json($lot->id);
 
 		let redireccion = false;
 

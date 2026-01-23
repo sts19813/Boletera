@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Ticket extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     // UUID como primary key
     protected $keyType = 'string';
@@ -37,18 +37,6 @@ class Ticket extends Model
         'available_until' => 'datetime',
         'purchased_at' => 'datetime',
     ];
-
-    // Genera UUID automáticamente
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (!$model->getKey()) {
-                $model->{$model->getKeyName()} = (string) Str::uuid();
-            }
-        });
-    }
 
     // Relaciones
     public function stage()

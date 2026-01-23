@@ -27,12 +27,6 @@ Route::get('/admin', function () {
         : view('login');
 });
 
-Route::get('/', function () {
-    return app(EventosController::class)
-        ->iframe(1);
-});
-
-
 // =========================
 // Autenticación con Google
 // =========================
@@ -103,16 +97,11 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])
             ->name('events.configurator');
 
-
         Route::post('/evets/fetch', [EventosController::class, 'fetch'])
             ->name('events.fetch');
 
-
-
-
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])
             ->name('eventsSettings.store');
-
 
         //perfil
         Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
@@ -120,14 +109,11 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::post('/perfil/foto', [ProfileController::class, 'updatePhoto'])->name('profile.update.photo');
         Route::post('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
 
-
-
         // Catálogo
         Route::get('/projects', [ProjectViewController::class, 'index'])->name('projects.index');
         Route::get('/phases', [PhaseViewController::class, 'index'])->name('phases.index');
         Route::get('/stages', [StageViewController::class, 'index'])->name('stages.index');
         Route::get('/tickets', [TicketViewController::class, 'index'])->name('tickets.index');
-
 
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('admin.dashboard');
@@ -179,11 +165,7 @@ Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->n
 Route::post('/cart/remove', [App\Http\Controllers\CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
 
-// Checkout: crea sesión stripe (ejemplo con Checkout Sessions)
-Route::post('/cart/checkout', [App\Http\Controllers\CartController::class, 'checkout'])->name('cart.checkout');
-
 Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
-
 
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])
     ->name('eventPublic.index');
