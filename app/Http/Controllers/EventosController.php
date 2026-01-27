@@ -223,22 +223,6 @@ class EventosController extends Controller
     }
 
     /**
-     * Obtener fases de un proyecto
-     */
-    public function getPhases($id)
-    {
-
-    }
-
-    /**
-     * Obtener etapas de un proyecto/fase
-     */
-    public function getStages($projectId, $phaseId)
-    {
-
-    }
-
-    /**
      * Configurador de un evento (vincula boletos con SVG)
      */
     public function configurator($id)
@@ -280,6 +264,10 @@ class EventosController extends Controller
 
         $lots = Ticket::where('stage_id', $lot->stage_id)->get();
 
+        $tickets = Ticket::where('stage_id', $lot->stage_id)
+            ->where('status', 'available')
+        ->get();
+
         $dbLotes = TicketSvgMapping::where([
             'evento_id' => $lot->id,
             'project_id' => $lot->project_id,
@@ -287,10 +275,7 @@ class EventosController extends Controller
             'stage_id' => $lot->stage_id
         ])->get();
 
-
-
-
-        return view('events.iframe', compact('lot', 'projects', 'lots', 'dbLotes'));
+        return view('events.iframe', compact('lot', 'projects', 'lots', 'dbLotes', 'tickets'));
     }
 
     /**

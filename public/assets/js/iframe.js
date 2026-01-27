@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return window.cartState.items.find(t => t.id == ticketId);
     }
 
-    function addToCart(ticket) {
+    window.addToCart = function (ticket) {
 
         let item = getCartItem(ticket.id);
 
@@ -135,9 +135,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Error al preparar el pago');
             });
     });
-
-
-
 });
 
 /**
