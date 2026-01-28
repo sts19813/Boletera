@@ -92,6 +92,9 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])
             ->name('events.destroy');
 
+        Route::delete('events/{event}/configurator',[EventosController::class, 'destroyMapping'])
+            ->name('events.configurator.destroy');
+
         Route::get('/dashboards', action: [EventosController::class, 'index'])->name('dashboards.index');
 
         Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])

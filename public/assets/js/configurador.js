@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const polygonForm = document.getElementById('polygonForm');
     const lotSelect = document.getElementById('modal_lot_id');
 
-
     /**
      * =========================
      * TOGGLE REDIRECCIÓN
@@ -67,7 +66,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 opt.textContent = lot.name;
                 lotSelect.appendChild(opt);
             });
-        
 
             polygonModal.show();
         });
@@ -131,4 +129,87 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
+
+    // ============================================================
+    // MODAL ADMINISTRAR EVENTOS MAPEADOS
+    // ============================================================
+
+    $('#btnManageEventMappings').on('click', function () {
+
+        const tbody = $('#mappedEventsTable');
+        tbody.empty();
+
+        debugger
+
+        const eventsById = Object.fromEntries(
+            window.preloadedLots.map(e => [e.id, e.name])
+        );
+
+        if (!window.dbLotes || window.dbLotes.length === 0) {
+            tbody.append(`
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    No hay eventos mapeados
+                </td>
+            </tr>
+        `);
+        } else {
+            window.dbLotes.forEach(item => {
+
+                const eventName = eventsById[item.ticket_id] ?? '—';
+
+                tbody.append(`
+                <tr>
+                    <td><code>${item.svg_selector}</code></td>
+                    <td>${eventName}</td>
+                    <td>
+                        <button 
+                            class="btn btn-sm btn-danger btn-delete-event-mapping"
+                            data-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+            });
+        }
+
+        $('#mappedEventsModal').modal('show');
+    });
+
+
+    // Eliminar mapeo
+    $('#mappedEventsTable').on('click', '.btn-delete-event-mapping', function () {
+
+        const id = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Eliminar mapeo?',
+            text: 'El polígono quedará libre nuevamente',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar'
+        }).then(result => {
+
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: window.Laravel.routes.eventDelete,
+                type: 'DELETE',
+                data: {
+                    id,
+                    _token: window.Laravel.csrfToken
+                },
+                success: () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Mapeo eliminado',
+                        timer: 1200,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
+                }
+            });
+        });
+    });
 });

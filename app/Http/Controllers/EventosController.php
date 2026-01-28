@@ -402,4 +402,15 @@ class EventosController extends Controller
 
         return redirect()->route('Eventos.index')->with('success', 'Desarrollo eliminado correctamente.');
     }
+    
+    /// Eliminar un mapeo específico
+    public function destroyMapping(Request $request, Eventos $event)
+    {
+        $mapping = TicketSvgMapping::findOrFail($request->id);
+        $mapping->delete();
+
+        return response()->json([
+            'success' => true
+        ]);
+    }
 }

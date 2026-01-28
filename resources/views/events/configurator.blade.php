@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Configurador de Lote')
+@section('title', 'Configurador de Asientos')
 
 @section('content')
 
@@ -23,12 +23,27 @@
 	</style>
 
 	<div class="card shadow-sm">
-		<div class="card-header">
-			<h3 class="card-title">Configurador: {{ $lot->name }}</h3>
-			<div class="card-toolbar">
-				<a href="{{ route('events.index') }}" class="btn btn-secondary">Regresar</a>
+		<div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+			<h3 class="card-title mb-0">
+				Configurador: {{ $lot->name }}
+			</h3>
+
+			<div class="d-flex align-items-center gap-2">
+
+				<button type="button" class="btn btn-outline-danger" id="btnManageEventMappings">
+					<i class="fas fa-project-diagram me-1"></i>
+					Administrar mapeos
+				</button>
+
+				<a href="{{ route('events.index') }}" class="btn btn-secondary">
+					<i class="fas fa-arrow-left me-1"></i>
+					Regresar
+				</a>
+
 			</div>
 		</div>
+
 		<div class="card-body text-center">
 			<div style="position: relative; display: inline-block;">
 				@if ($lot->png_image)
@@ -61,9 +76,9 @@
 						{{-- Solo select de lote --}}
 						<div class="row g-3 mb-4">
 							<div class="col-md-12 mb-3">
-								<label for="lot_id" class="form-label fw-bold">Lote</label>
+								<label for="lot_id" class="form-label fw-bold">Ticket</label>
 								<select id="modal_lot_id" name="lot_id" class="form-select form-select-solid">
-									<option value="">Seleccione un lote...</option>
+									<option value="">Seleccione un ticket...</option>
 								</select>
 							</div>
 						</div>
@@ -77,31 +92,58 @@
 						</div>
 
 						<div class="mb-3">
-							<label for="redirect_url" class="form-label">Redirigir a evento:</label>
+							<label for="redirect_url" class="form-label">Redirigir a seccion del recinto:</label>
 							<select id="redirect_url" name="redirect_url" class="form-select form-select-solid" disabled>
-								<option value="">Seleccione un desarrollo...</option>
+								<option value="">Seleccione una seccion...</option>
 								@foreach ($Eventos as $evento)
 									<option value="{{ $evento->id }}">{{ $evento->name }}</option>
 								@endforeach
 							</select>
 						</div>
 
-						<div class="row mb-3">
-							<div class="col-md-6">
-								<label for="color" class="form-label">Color</label>
-								<input type="color" id="color" name="color" class="form-control form-control-color"
-									value="#34c759ff" disabled>
-							</div>
-							<div class="col-md-6">
-								<label for="color_active" class="form-label">Color Activo (hover)</label>
-								<input type="color" id="color_active" name="color_active"
-									class="form-control form-control-color" value="#2c7be5ff" disabled>
+						<div class="d-none">
+							<div class="row mb-3">
+								<div class="col-md-6">
+									<label for="color" class="form-label">Color</label>
+									<input type="color" id="color" name="color" class="form-control form-control-color"
+										value="#34c759ff" disabled>
+								</div>
+								<div class="col-md-6">
+									<label for="color_active" class="form-label">Color Activo (hover)</label>
+									<input type="color" id="color_active" name="color_active"
+										class="form-control form-control-color" value="#2c7be5ff" disabled>
+								</div>
 							</div>
 						</div>
 						<div class="d-flex justify-content-end">
 							<button type="submit" class="btn btn-primary">Guardar</button>
 						</div>
 					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="mappedEventsModal" tabindex="-1">
+		<div class="modal-dialog modal-xl modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Asientos / Tickets mapeados</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+
+				<div class="modal-body">
+					<table class="table table-bordered align-middle">
+						<thead class="table-light">
+							<tr>
+								<th>SVG ID</th>
+								<th>Ticket</th>
+								<th width="120">Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="mappedEventsTable">
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
@@ -116,7 +158,8 @@
 			csrfToken: "{{ csrf_token() }}",
 			routes: {
 				eventsFetch: "{{ route('events.fetch') }}",
-				eventsStore: "{{ route('eventsSettings.store') }}"
+				eventsStore: "{{ route('eventsSettings.store') }}",
+				eventDelete: "{{ route('events.configurator.destroy', $lot->id) }}"
 			}
 		};
 
@@ -130,7 +173,6 @@
 		let redireccion = false;
 
 	</script>
-
 	<script src="/assets/js/shared-svg.js"></script>
 	<script src="/assets/js/configurador.js"></script>
 	<script src="/assets/js/iframe.js"></script>
