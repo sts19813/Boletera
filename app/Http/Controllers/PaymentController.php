@@ -15,13 +15,17 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BoletosMail;
 use App\Services\TicketBuilderService;
+use App\Models\Eventos;
+use App\Models\RegistrationInstance;
 
+use App\Services\RegistrationBuilderService;
 
 class PaymentController extends Controller
 {
 
     public function __construct(
-        private TicketBuilderService $ticketBuilder
+        private TicketBuilderService $ticketBuilder,
+        private RegistrationBuilderService $registrationBuilder
     ) {
     }
 
@@ -37,6 +41,17 @@ class PaymentController extends Controller
             abort(404, 'Carrito vacío');
         }
 
+        $eventId = session('event_id');
+
+        if (!$eventId) {
+            abort(400, 'Evento no definido');
+        }
+
+        $registration = session('registration_form');
+
+        $evento = Eventos::findOrFail($eventId);
+
+
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
 
         // comisión ejemplo
@@ -50,9 +65,11 @@ class PaymentController extends Controller
 
         return view('pago.form', compact(
             'carrito',
+            'evento',
             'subtotal',
             'comision',
-            'total'
+            'total',
+            'registration'
         ));
     }
 
@@ -105,24 +122,140 @@ class PaymentController extends Controller
             abort(400, 'Pago inválido');
         }
 
-        // 1️⃣ Generar boletos (YA LO TIENES)
-        $boletos = $this->generateBoletosFromPaymentIntent(
-            $paymentIntentId,
-            $email
+        Stripe::setApiKey(config('services.stripe.secret'));
+        $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+
+        $cart = json_decode($intent->metadata->cart ?? '[]', true);
+
+        if (empty($cart)) {
+            abort(400, 'Carrito vacío');
+        }
+
+        // 🔎 Detectar tipo de compra
+
+        $isRegistration = collect($cart)->contains(
+            fn($i) => ($i['type'] ?? null) === 'registration'
         );
 
-        // 2️⃣ Generar PDF
+        if ($isRegistration) {
+
+            // 📝 INSCRIPCIONES
+            $boletos = $this->generateRegistrationsFromPaymentIntent(
+                $paymentIntentId,
+                $email
+            );
+
+        } else {
+
+            // 🎟️ TICKETS (flujo existente)
+            $boletos = $this->generateBoletosFromPaymentIntent(
+                $paymentIntentId,
+                $email
+            );
+        }
+
+        // 📄 PDF (puede ser el mismo o adaptado)
         $pdfContent = $this->generateBoletosPdf($boletos, $email);
 
-        // 3️⃣ Enviar correo (solo una vez)
+        // ✉️ Envío de correo
         Mail::to($email)->send(
             new BoletosMail($pdfContent)
         );
 
-        // 4️⃣ Mostrar vista
+        // 🖥️ Vista final
         return view('pago.success', compact('boletos', 'email'));
     }
 
+
+
+    private function generateRegistrationsFromPaymentIntent(
+        string $paymentIntentId,
+        string $email
+    ): array {
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $intent = PaymentIntent::retrieve($paymentIntentId);
+
+        if ($intent->status !== 'succeeded') {
+            abort(403, 'Pago no confirmado');
+        }
+
+        $cart = json_decode($intent->metadata->cart ?? '[]', true);
+
+        if (empty($cart)) {
+            abort(400, 'Carrito vacío');
+        }
+
+        $purchaseAt = now();
+        $boletos = [];
+
+        foreach ($cart as $item) {
+
+            if (($item['type'] ?? null) !== 'registration') {
+                continue;
+            }
+
+            $evento = Eventos::findOrFail($item['event_id']);
+            $qty = max(1, (int) ($item['qty'] ?? 1));
+
+            /**
+             * 🔒 IDEMPOTENCIA POR EVENTO + PAYMENT
+             */
+            $existingInstances = RegistrationInstance::where(
+                'payment_intent_id',
+                $paymentIntentId
+            )
+                ->where('event_id', $evento->id)
+                ->get();
+
+            // ➜ Ya existen todas las necesarias
+            if ($existingInstances->count() >= $qty) {
+
+                foreach ($existingInstances as $instance) {
+                    $boletos[] = $this->registrationBuilder->build(
+                        $evento,
+                        $instance,
+                        $email
+                    );
+                }
+
+                continue;
+            }
+
+            // ➜ Validar cupo SOLO para las faltantes
+            $toCreate = $qty - $existingInstances->count();
+
+            if ($evento->max_capacity < $toCreate) {
+                abort(409, 'Cupo agotado');
+            }
+
+            // ➜ Crear SOLO las que faltan
+            for ($i = 0; $i < $toCreate; $i++) {
+
+                $instance = RegistrationInstance::create([
+                    'event_id' => $evento->id,
+                    'email' => $email,
+                    'payment_intent_id' => $paymentIntentId,
+                    'qr_hash' => (string) Str::uuid(),
+                    'registered_at' => $purchaseAt,
+                ]);
+
+                $boletos[] = $this->registrationBuilder->build(
+                    $evento,
+                    $instance,
+                    $email
+                );
+            }
+
+            // 📉 Decrementar cupo SOLO una vez
+            if ($existingInstances->isEmpty()) {
+                $evento->decrement('max_capacity', $qty);
+            }
+        }
+
+        return $boletos;
+    }
 
     private function generateBoletosPdf(array $boletos, string $email)
     {

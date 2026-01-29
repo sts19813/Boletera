@@ -12,7 +12,6 @@ class Eventos extends Model
     // UUID como primary key
     protected $keyType = 'string';
     public $incrementing = false;
-
     protected $fillable = [
         'name',
         'description',
@@ -22,6 +21,10 @@ class Eventos extends Model
         'location',
         'total_asientos',
         'has_seat_mapping',
+        'is_registration',
+        'price',
+        'template',
+        'max_capacity',
         'project_id',
         'phase_id',
         'stage_id',
@@ -39,5 +42,7 @@ class Eventos extends Model
     protected $casts = [
         'event_date' => 'date',
         'has_seat_mapping' => 'boolean',
+        'is_registration' => 'boolean',
+        'price' => 'decimal:2',
     ];
 }

@@ -19,29 +19,91 @@ class CartController extends Controller
 
     public function add(Request $request)
     {
-        // Recibir `cart` completo o un item simple
-        if ($request->has('cart')) {
-            session(['svg_cart' => $request->input('cart')]);
-        } elseif ($request->has('id')) {
-            $cart = session('svg_cart', []);
-            $item = $request->only(['id','name','price','qty','selectorSVG']);
-            $idx = collect($cart)->search(fn($i) => $i['id'] == $item['id']);
-            if ($idx !== false) {
-                $cart[$idx]['qty'] = ($cart[$idx]['qty'] ?? 1) + ($item['qty'] ?? 1);
-            } else {
-                $cart[] = array_merge(['qty' => 1], $item);
-            }
-            session(['svg_cart' => $cart]);
+        /**
+         * =========================
+         * EVENTO
+         * =========================
+         */
+        if ($request->filled('event_id')) {
+            session(['event_id' => $request->event_id]);
         }
-        return response()->json(['success' => true]);
+
+        /**
+         * =========================
+         * FORMULARIO DE INSCRIPCIÓN
+         * =========================
+         */
+        if ($request->filled('registration')) {
+            session(['registration_form' => $request->registration]);
+        }
+
+        /**
+         * =========================
+         * CARRITO COMPLETO (NORMALIZADO)
+         * =========================
+         */
+        if ($request->has('cart')) {
+
+            $cart = collect($request->cart)->map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'event_id' => $item['event_id'] ?? null,
+                    'name' => $item['name'] ?? '',
+                    'price' => (float) $item['price'],
+                    'qty' => (int) ($item['qty'] ?? 1),
+                    'selectorSVG' => $item['selectorSVG'] ?? null,
+                    'type' => $item['type'] ?? 'ticket', // 👈 CLAVE
+                ];
+            })->values()->toArray();
+
+            session(['svg_cart' => $cart]);
+
+            return response()->json(['success' => true]);
+        }
+
+        /**
+         * =========================
+         * ITEM INDIVIDUAL (LEGACY)
+         * =========================
+         */
+        if ($request->has('id')) {
+
+            $cart = session('svg_cart', []);
+
+            $item = [
+                'id' => $request->id,
+                'event_id' => $request->event_id,
+                'name' => $request->name,
+                'price' => (float) $request->price,
+                'qty' => (int) ($request->qty ?? 1),
+                'selectorSVG' => $request->selectorSVG,
+                'type' => $request->type ?? 'ticket', 
+            ];
+
+            $idx = collect($cart)->search(fn($i) => $i['id'] === $item['id']);
+
+            if ($idx !== false) {
+                $cart[$idx]['qty'] += $item['qty'];
+            } else {
+                $cart[] = $item;
+            }
+
+            session(['svg_cart' => $cart]);
+
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['error' => 'Nada que agregar'], 400);
     }
+
+
 
     public function remove(Request $request)
     {
         $id = $request->input('id');
         $cart = session('svg_cart', []);
-        $cart = array_values(array_filter($cart, function($i) use ($id) {
-            return (string)$i['id'] !== (string)$id;
+        $cart = array_values(array_filter($cart, function ($i) use ($id) {
+            return (string) $i['id'] !== (string) $id;
         }));
         session(['svg_cart' => $cart]);
         return response()->json(['success' => true]);
@@ -72,9 +134,9 @@ class CartController extends Controller
                     'product_data' => [
                         'name' => $item['name'] ?? ('Asiento ' . $item['id']),
                     ],
-                    'unit_amount' => (int)round($price * 100),
+                    'unit_amount' => (int) round($price * 100),
                 ],
-                'quantity' => (int)($item['qty'] ?? 1),
+                'quantity' => (int) ($item['qty'] ?? 1),
             ];
         }
 
@@ -94,7 +156,7 @@ class CartController extends Controller
 
             return response()->json(['success' => true, 'checkoutUrl' => $session->url]);
         } catch (\Exception $e) {
-            \Log::error('Stripe error: '.$e->getMessage());
+            Log::error('Stripe error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'No se pudo crear la sesión de pago'], 500);
         }
     }

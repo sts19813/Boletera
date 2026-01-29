@@ -4,6 +4,8 @@
 
 @section('content')
 
+<x-event-header :evento="$evento" />
+
 <div class="bodyform">
 
     <div class="container py-10 position-relative" style="margin-top:-130px;">
@@ -178,6 +180,8 @@
 @push('scripts')
 <script src="https://js.stripe.com/v3/"></script>
 <script>
+
+    let registrationData = @json($registration ?? null);
     // ===============================
     // Detectar tema actual (Metronic)
     // ===============================

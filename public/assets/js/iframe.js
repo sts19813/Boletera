@@ -10,6 +10,25 @@ document.addEventListener('DOMContentLoaded', function () {
         items: []
     };
 
+
+    if (window.isRegistration && window.registrationTicket) {
+
+        debugger
+
+        window.cartState.items.push({
+            id: window.registrationTicket.id,
+            event_id: window.EVENT_ID,          // 👈 CLAVE
+            name: window.registrationTicket.name,
+            total_price: Number(window.registrationTicket.total_price),
+            stock: 1,
+            qty: 1,
+            svg_selector: window.registrationTicket.svg_selector ?? null
+        });
+
+        updateCartUI();
+    }
+
+
     function getCartItem(ticketId) {
         return window.cartState.items.find(t => t.id == ticketId);
     }
@@ -29,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.cartState.items.push({
             id: ticket.id,
+            event_id: window.EVENT_ID, // 👈 clave
             name: ticket.name,
             total_price: Number(ticket.total_price),
             stock: ticket.stock ?? 1,
@@ -109,20 +129,40 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        let registrationData = null;
+
+        if (window.isRegistration) {
+            const form = document.getElementById('registrationForm');
+            if (!form) {
+                alert('Formulario de inscripción no encontrado');
+                return;
+            }
+
+            registrationData = Object.fromEntries(
+                new FormData(form).entries()
+            );
+        }
+
+
         fetch('/cart/add', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': window.Laravel.csrfToken
             },
             body: JSON.stringify({
+                event_id: window.EVENT_ID,
                 cart: window.cartState.items.map(t => ({
                     id: t.id,
+                    event_id: t.event_id,
                     name: t.name,
                     price: t.total_price,
                     qty: t.qty,
-                    selectorSVG: t.svg_selector
-                }))
+                    selectorSVG: t.svg_selector,
+                    type: window.isRegistration ? 'registration' : 'ticket'
+                })),
+                registration: registrationData
             })
         })
             .then(res => res.json())

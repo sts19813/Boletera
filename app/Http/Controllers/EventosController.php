@@ -85,8 +85,15 @@ class EventosController extends Controller
             'hora_inicio' => 'nullable',
             'hora_fin' => 'nullable',
 
-            'total_asientos' => 'required|integer|min:1',
+            // Evento normal
+            'total_asientos' => 'required|integer|min:0',
             'has_seat_mapping' => 'required|boolean',
+
+            // Tipo de evento
+            'is_registration' => 'nullable|boolean',
+            'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
+            'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
+            'template' => 'nullable|string|max:100',
 
             'project_id' => 'nullable|integer',
             'phase_id' => 'nullable|integer',
@@ -118,6 +125,10 @@ class EventosController extends Controller
                 'hora_fin',
                 'total_asientos',
                 'has_seat_mapping',
+                'is_registration',
+                'price',
+                'max_capacity',
+                'template',
                 'project_id',
                 'phase_id',
                 'stage_id',
@@ -129,6 +140,20 @@ class EventosController extends Controller
                 'redirect_next',
                 'redirect_previous',
             ]);
+
+            /**
+             * Normalización para eventos de inscripción
+             */
+            if (!empty($data['is_registration'])) {
+                $data['total_asientos'] = 0;
+                $data['has_seat_mapping'] = false;
+                $data['template'] = $data['template'] ?? 'registration';
+            } else {
+                // Evento normal
+                $data['price'] = null;
+                $data['max_capacity'] = null;
+                $data['template'] = $data['template'] ?? 'default';
+            }
 
             // Upload SVG
             if ($request->hasFile('svg_image')) {
@@ -266,7 +291,7 @@ class EventosController extends Controller
 
         $tickets = Ticket::where('stage_id', $lot->stage_id)
             ->where('status', 'available')
-        ->get();
+            ->get();
 
         $dbLotes = TicketSvgMapping::where([
             'evento_id' => $lot->id,
@@ -310,8 +335,15 @@ class EventosController extends Controller
             'hora_inicio' => 'nullable',
             'hora_fin' => 'nullable',
 
-            'total_asientos' => 'required|integer|min:1',
+            // Evento normal
+            'total_asientos' => 'required|integer|min:0',
             'has_seat_mapping' => 'required|boolean',
+
+            // Tipo de evento
+            'is_registration' => 'nullable|boolean',
+            'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
+            'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
+            'template' => 'nullable|string|max:100',
 
             'project_id' => 'nullable|integer',
             'phase_id' => 'nullable|integer',
@@ -343,6 +375,13 @@ class EventosController extends Controller
                 'hora_fin',
                 'total_asientos',
                 'has_seat_mapping',
+
+                // Nuevos campos
+                'is_registration',
+                'price',
+                'max_capacity',
+                'template',
+
                 'project_id',
                 'phase_id',
                 'stage_id',
@@ -354,6 +393,20 @@ class EventosController extends Controller
                 'redirect_next',
                 'redirect_previous',
             ]);
+
+            /**
+             * Normalización según tipo de evento
+             */
+            if (!empty($data['is_registration'])) {
+                $data['total_asientos'] = 0;
+                $data['has_seat_mapping'] = false;
+                $data['template'] = $data['template'] ?? 'registration';
+            } else {
+                // Evento normal
+                $data['price'] = null;
+                $data['max_capacity'] = null;
+                $data['template'] = $data['template'] ?? 'default';
+            }
 
             // SVG nuevo (si se sube)
             if ($request->hasFile('svg_image')) {

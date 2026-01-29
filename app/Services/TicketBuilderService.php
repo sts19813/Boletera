@@ -49,7 +49,7 @@ class TicketBuilderService
                 'email' => $email,
             ],
             'qr' => $this->makeQr([
-                'type' => 'ticket',
+                'type' => $ticket->type ?? 'ticket',
                 'ticket_id' => $ticket->id,
                 'ticket_instance_id' => $instance?->id,
                 'hash' => $instance?->qr_hash,

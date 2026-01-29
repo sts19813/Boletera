@@ -21,7 +21,13 @@
             {{-- IZQUIERDA: MAPA + SVG --}}
             {{-- ===================== --}}
             <div class="col-lg-8">
-                @if($lot->has_seat_mapping)
+
+                @if($lot->is_registration)
+
+                    <form id="registrationForm">
+                        @include('events.partials.registration-form')
+                    </form>
+                @elseif($lot->has_seat_mapping)
 
                     {{-- INSTRUCCIONES --}}
                     <div class="seat-instructions mb-6">
@@ -107,6 +113,7 @@
         window.projects = @json($projects);
         window.dbLotes = @json($dbLotes);
         window.idDesarrollo = @json($lot->id);
+        window.EVENT_ID = @json($lot->id);
         let redireccion = true;
     </script>
     <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
@@ -117,4 +124,16 @@
         <script src="/assets/js/ticket-selects.js"></script>
     @endif
     <script src="/assets/js/seat-map.js"></script>
+    <script>
+        window.isRegistration = @json($lot->is_registration);
+        window.registrationTicket = {
+            id: 'registration',
+            name: 'Inscripción - {{ $lot->name }}',
+            total_price: {{ $lot->price }},
+            stock: 1,
+            qty: 1,
+            svg_selector: null
+        };
+    </script>
+
 @endpush
