@@ -18,6 +18,7 @@ use App\Services\TicketBuilderService;
 use App\Models\Eventos;
 use App\Models\RegistrationInstance;
 
+
 use App\Services\RegistrationBuilderService;
 
 class PaymentController extends Controller
@@ -48,6 +49,7 @@ class PaymentController extends Controller
         }
 
         $registration = session('registration_form');
+
 
         $evento = Eventos::findOrFail($eventId);
 

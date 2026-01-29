@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-
-
     /**
      * =========================
      * ESTADO DEL CARRITO
@@ -17,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.cartState.items.push({
             id: window.registrationTicket.id,
-            event_id: window.EVENT_ID,          // 👈 CLAVE
+            event_id: window.EVENT_ID,
             name: window.registrationTicket.name,
             total_price: Number(window.registrationTicket.total_price),
             stock: 1,
@@ -48,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.cartState.items.push({
             id: ticket.id,
-            event_id: window.EVENT_ID, // 👈 clave
+            event_id: window.EVENT_ID,
             name: ticket.name,
             total_price: Number(ticket.total_price),
             stock: ticket.stock ?? 1,
@@ -129,6 +127,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // 📝 Validar inscripción
+        if (window.isRegistration) {
+            if (!validateRegistrationForm()) {
+                return; // ⛔ NO PASA
+            }
+        }
+
         let registrationData = null;
 
         if (window.isRegistration) {
@@ -142,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 new FormData(form).entries()
             );
         }
-
 
         fetch('/cart/add', {
             method: 'POST',
@@ -268,3 +272,26 @@ function updateCartUI() {
     btn.disabled = window.cartState.items.length === 0;
 }
 
+function validateRegistrationForm() {
+
+    const form = document.getElementById('registrationForm');
+    if (!form) return true;
+
+    // 🔴 Validación HTML5 nativa
+    if (!form.checkValidity()) {
+        form.reportValidity(); // muestra mensajes del navegador
+        return false;
+    }
+
+    // 📱 Validación extra de celulares
+    const phones = form.querySelectorAll('input[type="tel"]');
+    for (const phone of phones) {
+        if (phone.value.length < 10) {
+            alert('El número de celular debe tener 10 dígitos');
+            phone.focus();
+            return false;
+        }
+    }
+
+    return true; // ✅ OK
+}
