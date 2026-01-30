@@ -41,7 +41,7 @@ class WalletTestController extends Controller
                         'eventName' => [
                             'defaultValue' => [
                                 'language' => 'es-MX',
-                                'value' => 'Evento Box Azteca'
+                                'value' => 'Evento - '
                             ]
                         ],
                         'issuerName' => 'Stom Tickets',

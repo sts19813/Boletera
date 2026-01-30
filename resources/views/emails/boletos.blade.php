@@ -10,7 +10,6 @@ Preséntalos el día del evento.
 </p>
 
 <p>
-<strong>Box Azteca</strong>
 </p>
 
 </body>

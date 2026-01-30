@@ -18,7 +18,7 @@ class BoletosMail extends Mailable
     public function build()
     {
         return $this
-            ->subject('🎟️ Tus boletos – Box Azteca')
+            ->subject('🎟️ Tus boletos')
             ->view('emails.boletos')
             ->attachData(
                 $this->pdfContent,
