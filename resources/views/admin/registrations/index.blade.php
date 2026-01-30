@@ -3,6 +3,30 @@
 @section('title', 'Inscripciones')
 
 @section('content')
+
+    <style>
+        /* Botón Ver registro */
+        .btn-light-primary,
+        .btn-view-registration {
+            background-color: #7723FF !important;
+            color: #ffffff !important;
+            border-color: #7723FF !important;
+        }
+
+        .btn-light-primary:hover,
+        .btn-view-registration:hover {
+            background-color: #5f1ccc !important;
+            border-color: #5f1ccc !important;
+            color: #ffffff !important;
+        }
+
+        /* Badge jugadores */
+        .badge-light-primary {
+            background-color: #7723FF !important;
+            color: #ffffff !important;
+        }
+    </style>
+
     <div class="card card-flush">
         <div class="card-header">
             <div class="card-title">
@@ -107,38 +131,38 @@
         });
     </script>
 
-<script>
-$(function () {
+    <script>
+        $(function () {
 
-    const modal = new bootstrap.Modal(document.getElementById('registrationModal'));
+            const modal = new bootstrap.Modal(document.getElementById('registrationModal'));
 
-    $('.btn-view-registration').on('click', function () {
-        const instance = $(this).data('instance');
-        const registration = $(this).data('registration');
+            $('.btn-view-registration').on('click', function () {
+                const instance = $(this).data('instance');
+                const registration = $(this).data('registration');
 
-        $('#modalTeam').text(registration.team_name);
-        $('#modalEvent').text(instance.evento?.name ?? '—');
-        $('#modalEmail').text(instance.email);
+                $('#modalTeam').text(registration.team_name);
+                $('#modalEvent').text(instance.evento?.name ?? '—');
+                $('#modalEmail').text(instance.email);
 
-        let rows = '';
-        registration.players.forEach(p => {
-            rows += `
-                <tr>
-                    <td>${p.name}</td>
-                    <td>${p.email}</td>
-                    <td>${p.phone}</td>
-                    <td>${p.campo}</td>
-                    <td>${p.handicap}</td>
-                    <td>${p.is_captain ? 'Sí' : '—'}</td>
-                </tr>
-            `;
+                let rows = '';
+                registration.players.forEach(p => {
+                    rows += `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td>${p.email}</td>
+                        <td>${p.phone}</td>
+                        <td>${p.campo}</td>
+                        <td>${p.handicap}</td>
+                        <td>${p.is_captain ? 'Sí' : '—'}</td>
+                    </tr>
+                `;
+                });
+
+                $('#modalPlayers').html(rows);
+                modal.show();
+            });
+
         });
-
-        $('#modalPlayers').html(rows);
-        modal.show();
-    });
-
-});
-</script>
+    </script>
 
 @endpush

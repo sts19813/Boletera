@@ -28,7 +28,19 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = auth()->user();
+
+        // 🔑 Redirección por rol
+        if ($user->isInscription()) {
+            return redirect()->route('admin.registrations.index');
+        }
+
+        if ($user->isAdmin()) {
+            return redirect()->route('events.index');
+        }
+
+        // Cliente / user
+        return redirect()->route('events.index'); // o la ruta que uses como home
     }
 
     /**

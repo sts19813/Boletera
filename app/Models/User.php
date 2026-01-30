@@ -17,13 +17,14 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-   protected $fillable = [
+    protected $fillable = [
         'name',
         'email',
         'password',
         'google_id',
         'is_admin',
         'profile_photo',
+        'role',
     ];
 
     /**
@@ -50,11 +51,21 @@ class User extends Authenticatable
         ];
     }
 
-     /**
+    /**
      * Verifica si el usuario es administrador
      */
     public function isAdmin(): bool
     {
         return $this->is_admin;
+    }
+
+    public function isClient(): bool
+    {
+        return $this->role === 'user';
+    }
+
+    public function isInscription(): bool
+    {
+        return $this->role === 'inscription';
     }
 }
