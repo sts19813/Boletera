@@ -143,9 +143,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            registrationData = Object.fromEntries(
-                new FormData(form).entries()
-            );
+            registrationData = formDataToObject(form);
+
         }
 
         fetch('/cart/add', {
@@ -294,4 +293,40 @@ function validateRegistrationForm() {
     }
 
     return true; // ✅ OK
+}
+function formDataToObject(form) {
+    const data = {};
+    const formData = new FormData(form);
+
+    for (let [key, value] of formData.entries()) {
+
+        // players[0][name] → ['players','0','name']
+        const keys = key
+            .replace(/\]/g, '')
+            .split('[');
+
+        let current = data;
+
+        keys.forEach((k, i) => {
+            if (i === keys.length - 1) {
+                // último nivel
+                if (current[k] !== undefined) {
+                    // manejar arrays (checkboxes)
+                    if (!Array.isArray(current[k])) {
+                        current[k] = [current[k]];
+                    }
+                    current[k].push(value);
+                } else {
+                    current[k] = value;
+                }
+            } else {
+                if (!current[k]) {
+                    current[k] = isNaN(keys[i + 1]) ? {} : [];
+                }
+                current = current[k];
+            }
+        });
+    }
+
+    return data;
 }

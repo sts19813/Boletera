@@ -14,9 +14,8 @@ class Registration extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'event_id',
+        'registration_instance_id',
         'team_name',
-        'players',
         'subtotal',
         'commission',
         'total',

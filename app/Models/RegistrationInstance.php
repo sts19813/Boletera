@@ -24,4 +24,9 @@ class RegistrationInstance extends Model
     {
         return $this->belongsTo(Eventos::class, 'event_id');
     }
+
+    public function registration()
+    {
+        return $this->hasOne(Registration::class);
+    }
 }

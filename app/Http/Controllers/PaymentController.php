@@ -17,7 +17,8 @@ use App\Mail\BoletosMail;
 use App\Services\TicketBuilderService;
 use App\Models\Eventos;
 use App\Models\RegistrationInstance;
-
+use App\Models\Registration;
+use App\Models\Player;
 
 use App\Services\RegistrationBuilderService;
 
@@ -243,6 +244,53 @@ class PaymentController extends Controller
                     'registered_at' => $purchaseAt,
                 ]);
 
+                $registrationForm = session('registration_form');
+
+                if ($registrationForm) {
+
+                    // 🧠 Idempotencia: evitar duplicar registro
+                    $existingRegistration = Registration::where(
+                        'registration_instance_id',
+                        $instance->id
+                    )->first();
+
+                    if (!$existingRegistration) {
+
+                        $subtotal = collect($cart)->sum(
+                            fn($i) => $i['price'] * ($i['qty'] ?? 1)
+                        );
+
+                        $commission = round($subtotal * 0.05, 2);
+                        $total = $subtotal;
+
+                        // 1️⃣ REGISTRATION (EQUIPO)
+                        $registration = Registration::create([
+                            'registration_instance_id' => $instance->id,
+                            'team_name' => $registrationForm['team_name'],
+                            'subtotal' => $subtotal,
+                            'commission' => $commission,
+                            'total' => $total,
+                        ]);
+
+                        // 2️⃣ PLAYERS
+                        foreach ($registrationForm['players'] as $i => $player) {
+
+                            $registration->players()->create([
+                                'name' => $player['name'],
+                                'phone' => $player['phone'],
+                                'email' => $player['email'],
+                                'campo' => $player['campo'],
+                                'handicap' => $player['handicap'],
+                                'ghin' => $player['ghin'] ?? null,
+                                'shirt' => $player['shirt'],
+                                'cumbres' => $player['cumbres'] ?? [],
+                                'is_captain' => $i === 0,
+                            ]);
+                        }
+                    }
+                }
+
+
                 $boletos[] = $this->registrationBuilder->build(
                     $evento,
                     $instance,
@@ -254,6 +302,9 @@ class PaymentController extends Controller
             if ($existingInstances->isEmpty()) {
                 $evento->decrement('max_capacity', $qty);
             }
+
+            session()->forget('registration_form');
+
         }
 
         return $boletos;

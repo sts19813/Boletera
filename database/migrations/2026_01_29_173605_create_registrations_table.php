@@ -13,27 +13,22 @@ return new class extends Migration {
         Schema::create('registrations', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
-            // FK UUID → eventos.id (UUID)
-            $table->uuid('event_id');
-
+            $table->uuid('registration_instance_id');
             $table->string('team_name');
 
-            // JSON para jugadores
-            $table->json('players')->nullable();
-
-            // Totales
+            // totales informativos
             $table->decimal('subtotal', 10, 2);
             $table->decimal('commission', 10, 2)->default(0);
             $table->decimal('total', 10, 2);
 
             $table->timestamps();
 
-            $table
-                ->foreign('event_id')
+            $table->foreign('registration_instance_id')
                 ->references('id')
-                ->on('eventos')
+                ->on('registration_instances')
                 ->cascadeOnDelete();
         });
+
     }
 
     public function down(): void
