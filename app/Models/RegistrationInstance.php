@@ -20,6 +20,9 @@ class RegistrationInstance extends Model
         'registered_at',
     ];
 
+    protected $casts = [
+        'registered_at' => 'datetime',
+    ];
     public function evento()
     {
         return $this->belongsTo(Eventos::class, 'event_id');

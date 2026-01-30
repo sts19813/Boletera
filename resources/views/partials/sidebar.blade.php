@@ -27,7 +27,8 @@
 
                 <!--begin: iFrames / Reportes -->
                 <div class="menu-item">
-                    <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}" href="/ticket-instances">
+                    <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}"
+                        href="/ticket-instances">
                         <span class="menu-icon">
                             <i class="ki-outline ki-element-7 fs-2"></i>
                         </span>
@@ -36,6 +37,16 @@
                 </div>
                 <!--end: iFrames -->
 
+                <!--begin: Inscripciones -->
+                <div class="menu-item">
+                    <a class="menu-link {{ request()->is('registrations*') ? 'active' : '' }}" href="/registrations">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-user-square fs-2"></i>
+                        </span>
+                        <span class="menu-title">Inscripciones</span>
+                    </a>
+                </div>
+                <!--end: Inscripciones -->
                 <!--begin: CRM Naboo -->
                 <div class="menu-item menu-accordion {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
                     data-kt-menu-trigger="click">
@@ -49,7 +60,7 @@
 
                     <div class="menu-sub menu-sub-accordion">
                         <!-- Proyecto -->
-                        <div class="menu-item">
+                        <div class=" menu-item">
                             <a class="menu-link {{ request()->is('projects*') ? 'active' : '' }}" href="/projects">
                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                 <span class="menu-title">{{ __('messages.proyectos') }}</span>
@@ -87,20 +98,16 @@
                         <span class="menu-title">{{ __('messages.dashboards') }}</span>
                     </a>
                 </div>
-
-        
                 <!--begin: Bitácora -->
                 <div class="menu-item {{ auth()->user()->role === 'admin' ? '' : 'd-none' }}">
                     <a class="menu-link {{ request()->is('corte*') ? 'active' : '' }}" href="/corte">
                         <span class="menu-icon">
                             <i class="ki-outline ki-notepad fs-2"></i>
                         </span>
-                        <span class="menu-title">{{ __('messages.bitacora') }}</span>
+                        <span class=" menu-title">{{ __('messages.bitacora') }}</span>
                     </a>
                 </div>
                 <!--end: Bitácora -->
-
-           
 
                 <!--begin: Configuraciones -->
                 <div class="menu-item menu-accordion {{ auth()->user()->role === 'admin' ? '' : 'd-none' }} {{ request()->is('users*', 'connections*', 'access*') ? 'show' : '' }}"
@@ -121,8 +128,6 @@
                                 <span class="menu-title">{{ __('messages.usuarios') }}</span>
                             </a>
                         </div>
-
-                      
                     </div>
                 </div>
                 <!--end: Configuraciones -->

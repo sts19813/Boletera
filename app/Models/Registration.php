@@ -19,10 +19,10 @@ class Registration extends Model
         'subtotal',
         'commission',
         'total',
+        'event_id',
     ];
 
     protected $casts = [
-        'players' => 'array',
         'subtotal' => 'decimal:2',
         'commission' => 'decimal:2',
         'total' => 'decimal:2',

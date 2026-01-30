@@ -20,6 +20,7 @@ use App\Http\Controllers\WalletTestController;
 use App\Http\Controllers\CheckinController;
 use App\Http\Controllers\Admin\CorteController;
 use App\Http\Controllers\Admin\TicketReprintController;
+use App\Http\Controllers\Admin\RegistrationController;
 
 Route::get('/admin', function () {
     return Auth::check()
@@ -92,7 +93,7 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])
             ->name('events.destroy');
 
-        Route::delete('events/{event}/configurator',[EventosController::class, 'destroyMapping'])
+        Route::delete('events/{event}/configurator', [EventosController::class, 'destroyMapping'])
             ->name('events.configurator.destroy');
 
         Route::get('/dashboards', action: [EventosController::class, 'index'])->name('dashboards.index');
@@ -145,6 +146,10 @@ Route::middleware(['auth', AdminMiddleware::class])
 
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])
             ->name('admin.ticket_instances.reprint');
+    
+        Route::get('/registrations', [RegistrationController::class, 'index'])
+            ->name('admin.registrations.index');
+        
 
         Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])
             ->name('boletos.reprint');
