@@ -16,6 +16,7 @@
                     {{-- ============ ROL: INSCRIPTION =================== --}}
                     {{-- ================================================= --}}
                     @if(auth()->user()->isInscription())
+                    <!-- Dashboard 
 
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('dashboard*') ? 'active' : '' }}" href="/dashboard">
@@ -24,7 +25,7 @@
                                 </span>
                                 <span class="menu-title">{{ __('messages.dashboards') }}</span>
                             </a>
-                        </div>
+                        </div>-->
 
                         <!-- Inscripciones -->
                         <div class="menu-item">

@@ -300,7 +300,6 @@ function formDataToObject(form) {
 
     for (let [key, value] of formData.entries()) {
 
-        // players[0][name] → ['players','0','name']
         const keys = key
             .replace(/\]/g, '')
             .split('[');
@@ -308,21 +307,36 @@ function formDataToObject(form) {
         let current = data;
 
         keys.forEach((k, i) => {
-            if (i === keys.length - 1) {
-                // último nivel
-                if (current[k] !== undefined) {
-                    // manejar arrays (checkboxes)
-                    if (!Array.isArray(current[k])) {
-                        current[k] = [current[k]];
+
+            const isLast = i === keys.length - 1;
+            const isArrayPush = k === ''; // ← detecta []
+
+            if (isLast) {
+                if (isArrayPush) {
+                    // push directo al array
+                    if (!Array.isArray(current)) {
+                        current = [];
                     }
-                    current[k].push(value);
+                    current.push(value);
                 } else {
-                    current[k] = value;
+                    if (current[k] !== undefined) {
+                        if (!Array.isArray(current[k])) {
+                            current[k] = [current[k]];
+                        }
+                        current[k].push(value);
+                    } else {
+                        current[k] = value;
+                    }
                 }
             } else {
+                if (k === '') return;
+
                 if (!current[k]) {
-                    current[k] = isNaN(keys[i + 1]) ? {} : [];
+                    current[k] = isNaN(keys[i + 1]) && keys[i + 1] !== ''
+                        ? {}
+                        : [];
                 }
+
                 current = current[k];
             }
         });

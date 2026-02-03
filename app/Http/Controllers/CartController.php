@@ -36,7 +36,6 @@ class CartController extends Controller
         if ($request->filled('registration')) {
             session(['registration_form' => $request->registration]);
         }
-
         /**
          * =========================
          * CARRITO COMPLETO (NORMALIZADO)
