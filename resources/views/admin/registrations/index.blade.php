@@ -27,11 +27,17 @@
         }
     </style>
 
+
+
     <div class="card card-flush">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <div class="card-title">
-                <h3 class="fw-bold">Inscripciones</h3>
+                <h3 class="fw-bold mb-0">Inscripciones</h3>
             </div>
+
+            <a href="{{ route('admin.registrations.export') }}" class="btn btn-sm btn-success">
+                Exportar Excel
+            </a>
         </div>
 
         <div class="card-body">
@@ -107,6 +113,9 @@
                                 <th>Celular</th>
                                 <th>Campo</th>
                                 <th>Handicap</th>
+                                <th>GHIN</th>
+                                <th>Playera</th>
+                                <th>Relación Cumbres</th>
                                 <th>Capitán</th>
                             </tr>
                         </thead>
@@ -151,17 +160,26 @@
                 $('#modalEmail').text(instance.email);
 
                 let rows = '';
+
                 registration.players.forEach(p => {
+
+                    const cumbres = (p.cumbres && p.cumbres.length)
+                        ? p.cumbres.join(', ')
+                        : '—';
+
                     rows += `
-                        <tr>
-                            <td>${p.name}</td>
-                            <td>${p.email}</td>
-                            <td>${p.phone}</td>
-                            <td>${p.campo}</td>
-                            <td>${p.handicap}</td>
-                            <td>${p.is_captain ? 'Sí' : '—'}</td>
-                        </tr>
-                    `;
+                                            <tr>
+                                                <td>${p.name}</td>
+                                                <td>${p.email}</td>
+                                                <td>${p.phone}</td>
+                                                <td>${p.campo}</td>
+                                                <td>${p.handicap}</td>
+                                                <td>${p.ghin ?? '—'}</td>
+                                                <td>${p.shirt}</td>
+                                                <td>${cumbres}</td>
+                                                <td>${p.is_captain ? 'Sí' : '—'}</td>
+                                            </tr>
+                                        `;
                 });
 
                 $('#modalPlayers').html(rows);

@@ -108,7 +108,7 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Número GHIN</label>
+                    <label class="form-label required">Número GHIN</label>
                     <input type="text"
                            class="form-control form-control-solid"
                            name="players[{{ $i }}][ghin]"
