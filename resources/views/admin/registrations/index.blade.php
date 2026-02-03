@@ -62,14 +62,20 @@
                             <td>{{ $instance->registered_at?->format('d/m/Y H:i') ?? '—' }}</td>
                             <td class="text-end">
                                 @if($registration)
-                                    <button class="btn btn-sm btn-light-primary btn-view-registration"
+                                    <button class="btn btn-sm btn-light-primary btn-view-registration me-2"
                                         data-instance='@json($instance)' data-registration='@json($registration)'>
                                         Ver registro
                                     </button>
+
+                                    <a target="_blank" href="{{ route('admin.registrations.reprint', $instance) }}"
+                                        class="btn btn-sm btn-light-primary">
+                                        Reimprimir
+                                    </a>
                                 @else
                                     —
                                 @endif
                             </td>
+
                         </tr>
                     @endforeach
                 </tbody>
@@ -147,15 +153,15 @@
                 let rows = '';
                 registration.players.forEach(p => {
                     rows += `
-                    <tr>
-                        <td>${p.name}</td>
-                        <td>${p.email}</td>
-                        <td>${p.phone}</td>
-                        <td>${p.campo}</td>
-                        <td>${p.handicap}</td>
-                        <td>${p.is_captain ? 'Sí' : '—'}</td>
-                    </tr>
-                `;
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${p.email}</td>
+                            <td>${p.phone}</td>
+                            <td>${p.campo}</td>
+                            <td>${p.handicap}</td>
+                            <td>${p.is_captain ? 'Sí' : '—'}</td>
+                        </tr>
+                    `;
                 });
 
                 $('#modalPlayers').html(rows);

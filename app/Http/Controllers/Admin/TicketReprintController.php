@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TicketInstance;
+use App\Models\RegistrationInstance;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use App\Services\TicketBuilderService;
 use App\Services\TicketPdfService;
+use App\Services\RegistrationBuilderService;
 
 class TicketReprintController extends Controller
 {
@@ -43,5 +45,27 @@ class TicketReprintController extends Controller
         ])
             ->setPaper([0, 0, 400, 700])
             ->stream("boleto-{$instance->reference}.pdf");
+    }
+
+
+    public function reprintInscription(
+        RegistrationInstance $instance,
+        RegistrationBuilderService $builder
+    ) {
+        $evento = $instance->evento;
+        $email = $instance->email ?? 'taquilla@local';
+
+        $registro = $builder->build(
+            evento: $evento,
+            instance: $instance,
+            email: $email
+        );
+
+        return Pdf::loadView('pdf.boletos', [
+            'boletos' => [$registro],
+            'email' => $email,
+        ])
+            ->setPaper([0, 0, 400, 700])
+            ->stream("inscripcion-{$instance->id}.pdf");
     }
 }

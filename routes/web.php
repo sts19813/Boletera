@@ -146,10 +146,10 @@ Route::middleware(['auth', AdminMiddleware::class])
 
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])
             ->name('admin.ticket_instances.reprint');
-    
+        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])
+            ->name('admin.registrations.reprint');
         Route::get('/registrations', [RegistrationController::class, 'index'])
             ->name('admin.registrations.index');
-        
 
         Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])
             ->name('boletos.reprint');
