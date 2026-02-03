@@ -1,111 +1,55 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
-
-use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Facades\Socialite;
-use App\Models\User;
 use App\Http\Middleware\AdminMiddleware;
-use App\Http\Controllers\EventosController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\CorteController;
+use App\Http\Controllers\Admin\TicketReprintController;
+use App\Http\Controllers\Admin\RegistrationController;
 use App\Http\Controllers\View\ProjectViewController;
 use App\Http\Controllers\View\PhaseViewController;
 use App\Http\Controllers\View\StageViewController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\EventosController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TicketResendController;
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\TaquillaController;
 use App\Http\Controllers\WalletTestController;
 use App\Http\Controllers\CheckinController;
-use App\Http\Controllers\Admin\CorteController;
-use App\Http\Controllers\Admin\TicketReprintController;
-use App\Http\Controllers\Admin\RegistrationController;
-
-Route::get('/admin', function () {
-    return Auth::check()
-        ? redirect()->route('events.index')
-        : view('login');
-});
+use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\UnauthorizedController;
+use App\Http\Controllers\LocaleController;
 
 // =========================
 // Autenticación con Google
 // =========================
-Route::get('/google-auth/redirect', function () {
-    return Socialite::driver('google')->redirect();
-});
-
-Route::get('/google-auth/callback', function () {
-    $user_google = Socialite::driver('google')
-        ->stateless()
-        ->setHttpClient(new \GuzzleHttp\Client(['verify' => false]))
-        ->user();
-
-    $user = User::updateOrCreate(
-        ['google_id' => $user_google->id],
-        [
-            'name' => $user_google->name,
-            'email' => $user_google->email,
-        ]
-    );
-
-    Auth::login($user);
-
-    return redirect()->intended('/');
-});
-
-
-Route::get('/unauthorized', function () {
-    return view('unauthorized'); // <-- aquí apunta tu blade
-})->name('unauthorized');
-
-Route::get('/lang/{lang}', function ($lang) {
-    session(['locale' => $lang]);
-    return back();
-})->name('lang.switch');
-
+Route::get('/admin', [AdminController::class, 'index'])->name('admin');
+Route::get('/google-auth/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+Route::get('/google-auth/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+Route::get('/unauthorized', [UnauthorizedController::class, 'index'])->name('unauthorized');
+Route::get('/lang/{lang}', [LocaleController::class, 'switch'])->name('lang.switch');
 
 // =========================
 // Rutas del panel admin
 // =========================
 Route::middleware(['auth', AdminMiddleware::class])
     ->group(function () {
-
-
         // =========================
         // CRUD Eventos
         // =========================
-        Route::get('/events/create', [EventosController::class, 'create'])
-            ->name('events.create');
-
-        Route::get('/events', [EventosController::class, 'index'])
-            ->name('events.index');
-
-        Route::post('/events', [EventosController::class, 'store'])
-            ->name('events.store');
-
-        Route::get('/events/{event}/edit', [EventosController::class, 'edit'])
-            ->name('events.edit');
-
-        Route::put('/events/{event}', [EventosController::class, 'update'])
-            ->name('events.update');
-
-        Route::delete('/events/{event}', [EventosController::class, 'destroy'])
-            ->name('events.destroy');
-
-        Route::delete('events/{event}/configurator', [EventosController::class, 'destroyMapping'])
-            ->name('events.configurator.destroy');
+        Route::get('/events/create', [EventosController::class, 'create'])->name('events.create');
+        Route::get('/events', [EventosController::class, 'index'])->name('events.index');
+        Route::post('/events', [EventosController::class, 'store'])->name('events.store');
+        Route::get('/events/{event}/edit', [EventosController::class, 'edit'])->name('events.edit');
+        Route::put('/events/{event}', [EventosController::class, 'update'])->name('events.update');
+        Route::delete('/events/{event}', [EventosController::class, 'destroy'])->name('events.destroy');
+        Route::delete('/events/{event}/configurator', [EventosController::class, 'destroyMapping'])->name('events.configurator.destroy');
 
         Route::get('/dashboards', action: [EventosController::class, 'index'])->name('dashboards.index');
-
-        Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])
-            ->name('events.configurator');
-
-        Route::post('/evets/fetch', [EventosController::class, 'fetch'])
-            ->name('events.fetch');
-
-        Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])
-            ->name('eventsSettings.store');
+        Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])->name('events.configurator');
+        Route::post('/evets/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
+        Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
 
         //perfil
         Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
@@ -119,11 +63,8 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/stages', [StageViewController::class, 'index'])->name('stages.index');
         Route::get('/tickets', [TicketViewController::class, 'index'])->name('tickets.index');
 
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('admin.dashboard');
-
-        Route::get('/dashboard/data', [DashboardController::class, 'data'])
-            ->name('admin.dashboard.data');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('admin.dashboard.data');
 
         Route::get('/corte', [CorteController::class, 'index'])->name('admin.corte.index');
         Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])->name('admin.corte.export.general');
@@ -133,40 +74,23 @@ Route::middleware(['auth', AdminMiddleware::class])
 
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
 
-        Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])
-            ->name('admin.dashboard.boletos');
+        Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
         Route::get('/checkin', [CheckinController::class, 'index']);
         Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
+        Route::get('/checkin/stats', [CheckinController::class, 'stats'])->name('checkin.stats');
+        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])->name('admin.ticket_instances.index');
 
-        Route::get('/checkin/stats', [CheckinController::class, 'stats'])
-            ->name('checkin.stats');
+        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])->name('admin.ticket_instances.reprint');
+        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
+        Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
 
-        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])
-            ->name('admin.ticket_instances.index');
-
-        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])
-            ->name('admin.ticket_instances.reprint');
-        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])
-            ->name('admin.registrations.reprint');
-        Route::get('/registrations', [RegistrationController::class, 'index'])
-            ->name('admin.registrations.index');
-
-        Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])
-            ->name('boletos.reprint');
+        Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])->name('boletos.reprint');
     });
 
-
 Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form');
-
-Route::post('/pago/intent', [PaymentController::class, 'crearIntent'])
-    ->name('pago.intent');
-
-Route::get('/pago/success', [PaymentController::class, 'success'])
-    ->name('pago.success');
-
-Route::get('/pago/cancel', [PaymentController::class, 'cancel'])
-    ->name('pago.cancel');
-
+Route::post('/pago/intent', [PaymentController::class, 'crearIntent'])->name('pago.intent');
+Route::get('/pago/success', [PaymentController::class, 'success'])->name('pago.success');
+Route::get('/pago/cancel', [PaymentController::class, 'cancel'])->name('pago.cancel');
 
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'get'])->name('cart.get');
 Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->name('cart.add');
@@ -174,17 +98,10 @@ Route::post('/cart/remove', [App\Http\Controllers\CartController::class, 'remove
 Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
 
 Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
+Route::get('/event/{lot}/', [EventosController::class, 'iframe'])->name('eventPublic.index');
+Route::get('/wallet/{instance}', [WalletTestController::class, 'testWallet'])->name('wallet.add');
+Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])->name('boletos.reprint');
 
-Route::get('/event/{lot}/', [EventosController::class, 'iframe'])
-    ->name('eventPublic.index');
-
-Route::get(
-    '/wallet/{instance}',
-    [WalletTestController::class, 'testWallet']
-)->name('wallet.add');
-
-Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])
-    ->name('boletos.reprint');
 // =========================
 // Auth Routes
 // =========================
