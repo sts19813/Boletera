@@ -168,18 +168,18 @@
                         : '—';
 
                     rows += `
-                                            <tr>
-                                                <td>${p.name}</td>
-                                                <td>${p.email}</td>
-                                                <td>${p.phone}</td>
-                                                <td>${p.campo}</td>
-                                                <td>${p.handicap}</td>
-                                                <td>${p.ghin ?? '—'}</td>
-                                                <td>${p.shirt}</td>
-                                                <td>${cumbres}</td>
-                                                <td>${p.is_captain ? 'Sí' : '—'}</td>
-                                            </tr>
-                                        `;
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${p.email}</td>
+                            <td>${p.phone}</td>
+                            <td>${p.campo}</td>
+                            <td>${p.handicap}</td>
+                            <td>${p.ghin ?? '—'}</td>
+                            <td>${p.shirt}</td>
+                            <td>${cumbres}</td>
+                            <td>${p.is_captain ? 'Sí' : '—'}</td>
+                        </tr>
+                    `;
                 });
 
                 $('#modalPlayers').html(rows);

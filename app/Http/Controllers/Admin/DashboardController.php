@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\TicketInstance;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\RegistrationInstance;
 
 class DashboardController extends Controller
 {
@@ -26,10 +27,16 @@ class DashboardController extends Controller
         // ================================
         // QUERY BASE (CON FILTRO)
         // ================================
-        $query = TicketInstance::query();
+        $ticketQuery = TicketInstance::query();
+        $registrationQuery = RegistrationInstance::query();
 
         if ($request->from && $request->to) {
-            $query->whereBetween('ticket_instances.purchased_at', [
+            $ticketQuery->whereBetween('ticket_instances.purchased_at', [
+                $request->from . ' 00:00:00',
+                $request->to . ' 23:59:59'
+            ]);
+
+            $registrationQuery->whereBetween('registered_at', [
                 $request->from . ' 00:00:00',
                 $request->to . ' 23:59:59'
             ]);
@@ -38,65 +45,128 @@ class DashboardController extends Controller
         // ================================
         // KPIs
         // ================================
-        $totalBoletos = (clone $query)->count();
+        $totalBoletos =
+            (clone $ticketQuery)->count() +
+            (clone $registrationQuery)->count();
 
-        $ingresosTotales = (clone $query)
-            ->join('tickets', 'ticket_instances.ticket_id', '=', 'tickets.id')
+        // 💰 INGRESOS (DESDE INSTANCIAS)
+        $ingresosTickets = (clone $ticketQuery)
             ->where('ticket_instances.email', '!=', 'CORTESIA')
-            ->sum('tickets.total_price');
+            ->sum('price');
 
-        $ventasHoy = (clone $query)
-            ->whereDate('ticket_instances.purchased_at', Carbon::today())
-            ->count();
+        $ingresosInscripciones = (clone $registrationQuery)->sum('price');
 
-        $boletosCortesia = (clone $query)
-            ->where('ticket_instances.email', 'CORTESIA')
-            ->count();
+        $ingresosTotales = $ingresosTickets + $ingresosInscripciones;
 
-        $ultimaVenta = (clone $query)
+        $ventasHoy =
+            (clone $ticketQuery)
+                ->whereDate('ticket_instances.purchased_at', Carbon::today())
+                ->count()
+            +
+            (clone $registrationQuery)
+                ->whereDate('registered_at', Carbon::today())
+                ->count();
+
+        $boletosCortesia =
+            (clone $ticketQuery)
+                ->where('ticket_instances.email', 'CORTESIA')
+                ->count()
+            +
+            (clone $registrationQuery)
+                ->where('price', 0)
+                ->count();
+
+        // ================================
+        // ÚLTIMA VENTA (GLOBAL)
+        // ================================
+        $ultimaVentaTicket = (clone $ticketQuery)
             ->latest('ticket_instances.purchased_at')
             ->first();
 
+        $ultimaInscripcion = (clone $registrationQuery)
+            ->latest('registered_at')
+            ->first();
+
+        $ultimaVentaFecha = collect([
+            $ultimaVentaTicket?->purchased_at,
+            $ultimaInscripcion?->registered_at,
+        ])->filter()->max();
+
         // ================================
-        // ÚLTIMAS 5 VENTAS
+        // ÚLTIMAS 5 VENTAS (MEZCLADAS)
         // ================================
-        $ultimasVentas = (clone $query)
+        $ultimosTickets = (clone $ticketQuery)
             ->with('ticket')
             ->latest('ticket_instances.purchased_at')
             ->take(5)
             ->get()
-            ->map(function ($item) {
-                return [
-                    'email' => $item->email,
-                    'ticket' => $item->ticket->name ?? '-',
-                    'precio' => $item->ticket->total_price ?? 0,
-                    'fecha' => $item->purchased_at->format('d/m/Y H:i'),
-                    'payment_intent' => $item->payment_intent_id,
-                ];
-            });
+            ->map(fn($item) => [
+                'email' => $item->email,
+                'concepto' => $item->ticket->name ?? 'Boleto',
+                'precio' => $item->price, // ✅ desde instancia
+                'fecha' => $item->purchased_at,
+                'tipo' => 'ticket',
+            ]);
+
+        $ultimasInscripciones = (clone $registrationQuery)
+            ->with('evento')
+            ->latest('registered_at')
+            ->take(5)
+            ->get()
+            ->map(fn($item) => [
+                'email' => $item->email,
+                'concepto' => $item->evento->name ?? 'Inscripción',
+                'precio' => $item->price, // ✅ desde instancia
+                'fecha' => $item->registered_at,
+                'tipo' => 'inscripcion',
+            ]);
+
+        $ultimasVentas = collect($ultimosTickets)
+            ->merge($ultimasInscripciones)
+            ->sortByDesc('fecha')
+            ->take(5)
+            ->map(fn($item) => [
+                ...$item,
+                'fecha' => $item['fecha']->format('d/m/Y H:i'),
+            ])
+            ->values();
 
         // ================================
-        // GRÁFICA: VENTAS POR DÍA
+        // GRÁFICA: VENTAS POR DÍA (SUMADAS)
         // ================================
-        $chartData = (clone $query)
+        $chartTickets = (clone $ticketQuery)
             ->select(
-                DB::raw('DATE(ticket_instances.purchased_at) as date'),
-                DB::raw("SUM(CASE WHEN ticket_instances.email = 'CORTESIA' THEN 1 ELSE 0 END) as cortesia"),
-                DB::raw("SUM(CASE WHEN ticket_instances.email != 'CORTESIA' THEN 1 ELSE 0 END) as pagados"),
+                DB::raw('DATE(purchased_at) as date'),
+                DB::raw("SUM(CASE WHEN email = 'CORTESIA' THEN 1 ELSE 0 END) as cortesia"),
+                DB::raw("SUM(CASE WHEN email != 'CORTESIA' THEN 1 ELSE 0 END) as pagados"),
                 DB::raw("COUNT(*) as total")
             )
             ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->map(function ($row) {
-                return [
-                    'date' => $row->date,
-                    'pagados' => (int) $row->pagados,
-                    'cortesia' => (int) $row->cortesia,
-                    'total' => (int) $row->total,
-                    'isToday' => $row->date === now()->toDateString(),
-                ];
-            });
+            ->get();
+
+        $chartInscripciones = (clone $registrationQuery)
+            ->select(
+                DB::raw('DATE(registered_at) as date'),
+                DB::raw("SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as cortesia"),
+                DB::raw("SUM(CASE WHEN price > 0 THEN 1 ELSE 0 END) as pagados"),
+                DB::raw("COUNT(*) as total")
+            )
+            ->groupBy('date')
+            ->get();
+
+        $chartData = $chartTickets
+            ->concat($chartInscripciones)
+            ->groupBy('date')
+            ->map(fn($rows) => [
+                'date' => $rows->first()->date,
+                'pagados' => (int) $rows->sum('pagados'),
+                'cortesia' => (int) $rows->sum('cortesia'),
+                'total' => (int) $rows->sum('total'),
+                'isToday' => $rows->first()->date === now()->toDateString(),
+            ])
+            ->values()
+            ->sortBy('date')
+            ->values();
 
         // ================================
         // RESPONSE
@@ -106,8 +176,8 @@ class DashboardController extends Controller
                 'total_boletos' => $totalBoletos,
                 'ingresos' => number_format($ingresosTotales, 2),
                 'ventas_hoy' => $ventasHoy,
-                'ultima_venta' => $ultimaVenta
-                    ? $ultimaVenta->purchased_at->format('d/m/Y H:i')
+                'ultima_venta' => $ultimaVentaFecha
+                    ? Carbon::parse($ultimaVentaFecha)->format('d/m/Y H:i')
                     : '-',
                 'cortesia' => $boletosCortesia,
             ],
@@ -116,26 +186,52 @@ class DashboardController extends Controller
         ]);
     }
 
+
     /**
      * Listado completo de boletos vendidos
      */
     public function boletos()
     {
         $boletos = TicketInstance::with('ticket')
-            ->orderBy('purchased_at', 'desc')
             ->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
-                    'boleto' => $item->ticket->name ?? '-',
+                    'tipo' => 'boleto',
+                    'boleto' => $item->ticket->name ?? 'Boleto',
                     'email' => $item->email ?? 'Taquilla',
                     'metodo' => $item->payment_method,
                     'referencia' => $item->reference,
-                    'fecha' => $item->purchased_at->format('d/m/Y H:i:s'),
+                    'precio' => $item->price,
+                    'fecha' => $item->purchased_at,
                 ];
             });
 
-        return response()->json($boletos);
+        $inscripciones = RegistrationInstance::with('evento')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'tipo' => 'inscripcion',
+                    'boleto' => $item->evento->name ?? 'Inscripción',
+                    'email' => $item->email,
+                    'metodo' => 'card',
+                    'referencia' =>  '',
+                    'precio' => $item->price,
+                    'fecha' => $item->registered_at,
+                ];
+            });
+
+        $data = $boletos
+            ->concat($inscripciones)
+            ->sortByDesc('fecha')
+            ->values()
+            ->map(function ($item) {
+                $item['fecha'] = $item['fecha']->format('d/m/Y H:i:s');
+                return $item;
+            });
+
+        return response()->json($data);
     }
 
 }

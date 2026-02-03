@@ -81,6 +81,13 @@ class PaymentController extends Controller
      */
     public function crearIntent(Request $request)
     {
+
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'celular' => 'required|string|max:20',
+            'email' => 'required|email',
+        ]);
+
         $carrito = session('svg_cart', []);
 
         if (empty($carrito)) {
@@ -105,6 +112,10 @@ class PaymentController extends Controller
                 'subtotal' => $subtotal,
                 'comision' => $comision,
                 'comision_aplicada' => false,
+
+                'nombre' => $request->nombre,
+                'celular' => $request->celular,
+                'email' => $request->email,
             ],
         ]);
 
@@ -119,7 +130,7 @@ class PaymentController extends Controller
     public function success(Request $request)
     {
         $paymentIntentId = $request->query('pi');
-        $email = $request->query('email');
+
 
         if (!$paymentIntentId) {
             abort(400, 'Pago inválido');
@@ -127,7 +138,7 @@ class PaymentController extends Controller
 
         Stripe::setApiKey(config('services.stripe.secret'));
         $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
-
+        $email = $intent->metadata->email ?? null;
         $cart = json_decode($intent->metadata->cart ?? '[]', true);
 
         if (empty($cart)) {
@@ -144,16 +155,14 @@ class PaymentController extends Controller
 
             // 📝 INSCRIPCIONES
             $boletos = $this->generateRegistrationsFromPaymentIntent(
-                $paymentIntentId,
-                $email
+                $paymentIntentId
             );
 
         } else {
 
             // 🎟️ TICKETS (flujo existente)
             $boletos = $this->generateBoletosFromPaymentIntent(
-                $paymentIntentId,
-                $email
+                $paymentIntentId
             );
         }
 
@@ -173,12 +182,15 @@ class PaymentController extends Controller
 
     private function generateRegistrationsFromPaymentIntent(
         string $paymentIntentId,
-        string $email
     ): array {
 
         Stripe::setApiKey(config('services.stripe.secret'));
 
         $intent = PaymentIntent::retrieve($paymentIntentId);
+
+        $email = $intent->metadata->email ?? null;
+        $nombre = $intent->metadata->nombre ?? null;
+        $celular = $intent->metadata->celular ?? null;
 
         if ($intent->status !== 'succeeded') {
             abort(403, 'Pago no confirmado');
@@ -239,9 +251,12 @@ class PaymentController extends Controller
                 $instance = RegistrationInstance::create([
                     'event_id' => $evento->id,
                     'email' => $email,
+                    'nombre' => $nombre,
+                    'celular' => $celular,
                     'payment_intent_id' => $paymentIntentId,
                     'qr_hash' => (string) Str::uuid(),
                     'registered_at' => $purchaseAt,
+                    'price' => $evento['price'] ?? 0,
                 ]);
 
                 $registrationForm = session('registration_form');
@@ -321,7 +336,7 @@ class PaymentController extends Controller
 
 
 
-    private function generateBoletosFromPaymentIntent(string $paymentIntentId, string $email): array
+    private function generateBoletosFromPaymentIntent(string $paymentIntentId): array
     {
         Stripe::setApiKey(config('services.stripe.secret'));
 
@@ -337,13 +352,19 @@ class PaymentController extends Controller
             abort(400, 'Carrito vacío');
         }
 
+        $email = $intent->metadata->email ?? null;
+        $nombre = $intent->metadata->nombre ?? null;
+        $celular = $intent->metadata->celular ?? null;
+
         $purchaseAt = now();
         $purchaseAtString = $purchaseAt->toDateTimeString();
 
         $boletos = [];
 
-        foreach ($cart as $item) {
+        
 
+        foreach ($cart as $item) {
+            $evento = Eventos::findOrFail($item['event_id']);
             $ticket = Ticket::findOrFail($item['id']);
             $qty = max(1, (int) ($item['qty'] ?? 1));
 
@@ -365,12 +386,16 @@ class PaymentController extends Controller
                 }
 
                 $instance = TicketInstance::create([
+                    'event_id' => $evento->id,
                     'ticket_id' => $ticket->id,
                     'email' => $email,
+                    'nombre' => $nombre,
+                    'celular' => $celular,
                     'purchased_at' => $purchaseAt,
                     'qr_hash' => (string) Str::uuid(),
                     'payment_intent_id' => $paymentIntentId,
                     'reference' => $paymentIntentId,
+                    'price' => $ticket->total_price,
                     'sale_channel' => 'stripe',
                     'payment_method' => 'card',
                 ]);
@@ -419,10 +444,13 @@ class PaymentController extends Controller
                 $instance = TicketInstance::create([
                     'ticket_id' => $ticket->id,
                     'email' => $email,
+                    'nombre' => $nombre,
+                    'celular' => $celular,
                     'purchased_at' => $purchaseAt,
                     'qr_hash' => (string) Str::uuid(),
                     'payment_intent_id' => $paymentIntentId,
                     'reference' => $paymentIntentId,
+                    'price' => $ticket->total_price,
                     'sale_channel' => 'stripe',
                     'payment_method' => 'card',
                 ]);

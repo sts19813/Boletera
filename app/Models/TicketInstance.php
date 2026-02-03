@@ -14,13 +14,16 @@ class TicketInstance extends Model
      protected $fillable = [
         'ticket_id',
         'email',
+        'nombre',
+        'celular',
         'purchased_at',
         'qr_hash',
         'payment_intent_id',
         'reference',
         'sale_channel',
         'payment_method',
-        'used_at'
+        'used_at',
+        'price',
     ];
 
     protected $casts = [

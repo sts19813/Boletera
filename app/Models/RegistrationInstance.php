@@ -18,6 +18,9 @@ class RegistrationInstance extends Model
         'payment_intent_id',
         'qr_hash',
         'registered_at',
+        'price',
+        'nombre',
+        'celular',
     ];
 
     protected $casts = [

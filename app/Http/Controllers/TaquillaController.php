@@ -71,6 +71,7 @@ class TaquillaController extends Controller
                     'qr_hash' => (string) Str::uuid(),
                     'reference' => $reference,
                     'sale_channel' => 'taquilla',
+                    'price' => $ticket->total_price,
                     'payment_method' => $paymentMethod, // cash | card
                 ]);
 
