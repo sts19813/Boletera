@@ -11,8 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (window.isRegistration && window.registrationTicket) {
 
-        debugger
-
         window.cartState.items.push({
             id: window.registrationTicket.id,
             event_id: window.EVENT_ID,
@@ -291,6 +289,21 @@ function validateRegistrationForm() {
             return false;
         }
     }
+
+    // 🟣 Validación Relación Cumbres (AL MENOS UNO POR JUGADOR)
+    const groups = form.querySelectorAll('.cumbres-group');
+
+    for (const group of groups) {
+        const checkboxes = group.querySelectorAll('input[type="checkbox"]');
+        const hasChecked = Array.from(checkboxes).some(cb => cb.checked);
+
+        if (!hasChecked) {
+            toastr.error('Debes seleccionar al menos una opción en "Relación con Cumbres" para cada jugador.');
+            group.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        }
+    }
+
 
     return true; // ✅ OK
 }
