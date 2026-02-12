@@ -51,6 +51,11 @@
                             value="padre">
                         <span class="form-check-label">Padre de familia</span>
                     </label>
+                    <label class="form-check form-check-custom form-check-solid">
+                        <input class="form-check-input cumbres-checkbox" type="checkbox" name="players[{{ $i }}][cumbres][]"
+                            value="invitado">
+                        <span class="form-check-label">Invitado</span>
+                    </label>    
                 </div>
 
                 <div class="text-danger small mt-2 d-none cumbres-error">
