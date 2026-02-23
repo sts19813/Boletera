@@ -361,7 +361,6 @@ class PaymentController extends Controller
 
         $boletos = [];
 
-        
 
         foreach ($cart as $item) {
             $evento = Eventos::findOrFail($item['event_id']);
@@ -380,6 +379,7 @@ class PaymentController extends Controller
                         $instance,
                         $email,
                         $purchaseAtString,
+                        $evento,
                         $paymentIntentId
                     );
                     continue;
@@ -412,6 +412,7 @@ class PaymentController extends Controller
                     $instance,
                     $email,
                     $purchaseAtString,
+                    $evento,
                     $paymentIntentId
                 );
 
@@ -432,6 +433,7 @@ class PaymentController extends Controller
                         $instance,
                         $email,
                         $purchaseAtString,
+                        $evento,
                         $paymentIntentId
                     );
                 }
@@ -443,6 +445,7 @@ class PaymentController extends Controller
 
                 $instance = TicketInstance::create([
                     'ticket_id' => $ticket->id,
+                    'event_id' => $evento->id,
                     'email' => $email,
                     'nombre' => $nombre,
                     'celular' => $celular,
@@ -460,6 +463,7 @@ class PaymentController extends Controller
                     $instance,
                     $email,
                     $purchaseAtString,
+                    $evento,
                     $paymentIntentId
                 );
             }
@@ -487,16 +491,20 @@ class PaymentController extends Controller
             abort(400, 'Referencia requerida');
         }
 
-        // Buscar boletos EXISTENTES
+        // Buscar boletos existentes
         $instances = TicketInstance::where(function ($q) use ($reference) {
             $q->where('payment_intent_id', $reference)
                 ->orWhere('reference', $reference);
         })->get();
 
-
         if ($instances->isEmpty()) {
             abort(404, 'Boletos no encontrados');
         }
+
+        // Tomamos el primero (todos deberían ser del mismo evento)
+        $instance = $instances->first();
+
+        $evento = Eventos::findOrFail($instance->event_id);
 
         $boletos = $instances->map(
             fn($instance) =>
@@ -505,6 +513,7 @@ class PaymentController extends Controller
                 $instance,
                 $email,
                 $instance->purchased_at,
+                $evento,
                 $instance->payment_intent_id ?? $instance->reference
             )
         )->toArray();

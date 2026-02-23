@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use App\Models\Ticket;
+use App\Models\Eventos;
 use App\Models\TicketInstance;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
@@ -20,7 +21,8 @@ class TaquillaController extends Controller
 {
     public function __construct(
         private TicketBuilderService $ticketBuilder
-    ) {}
+    ) {
+    }
     public function index()
     {
         $tickets = Ticket::where('status', 'available')->get();
@@ -33,6 +35,7 @@ class TaquillaController extends Controller
             'cart' => 'required|array|min:1',
             'email' => 'nullable|string',
             'payment_method' => 'required|in:cash,card,cortesia',
+            'event_id' => 'required|string',
         ]);
 
         // Método recibido desde frontend
@@ -62,10 +65,15 @@ class TaquillaController extends Controller
                 abort(409, 'Stock insuficiente');
             }
 
+            $evento = Eventos::findOrFail($request->input('event_id'));
+
+
             for ($i = 0; $i < $qty; $i++) {
 
                 $instance = TicketInstance::create([
                     'ticket_id' => $ticket->id,
+                    'event_id' => $request->input('event_id'),
+                    'nombre' => 'taquilla',
                     'email' => $email,
                     'purchased_at' => now(),
                     'qr_hash' => (string) Str::uuid(),
@@ -76,11 +84,12 @@ class TaquillaController extends Controller
                 ]);
 
                 $boletos[] = $this->ticketBuilder->build(
-                    $ticket,
-                    $instance,
-                    $instance->email,
-                    $instance->purchased_at,
-                    $reference
+                    ticket: $ticket,
+                    instance: $instance,
+                    email: $instance->email,
+                    purchasedAt: $instance->purchased_at,
+                    event: $evento,
+                    reference: $reference
                 );
             }
 
@@ -101,12 +110,15 @@ class TaquillaController extends Controller
 
     public function pdf(TicketInstance $instance)
     {
+        $evento = Eventos::findOrFail($instance->event_id);
+
         $boleto = $this->ticketBuilder->build(
-            $instance->ticket,
-            $instance,
-            $instance->email ?? 'taquilla@local',
-            $instance->purchased_at,
-            $instance->reference
+            ticket: $instance->ticket,
+            instance: $instance,
+            email: $instance->email ?? 'taquilla@local',
+            purchasedAt: $instance->purchased_at,
+            event: $evento,
+            reference: $instance->reference
         );
 
         return Pdf::loadView('pdf.boletos', [

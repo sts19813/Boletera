@@ -109,7 +109,7 @@ class EventosController extends Controller
             'redirect_previous' => 'nullable|string|max:255',
 
             'svg_image' => 'nullable|mimes:svg,xml',
-            'png_image' => 'nullable|image|mimes:png,jpg,jpeg',
+            'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
         ]);
 
         DB::beginTransaction();
@@ -359,7 +359,7 @@ class EventosController extends Controller
             'redirect_previous' => 'nullable|string|max:255',
 
             'svg_image' => 'nullable|mimes:svg,xml',
-            'png_image' => 'nullable|image|mimes:png,jpg,jpeg',
+            'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
         ]);
 
         DB::beginTransaction();

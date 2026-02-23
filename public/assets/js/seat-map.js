@@ -53,7 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     cart: window.cartState.items,
                     cortesia: esCortesia,
-                    email,
+                    email:email,
+                    event_id:window.EVENT_ID,
                     payment_method: metodoPago
                 })
             })

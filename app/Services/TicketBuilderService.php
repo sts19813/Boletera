@@ -3,9 +3,8 @@
 namespace App\Services;
 
 use App\Models\Ticket;
+use App\Models\Eventos;
 use App\Models\TicketInstance;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
 use Carbon\Carbon;
 
 
@@ -20,15 +19,16 @@ class TicketBuilderService
         TicketInstance $instance,
         string $email,
         $purchasedAt,
+        Eventos $event,
         string $reference
     ): array {
         return [
             'event' => [
-                'name' => $ticket->event->name ?? 'Evento - Box Azteca',
-                'date' => '17 de Enero de 2026',
-                'time' => '6:00 PM',
-                'venue' => 'Centro de Convenciones Siglo XXI',
-                'organizer' => 'Maxboxing',
+                'name' => $event->name ?? 'Evento - ',
+                'date' => optional($event->event_date)->format('d/m/Y'),
+                'time' => $event->hora_inicio,
+                'venue' => $event->location,
+                'organizer' => '',
             ],
             'ticket' => [
                 'name' => $ticket->name,

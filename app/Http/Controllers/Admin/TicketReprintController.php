@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Services\TicketBuilderService;
 use App\Services\TicketPdfService;
 use App\Services\RegistrationBuilderService;
+use App\Models\Eventos;
 
 class TicketReprintController extends Controller
 {
@@ -30,12 +31,14 @@ class TicketReprintController extends Controller
     ) {
         $ticket = $instance->ticket;
         $email = $instance->email ?? 'taquilla@local';
+        $evento = Eventos::findOrFail($instance->event_id);
 
         $boleto = $builder->build(
             ticket: $ticket,
             instance: $instance,
             email: $email,
             purchasedAt: $instance->purchased_at,
+            event: $evento,
             reference: $instance->reference
         );
 

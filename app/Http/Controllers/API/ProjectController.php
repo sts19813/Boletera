@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Project;
-
 class ProjectController extends Controller
 {
     public function index()
@@ -16,15 +15,12 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'name' => 'required|string',
-            'email' => 'nullable|email',
-            'phone' => 'nullable|string',
-            'logo' => 'nullable|string',
-            'quotation' => 'nullable|string',
+            'name' => 'required|string|max:255',
         ]);
 
-        $project = Project::create($request->all());
+        $project = Project::create([
+            'name' => $request->name,
+        ]);
 
         return response()->json($project, 201);
     }
