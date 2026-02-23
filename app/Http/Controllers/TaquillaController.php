@@ -55,7 +55,7 @@ class TaquillaController extends Controller
 
         $reference = 'TAQ-' . now()->format('YmdHis');
         $boletos = [];
-
+        $evento = Eventos::findOrFail($request->input('event_id'));
         foreach ($request->cart as $item) {
 
             $ticket = Ticket::lockForUpdate()->findOrFail($item['id']);
@@ -64,9 +64,6 @@ class TaquillaController extends Controller
             if ($ticket->stock < $qty) {
                 abort(409, 'Stock insuficiente');
             }
-
-            $evento = Eventos::findOrFail($request->input('event_id'));
-
 
             for ($i = 0; $i < $qty; $i++) {
 
@@ -104,6 +101,7 @@ class TaquillaController extends Controller
         return view('pago.success', [
             'boletos' => $boletos,
             'email' => $email,
+            'evento' => $evento
         ]);
     }
 

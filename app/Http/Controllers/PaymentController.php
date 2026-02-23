@@ -173,9 +173,11 @@ class PaymentController extends Controller
         Mail::to($email)->send(
             new BoletosMail($pdfContent)
         );
+        $eventId = $cart[0]['event_id'] ?? null;
+        $evento = Eventos::findOrFail($eventId);
 
         // 🖥️ Vista final
-        return view('pago.success', compact('boletos', 'email'));
+        return view('pago.success', compact('boletos', 'email', 'evento'));
     }
 
 

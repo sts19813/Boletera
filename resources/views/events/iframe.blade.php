@@ -129,7 +129,7 @@
         window.registrationTicket = {
             id: 'registration',
             name: 'Inscripción - {{ $lot->name }}',
-            total_price: {{ $lot->price }},
+            total_price: {{ $lot->price ?? 0 }},
             stock: 1,
             qty: 1,
             svg_selector: null

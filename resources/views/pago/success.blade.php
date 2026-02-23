@@ -3,6 +3,7 @@
 @section('title', 'Pago exitoso')
 
 @section('content')
+	<x-event-header :evento="$evento" />	
 	<div class="container py-15 text-center" style="margin-top: -130px">
 
 		<div class="card card-flush shadow-sm mx-auto" style="max-width: 520px">
@@ -39,8 +40,6 @@
 						</a>
 					@endif
 				@endif
-
-
 
 				{{-- BOTONES GOOGLE WALLET --}}
 				<div class="mt-6 no-print">
