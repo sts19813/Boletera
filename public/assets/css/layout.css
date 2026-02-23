@@ -90,6 +90,14 @@
     box-shadow: none !important;
 }
 
+#cartItems div {
+    font-size: 14px;
+}
+
+.cart-item-price {
+    font-size: 14px !important;
+}
+
 
 @media (max-width: 600px) {
 

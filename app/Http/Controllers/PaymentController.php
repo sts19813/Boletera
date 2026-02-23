@@ -145,38 +145,29 @@ class PaymentController extends Controller
             abort(400, 'Carrito vacío');
         }
 
-        // 🔎 Detectar tipo de compra
-
         $isRegistration = collect($cart)->contains(
             fn($i) => ($i['type'] ?? null) === 'registration'
         );
 
         if ($isRegistration) {
-
-            // 📝 INSCRIPCIONES
             $boletos = $this->generateRegistrationsFromPaymentIntent(
                 $paymentIntentId
             );
 
         } else {
-
-            // 🎟️ TICKETS (flujo existente)
             $boletos = $this->generateBoletosFromPaymentIntent(
                 $paymentIntentId
             );
         }
 
-        // 📄 PDF (puede ser el mismo o adaptado)
         $pdfContent = $this->generateBoletosPdf($boletos, $email);
 
-        // ✉️ Envío de correo
         Mail::to($email)->send(
             new BoletosMail($pdfContent)
         );
         $eventId = $cart[0]['event_id'] ?? null;
         $evento = Eventos::findOrFail($eventId);
 
-        // 🖥️ Vista final
         return view('pago.success', compact('boletos', 'email', 'evento'));
     }
 
