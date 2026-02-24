@@ -4,8 +4,8 @@
 
 @section('content')
 
-	<link rel="stylesheet" href="/assets/css/configurador.css">
-
+	<link rel="stylesheet"
+		href="{{ asset('assets/css/configurador.css') }}?v={{ filemtime(public_path('assets/css/configurador.css')) }}">
 	<style>
 		{{ $lot->modal_selector ?? 'svg g *' }}
 			{

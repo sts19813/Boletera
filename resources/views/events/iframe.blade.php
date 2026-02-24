@@ -12,7 +12,8 @@
         }
     </style>
 
-    <link rel="stylesheet" href="/assets/css/configurador.css">
+    <link rel="stylesheet"
+        href="{{ asset('assets/css/configurador.css') }}?v={{ filemtime(public_path('assets/css/configurador.css')) }}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
     <div class="container py-10 position-relative" style="margin-top:-130px;">
