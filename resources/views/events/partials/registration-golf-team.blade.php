@@ -105,7 +105,6 @@
                 <input type="text" class="form-control form-control-solid" name="players[{{ $i }}][shirt]"
                     placeholder="Ej. M, G, XG" required>
             </div>
-
         </div>
     </div>
 @endfor

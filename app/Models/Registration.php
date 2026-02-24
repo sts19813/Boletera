@@ -20,12 +20,14 @@ class Registration extends Model
         'commission',
         'total',
         'event_id',
+        'form_data',
     ];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
         'commission' => 'decimal:2',
         'total' => 'decimal:2',
+        'form_data' => 'array',
     ];
 
     public function event()

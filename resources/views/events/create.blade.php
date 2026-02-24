@@ -36,8 +36,8 @@
                 @csrf
 
                 <!-- ===============================
-                                         INFORMACIÓN GENERAL
-                                    ================================ -->
+                            INFORMACIÓN GENERAL
+                            ================================ -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
                         <h4 class="card-title fw-bold">Información del Evento</h4>
@@ -94,8 +94,8 @@
                 </div>
 
                 <!-- ===============================
-                             TIPO DE EVENTO
-                        ================================ -->
+                            TIPO DE EVENTO
+                            ================================ -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
                         <h4 class="card-title fw-bold">Tipo de evento</h4>
@@ -104,7 +104,7 @@
                     <div class="card-body">
                         <div class="row g-4 align-items-end">
 
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold">¿Es inscripción?</label>
                                 <select name="is_registration" id="is_registration" class="form-select">
                                     <option value="0" selected>No (boletos / asientos)</option>
@@ -131,15 +131,29 @@
                                 </select>
                             </div>
 
-                        </div>
+                            <div class="col-md-3 d-none registration-field">
+                                <label class="form-label fw-bold">Tipo de formulario</label>
+                                <select name="template_form" class="form-select">
+                                    <option value="golf_team">Equipo de Golf (3 jugadores)</option>
+                                    <option value="cena_gala">Cena Gala (múltiples personas)</option>
+                                </select>
+                            </div>
 
+                            <div class="col-md-3 d-none registration-field">
+                                <label class="form-label fw-bold d-block">
+                                    <input type="checkbox" name="allows_multiple_registrations" value="1">
+                                    Permite múltiples inscripciones en una sola compra
+                                </label>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
 
 
                 <!-- ===============================
-                                         CATÁLOGO NABOO
-                                    ================================ -->
+                            CATÁLOGO NABOO
+                            ================================ -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
                         <h4 class="card-title fw-bold">Ubicación (Catálogo de boletos)</h4>
@@ -174,8 +188,8 @@
                 </div>
 
                 <!-- ===============================
-                                         IMÁGENES
-                                    ================================ -->
+                                                             IMÁGENES
+                                                        ================================ -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
                         <h4 class="card-title fw-bold">Imágenes (para el mapeo de boletos con los asientos)</h4>
@@ -199,8 +213,8 @@
                 </div>
 
                 <!-- ===============================
-                                         COLORES Y SELECTORES
-                                    ================================ -->
+                                                             COLORES Y SELECTORES
+                                                        ================================ -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
                         <h4 class="card-title fw-bold">Tema visual</h4>
@@ -234,8 +248,8 @@
                 </div>
 
                 <!-- ===============================
-                                         REDIRECCIONES
-                                    ================================ -->
+                                                             REDIRECCIONES
+                                                        ================================ -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
                         <h4 class="card-title fw-bold">Redirecciones</h4>
@@ -326,31 +340,40 @@
         document.addEventListener('DOMContentLoaded', function () {
 
             const isRegistration = document.getElementById('is_registration');
+
             const priceWrapper = document.getElementById('price_wrapper');
             const templateWrapper = document.getElementById('template_wrapper');
             const maxCapacityWrapper = document.getElementById('max_capacity_wrapper');
+
+            const registrationFields = document.querySelectorAll('.registration-field');
 
             const totalAsientos = document.querySelector('[name="total_asientos"]');
             const hasSeatMapping = document.getElementById('has_seat_mapping');
 
             function toggleRegistrationMode() {
+
                 const isReg = isRegistration.value === '1';
 
-                // Mostrar / ocultar campos de inscripción
+                // 🔥 Mostrar / ocultar wrappers individuales
                 priceWrapper.classList.toggle('d-none', !isReg);
                 templateWrapper.classList.toggle('d-none', !isReg);
                 maxCapacityWrapper.classList.toggle('d-none', !isReg);
 
+                // 🔥 Mostrar / ocultar los campos adicionales
+                registrationFields.forEach(field => {
+                    field.classList.toggle('d-none', !isReg);
+                });
+
                 if (isReg) {
-                    // Inscripción → sin asientos ni mapa
-                    totalAsientos.value = 0;
+
+                    totalAsientos.value = 1;
                     totalAsientos.removeAttribute('required');
                     totalAsientos.setAttribute('readonly', true);
 
                     hasSeatMapping.value = 0;
                     hasSeatMapping.setAttribute('disabled', true);
+
                 } else {
-                    // Evento normal
                     totalAsientos.removeAttribute('readonly');
                     totalAsientos.setAttribute('required', true);
 
@@ -359,7 +382,7 @@
             }
 
             isRegistration.addEventListener('change', toggleRegistrationMode);
-            toggleRegistrationMode(); // init
+            toggleRegistrationMode();
         });
     </script>
 @endpush

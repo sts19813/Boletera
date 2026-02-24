@@ -25,7 +25,11 @@
                 @if($lot->is_registration)
 
                     <form id="registrationForm">
-                        @include('events.partials.registration-form')
+                        @if($lot->is_registration && $lot->template_form === 'cena_gala')
+                            @include('events.partials.registration-cena-gala')
+                        @elseif($lot->is_registration && $lot->template_form === 'golf_team')
+                            @include('events.partials.registration-golf-team')
+                        @endif
                     </form>
                 @elseif($lot->has_seat_mapping)
 
@@ -88,9 +92,7 @@
             {{-- DERECHA: CARRITO --}}
             {{-- ===================== --}}
             <div class="col-lg-4">
-
                 @include('events.partials.cartItems')
-
             </div>
         </div>
     </div>
@@ -115,6 +117,12 @@
         window.idDesarrollo = @json($lot->id);
         window.EVENT_ID = @json($lot->id);
         let redireccion = true;
+
+        window.registrationConfig = {
+            allowsMultiple: @json($lot->allows_multiple_registrations),
+            maxCapacity: @json($lot->max_capacity),
+            templateForm: @json($lot->template_form)
+        };
     </script>
     <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
     <script src="/assets/js/shared-svg.js"></script>
@@ -135,5 +143,4 @@
             svg_selector: null
         };
     </script>
-
 @endpush

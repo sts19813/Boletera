@@ -87,13 +87,15 @@ class EventosController extends Controller
 
             // Evento normal
             'total_asientos' => 'required|integer|min:0',
-            'has_seat_mapping' => 'required|boolean',
+            'has_seat_mapping' => 'nullable|boolean',
 
             // Tipo de evento
             'is_registration' => 'nullable|boolean',
             'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
             'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
             'template' => 'nullable|string|max:100',
+            'template_form' => 'nullable|required_if:is_registration,1|string|max:100',
+            'allows_multiple_registrations' => 'nullable|boolean',
 
             'project_id' => 'nullable|integer',
             'phase_id' => 'nullable|integer',
@@ -139,6 +141,7 @@ class EventosController extends Controller
                 'redirect_return',
                 'redirect_next',
                 'redirect_previous',
+                'template_form',
             ]);
 
             /**
@@ -166,6 +169,9 @@ class EventosController extends Controller
                 $data['png_image'] = $this->fileUploadService
                     ->upload($request->file('png_image'), 'eventos-assets');
             }
+
+            $data['has_seat_mapping'] = $request->boolean('has_seat_mapping');
+            $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
 
             Eventos::create($data);
 
@@ -337,13 +343,15 @@ class EventosController extends Controller
 
             // Evento normal
             'total_asientos' => 'required|integer|min:0',
-            'has_seat_mapping' => 'required|boolean',
+            'has_seat_mapping' => 'nullable|boolean',
 
             // Tipo de evento
             'is_registration' => 'nullable|boolean',
             'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
             'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
             'template' => 'nullable|string|max:100',
+            'template_form' => 'nullable|required_if:is_registration,1|string|max:100',
+            'allows_multiple_registrations' => 'nullable|boolean',
 
             'project_id' => 'nullable|integer',
             'phase_id' => 'nullable|integer',
@@ -381,6 +389,7 @@ class EventosController extends Controller
                 'price',
                 'max_capacity',
                 'template',
+                'template_form',
 
                 'project_id',
                 'phase_id',
@@ -394,17 +403,24 @@ class EventosController extends Controller
                 'redirect_previous',
             ]);
 
+            $data['has_seat_mapping'] = $request->boolean('has_seat_mapping');
+            $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
+            $data['is_registration'] = $request->boolean('is_registration');
             /**
              * Normalización según tipo de evento
              */
-            if (!empty($data['is_registration'])) {
+            if ($data['is_registration']) {
+
                 $data['total_asientos'] = 0;
                 $data['has_seat_mapping'] = false;
                 $data['template'] = $data['template'] ?? 'registration';
+
             } else {
-                // Evento normal
+
                 $data['price'] = null;
                 $data['max_capacity'] = null;
+                $data['template_form'] = null;
+                $data['allows_multiple_registrations'] = false;
                 $data['template'] = $data['template'] ?? 'default';
             }
 
@@ -455,7 +471,7 @@ class EventosController extends Controller
 
         return redirect()->route('Eventos.index')->with('success', 'Desarrollo eliminado correctamente.');
     }
-    
+
     /// Eliminar un mapeo específico
     public function destroyMapping(Request $request, Eventos $event)
     {

@@ -22,8 +22,10 @@ class Eventos extends Model
         'total_asientos',
         'has_seat_mapping',
         'is_registration',
+        'template_form', // Para determinar blade archivo formulario de registro usar contiene logica js
+        'allows_multiple_registrations',
         'price',
-        'template',
+        'template', // Para determinar plantilla formulario de registro usar visual utilizar al futuro
         'max_capacity',
         'project_id',
         'phase_id',
@@ -44,5 +46,6 @@ class Eventos extends Model
         'has_seat_mapping' => 'boolean',
         'is_registration' => 'boolean',
         'price' => 'decimal:2',
+        'allows_multiple_registrations' => 'boolean',
     ];
 }

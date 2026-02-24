@@ -46,8 +46,7 @@
                     <tr class="text-start text-muted fw-bold fs-7 text-uppercase">
                         <th>Email</th>
                         <th>Evento</th>
-                        <th>Equipo</th>
-                        <th>Jugadores</th>
+                      
                         <th>Fecha</th>
                         <th class="text-end">Acciones</th>
                     </tr>
@@ -59,12 +58,6 @@
                         <tr>
                             <td>{{ $instance->email }}</td>
                             <td>{{ $instance->evento?->name ?? '—' }}</td>
-                            <td class="fw-bold">{{ $registration?->team_name ?? '—' }}</td>
-                            <td>
-                                <span class="badge badge-light-primary">
-                                    {{ $registration?->players?->count() ?? 0 }}
-                                </span>
-                            </td>
                             <td>{{ $instance->registered_at?->format('d/m/Y H:i') ?? '—' }}</td>
                             <td class="text-end">
                                 @if($registration)
@@ -152,41 +145,121 @@
             const modal = new bootstrap.Modal(document.getElementById('registrationModal'));
 
             $('.btn-view-registration').on('click', function () {
+
                 const instance = $(this).data('instance');
                 const registration = $(this).data('registration');
 
-                $('#modalTeam').text(registration.team_name);
                 $('#modalEvent').text(instance.evento?.name ?? '—');
                 $('#modalEmail').text(instance.email);
 
+                let headers = '';
                 let rows = '';
+                let teamName = 'Registro';
 
-                registration.players.forEach(p => {
+                let data = null;
 
-                    const cumbres = (p.cumbres && p.cumbres.length)
-                        ? p.cumbres.join(', ')
-                        : '—';
+                // ================================
+                // 1️⃣ MODELO VIEJO
+                // ================================
+                if (registration.players && registration.players.length > 0) {
+                    data = { players: registration.players };
+                    teamName = registration.team_name ?? 'Equipo';
+                }
 
-                    rows += `
+                // ================================
+                // 2️⃣ MODELO NUEVO JSON
+                // ================================
+                else if (registration.form_data) {
+                    data = registration.form_data;
+                }
+
+                if (!data) return;
+
+                /*
+                ======================================================
+                EVENTO GOLF (players)
+                ======================================================
+                */
+                if (data.players && data.players.length > 0) {
+
+                    headers = `
+                    <tr>
+                        <th>Jugador</th>
+                        <th>Email</th>
+                        <th>Celular</th>
+                        <th>Campo</th>
+                        <th>Handicap</th>
+                        <th>GHIN</th>
+                        <th>Playera</th>
+                        <th>Relación Cumbres</th>
+                        <th>Capitán</th>
+                    </tr>
+                `;
+
+                    data.players.forEach((p, index) => {
+
+                        const cumbres = (p.cumbres && p.cumbres.length)
+                            ? p.cumbres.join(', ')
+                            : '—';
+
+                        rows += `
                         <tr>
-                            <td>${p.name}</td>
-                            <td>${p.email}</td>
-                            <td>${p.phone}</td>
-                            <td>${p.campo}</td>
-                            <td>${p.handicap}</td>
+                            <td>${p.name ?? '—'}</td>
+                            <td>${p.email ?? '—'}</td>
+                            <td>${p.phone ?? '—'}</td>
+                            <td>${p.campo ?? '—'}</td>
+                            <td>${p.handicap ?? '—'}</td>
                             <td>${p.ghin ?? '—'}</td>
-                            <td>${p.shirt}</td>
+                            <td>${p.shirt ?? '—'}</td>
                             <td>${cumbres}</td>
-                            <td>${p.is_captain ? 'Sí' : '—'}</td>
+                            <td>${index === 0 ? 'Sí' : '—'}</td>
                         </tr>
                     `;
-                });
+                    });
 
+                    teamName = data.team_name ?? teamName;
+                }
+
+                /*
+                ======================================================
+                EVENTO CENA (participants)
+                ======================================================
+                */
+                else if (data.participants && data.participants.length > 0) {
+
+                    headers = `
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Celular</th>
+                        <th>Tipo</th>
+                        <th>Generación</th>
+                    </tr>
+                `;
+
+                    data.participants.forEach(p => {
+
+                        rows += `
+                        <tr>
+                            <td>${p.nombre ?? '—'}</td>
+                            <td>${p.email ?? '—'}</td>
+                            <td>${p.celular ?? '—'}</td>
+                            <td>${p.tipo ?? '—'}</td>
+                            <td>${p.generacion ?? '—'}</td>
+                        </tr>
+                    `;
+                    });
+
+                    teamName = 'Invitados';
+                }
+
+                $('#modalTeam').text(teamName);
+                $('#registrationModal thead').html(headers);
                 $('#modalPlayers').html(rows);
+
                 modal.show();
             });
 
         });
     </script>
-
 @endpush

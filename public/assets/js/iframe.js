@@ -11,12 +11,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (window.isRegistration && window.registrationTicket) {
 
+        let stock = 1;
+
+        if (window.registrationConfig) {
+
+            // 🎯 Si permite múltiples
+            if (window.registrationConfig.allowsMultiple) {
+
+                // Si hay capacidad definida → usarla
+                if (window.registrationConfig.maxCapacity) {
+                    stock = window.registrationConfig.maxCapacity;
+                } else {
+                    stock = 9999; // fallback seguro
+                }
+
+            } else {
+                stock = 1;
+            }
+
+            // 🎯 Golf team siempre es 1
+            if (window.registrationConfig.templateForm === 'golf_team') {
+                stock = 1;
+            }
+        }
+
         window.cartState.items.push({
             id: window.registrationTicket.id,
             event_id: window.EVENT_ID,
             name: window.registrationTicket.name,
             total_price: Number(window.registrationTicket.total_price),
-            stock: 1,
+            stock: stock,
             qty: 1,
             svg_selector: window.registrationTicket.svg_selector ?? null
         });

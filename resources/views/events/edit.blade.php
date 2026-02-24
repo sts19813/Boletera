@@ -107,7 +107,7 @@
                 </div>
 
                 {{-- ===============================
-                TIPO DE EVENTO
+                        TIPO DE EVENTO
                 ================================ --}}
                 <div class="card shadow-sm mb-5">
                     <div class="card-header">
@@ -117,6 +117,7 @@
                     <div class="card-body">
                         <div class="row g-4 align-items-end">
 
+                            {{-- ¿Es inscripción? --}}
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">¿Es inscripción?</label>
                                 <select name="is_registration" id="is_registration" class="form-select">
@@ -125,19 +126,28 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3" id="price_wrapper">
+                            {{-- Precio --}}
+                            <div class="col-md-3 registration-field" id="price_wrapper">
                                 <label class="form-label fw-bold">Precio</label>
-                                <input type="number" step="0.01" name="price" class="form-control"
+                                <input type="number"
+                                    step="0.01"
+                                    name="price"
+                                    class="form-control"
                                     value="{{ old('price', $event->price) }}">
                             </div>
 
-                            <div class="col-md-3" id="capacity_wrapper">
+                            {{-- Capacidad --}}
+                            <div class="col-md-3 registration-field" id="capacity_wrapper">
                                 <label class="form-label fw-bold">Capacidad máxima</label>
-                                <input type="number" min="1" name="max_capacity" class="form-control"
+                                <input type="number"
+                                    min="1"
+                                    name="max_capacity"
+                                    class="form-control"
                                     value="{{ old('max_capacity', $event->max_capacity) }}">
                             </div>
 
-                            <div class="col-md-3" id="template_wrapper">
+                            {{-- Plantilla visual --}}
+                            <div class="col-md-3 registration-field" id="template_wrapper">
                                 <label class="form-label fw-bold">Plantilla</label>
                                 <select name="template" class="form-select">
                                     <option value="registration" {{ $event->template === 'registration' ? 'selected' : '' }}>
@@ -147,6 +157,32 @@
                                         Default
                                     </option>
                                 </select>
+                            </div>
+
+                            {{-- Tipo de formulario --}}
+                            <div class="col-md-3 registration-field">
+                                <label class="form-label fw-bold">Tipo de formulario</label>
+                                <select name="template_form" class="form-select">
+                                    <option value="golf_team"
+                                        {{ old('template_form', $event->template_form) === 'golf_team' ? 'selected' : '' }}>
+                                        Equipo de Golf (3 jugadores)
+                                    </option>
+                                    <option value="cena_gala"
+                                        {{ old('template_form', $event->template_form) === 'cena_gala' ? 'selected' : '' }}>
+                                        Cena Gala (múltiples personas)
+                                    </option>
+                                </select>
+                            </div>
+
+                            {{-- Permitir múltiples --}}
+                            <div class="col-md-4 registration-field">
+                                <label class="form-label fw-bold d-block">
+                                    <input type="checkbox"
+                                        name="allows_multiple_registrations"
+                                        value="1"
+                                        {{ old('allows_multiple_registrations', $event->allows_multiple_registrations) ? 'checked' : '' }}>
+                                    Permite múltiples inscripciones en una sola compra
+                                </label>
                             </div>
 
                         </div>
@@ -365,32 +401,42 @@
         document.addEventListener('DOMContentLoaded', function () {
 
             const isRegistration = document.getElementById('is_registration');
-            const priceWrapper = document.getElementById('price_wrapper');
-            const capacityWrapper = document.getElementById('capacity_wrapper');
-            const templateWrapper = document.getElementById('template_wrapper');
+            const registrationFields = document.querySelectorAll('.registration-field');
+
             const totalAsientos = document.getElementById('total_asientos');
             const seatMapping = document.getElementById('has_seat_mapping');
 
             function toggleRegistrationMode() {
+
                 const isReg = isRegistration.value === '1';
 
-                priceWrapper.classList.toggle('d-none', !isReg);
-                capacityWrapper.classList.toggle('d-none', !isReg);
-                templateWrapper.classList.toggle('d-none', !isReg);
+                // Mostrar u ocultar campos de inscripción
+                registrationFields.forEach(field => {
+                    field.classList.toggle('d-none', !isReg);
+                });
 
                 if (isReg) {
+
+                    // Forzar comportamiento inscripción
                     totalAsientos.value = 0;
                     totalAsientos.setAttribute('readonly', true);
+
                     seatMapping.value = 0;
-                    seatMapping.setAttribute('disabled', true);
+                    seatMapping.style.pointerEvents = 'none';
+                    seatMapping.style.opacity = '0.6';
+
                 } else {
+
                     totalAsientos.removeAttribute('readonly');
-                    seatMapping.removeAttribute('disabled');
+
+                    seatMapping.style.pointerEvents = 'auto';
+                    seatMapping.style.opacity = '1';
                 }
             }
 
             isRegistration.addEventListener('change', toggleRegistrationMode);
-            toggleRegistrationMode(); // init
+
+            toggleRegistrationMode(); // inicial
         });
     </script>
 @endpush

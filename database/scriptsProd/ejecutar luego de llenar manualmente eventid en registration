@@ -1,0 +1,14 @@
+-- 1️⃣ Asegurar que tenga índice (recomendado)
+ALTER TABLE registrations
+ADD INDEX registrations_event_id_index (event_id);
+
+-- 2️⃣ Crear la foreign key
+ALTER TABLE registrations
+ADD CONSTRAINT registrations_event_id_foreign
+FOREIGN KEY (event_id)
+REFERENCES eventos(id)
+ON DELETE CASCADE;
+
+
+ALTER TABLE registrations
+MODIFY team_name VARCHAR(255) NULL;

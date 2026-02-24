@@ -253,10 +253,8 @@ class PaymentController extends Controller
                 ]);
 
                 $registrationForm = session('registration_form');
-
                 if ($registrationForm) {
 
-                    // 🧠 Idempotencia: evitar duplicar registro
                     $existingRegistration = Registration::where(
                         'registration_instance_id',
                         $instance->id
@@ -271,30 +269,14 @@ class PaymentController extends Controller
                         $commission = round($subtotal * 0.05, 2);
                         $total = $subtotal;
 
-                        // 1️⃣ REGISTRATION (EQUIPO)
-                        $registration = Registration::create([
+                        Registration::create([
                             'registration_instance_id' => $instance->id,
-                            'team_name' => $registrationForm['team_name'],
+                            'event_id' => $evento->id,
                             'subtotal' => $subtotal,
                             'commission' => $commission,
                             'total' => $total,
+                            'form_data' => $registrationForm, // 🔥 SIEMPRE JSON
                         ]);
-
-                        // 2️⃣ PLAYERS
-                        foreach ($registrationForm['players'] as $i => $player) {
-
-                            $registration->players()->create([
-                                'name' => $player['name'],
-                                'phone' => $player['phone'],
-                                'email' => $player['email'],
-                                'campo' => $player['campo'],
-                                'handicap' => $player['handicap'],
-                                'ghin' => $player['ghin'] ?? null,
-                                'shirt' => $player['shirt'],
-                                'cumbres' => $player['cumbres'] ?? [],
-                                'is_captain' => $i === 0,
-                            ]);
-                        }
                     }
                 }
 
