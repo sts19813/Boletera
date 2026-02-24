@@ -18,14 +18,15 @@
 
     .header {
         text-align: center;
-        margin-bottom: 12px;
+        margin-bottom: 1px;
     }
 
     .event-name {
-        font-size: 25px;
+        font-size: 22px;
         font-weight: bold;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
         text-transform: uppercase;
-        letter-spacing: 1px;
     }
 
     .event-meta {
@@ -62,12 +63,11 @@
 
     .qr {
         text-align: center;
-        margin-top: 14px;
     }
 
     .logoStom {
         text-align: center;
-        margin-top: 40px;
+        margin-top: 20px;
     }
 
     .logoStom img {
@@ -81,7 +81,7 @@
         text-align: center;
         font-size: 14px;
         color: #000;
-        margin-top: 10px;
+        margin-top: 0px;
     }
 
 </style>
