@@ -3,7 +3,7 @@
     <div class="participant-card card shadow-sm mb-8" data-index="0">
         <div class="card-header bg-light">
             <h4 class="card-title fw-bold mb-0">
-                Invitado 1
+                Asistente 1
             </h4>
         </div>
 
@@ -54,7 +54,7 @@
 
 <div class="text-center">
     <button type="button" id="addParticipant" class="btn btn-light-primary">
-        + Agregar Invitado
+        + Agregar Asistente
     </button>
 </div>
 
@@ -77,7 +77,7 @@
             const newCard = firstCard.cloneNode(true);
 
             newCard.setAttribute('data-index', currentCount);
-            newCard.querySelector('.card-title').innerText = `Invitado ${currentCount + 1}`;
+            newCard.querySelector('.card-title').innerText = `Asistente ${currentCount + 1}`;
 
             newCard.querySelectorAll('input, select').forEach(input => {
                 let name = input.getAttribute('name');
