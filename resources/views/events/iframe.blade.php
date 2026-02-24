@@ -126,7 +126,7 @@
     </script>
     <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
     <script src="/assets/js/shared-svg.js"></script>
-    <script src="/assets/js/iframe.js"></script>
+    <script src="{{ asset('assets/js/iframe.js') }}?v={{ filemtime(public_path('assets/js/iframe.js')) }}"></script>
 
     @if(!$lot->has_seat_mapping)
         <script src="/assets/js/ticket-selects.js"></script>
