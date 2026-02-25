@@ -30,7 +30,7 @@
                     @if($evento->description)
                         <div style="max-width: 950px">
                             <i class="ki-duotone ki-information fs-5 me-2"></i>
-                            {{ $evento->description }}
+                            {!! $evento->description !!}
                         </div>
                     @endif
                 </div>
