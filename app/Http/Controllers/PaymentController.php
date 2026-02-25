@@ -163,7 +163,7 @@ class PaymentController extends Controller
         $pdfContent = $this->generateBoletosPdf($boletos, $email);
 
         Mail::to($email)->send(
-            new BoletosMail($pdfContent)
+            new BoletosMail($pdfContent, $boletos)
         );
         $eventId = $cart[0]['event_id'] ?? null;
         $evento = Eventos::findOrFail($eventId);
