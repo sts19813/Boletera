@@ -19,7 +19,7 @@
                     <!-- HEADER -->
                     <tr>
                         <td align="center" style="background:#000; padding:30px 20px;">
-                            <img src="{{ $message->embed(public_path('assets/logo.png')) }}" alt="StomTickets"
+                            <img src="{{ $message->embed(public_path('assets/Stom_Tickets_logo.png')) }}" alt="StomTickets"
                                 width="200">
                         </td>
                     </tr>
@@ -29,7 +29,7 @@
                         <td style="padding:40px;">
 
                             <h1 style="margin:0 0 10px 0; font-size:24px; color:#111;">
-                                🎟️ {{ $evento['name'] }}
+                                {{ $evento['name'] }}
                             </h1>
 
                             <p style="font-size:15px; color:#555; margin:0 0 20px 0;">
@@ -48,8 +48,9 @@
                                         ⏰ <strong>Hora:</strong> {{ $evento['time'] }}<br>
                                         📍 <strong>Lugar:</strong> {{ $evento['venue'] }}<br><br>
 
-                                        👤 <strong>Comprador:</strong> {{ $boletos[0]['user']['email'] }}<br>
-                                        🧾 <strong>Orden:</strong>
+                                         <strong>Nombre:</strong> {{ $boletos[0]['user']['nombre'] }}<br>
+                                         <strong>Correo:</strong> {{ $boletos[0]['user']['email'] }}<br>
+                                         <strong>Orden:</strong>
                                         {{ $boletos[0]['order']['payment_intent'] ?? $boletos[0]['order']['reference'] }}
                                     </td>
                                 </tr>
@@ -84,7 +85,7 @@
 
                             <p style="font-size:13px; color:#777; margin:0 0 8px 0;">
                                 Organiza tus eventos con
-                                <a href="https://stomtickets.com"
+                                <a href="https://www.stomtickets.com/realiza-tu-evento"
                                     style="color:#000; font-weight:bold; text-decoration:none;">
                                     stomtickets.com
                                 </a>
