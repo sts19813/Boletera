@@ -26,7 +26,11 @@ class TicketBuilderService
             'event' => [
                 'name' => $event->name ?? 'Evento - ',
                 'date' => optional($event->event_date)->format('d/m/Y'),
-                'time' => $event->hora_inicio,
+                'time' => str_replace(
+                    ['am', 'pm'],
+                    ['a.m.', 'p.m.'],
+                    Carbon::parse($event->hora_inicio)->format('g:i a')
+                ),
                 'venue' => $event->location,
                 'organizer' => '',
             ],

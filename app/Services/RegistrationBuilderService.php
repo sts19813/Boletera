@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Models\Eventos;
 use App\Models\RegistrationInstance;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class RegistrationBuilderService
 {
@@ -18,7 +19,11 @@ class RegistrationBuilderService
             'event' => [
                 'name' => $evento->name,
                 'date' => optional($evento->event_date)->format('d/m/Y'),
-                'time' => $evento->hora_inicio,
+                'time' => str_replace(
+                    ['am', 'pm'],
+                    ['a.m.', 'p.m.'],
+                    Carbon::parse($evento->hora_inicio)->format('g:i a')
+                ),
                 'venue' => $evento->location,
             ],
             'ticket' => [
