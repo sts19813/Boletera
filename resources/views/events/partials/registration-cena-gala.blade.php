@@ -29,15 +29,32 @@
             </div>
 
             {{-- Tipo --}}
-            <div class="mb-5">
+            <div class="mb-5 cumbres-group">
                 <label class="form-label required">Eres:</label>
 
-                <select name="participants[0][tipo]" class="form-select form-select-solid tipo-select" required>
-                    <option value="">Selecciona una opción</option>
-                    <option value="egresado">Egresado</option>
-                    <option value="papa">Papá del Colegio</option>
-                    <option value="invitado">Invitado</option>
-                </select>
+                <div class="d-flex gap-6">
+                    <label class="form-check form-check-custom form-check-solid">
+                        <input class="form-check-input tipo-checkbox" type="checkbox" name="participants[0][tipo][]"
+                            value="egresado">
+                        <span class="form-check-label">Egresado</span>
+                    </label>
+
+                    <label class="form-check form-check-custom form-check-solid">
+                        <input class="form-check-input tipo-checkbox" type="checkbox" name="participants[0][tipo][]"
+                            value="papa">
+                        <span class="form-check-label">Papá del Colegio</span>
+                    </label>
+
+                    <label class="form-check form-check-custom form-check-solid">
+                        <input class="form-check-input tipo-checkbox" type="checkbox" name="participants[0][tipo][]"
+                            value="invitado">
+                        <span class="form-check-label">Invitado</span>
+                    </label>
+                </div>
+
+                <div class="text-danger small mt-2 d-none tipo-error">
+                    Debes seleccionar al menos una opción.
+                </div>
             </div>
 
             {{-- Generación (solo egresado) --}}
@@ -80,12 +97,23 @@
             newCard.querySelector('.card-title').innerText = `Asistente ${currentCount + 1}`;
 
             newCard.querySelectorAll('input, select').forEach(input => {
+
                 let name = input.getAttribute('name');
                 name = name.replace(/\[\d+\]/, `[${currentCount}]`);
                 input.setAttribute('name', name);
-                input.value = '';
+
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
             });
 
+            const generacionWrapper = newCard.querySelector('.generacion-wrapper');
+            const generacionInput = newCard.querySelector('.generacion-input');
+
+            if (generacionWrapper) generacionWrapper.classList.add('d-none');
+            if (generacionInput) generacionInput.required = false;
             wrapper.appendChild(newCard);
         }
 
@@ -154,7 +182,7 @@
         =============================== */
         document.addEventListener('change', function (e) {
 
-            if (!e.target.classList.contains('tipo-select')) return;
+            if (!e.target.classList.contains('tipo-checkbox')) return;
 
             const card = e.target.closest('.participant-card');
             if (!card) return;
@@ -162,7 +190,11 @@
             const generacionWrapper = card.querySelector('.generacion-wrapper');
             const generacionInput = card.querySelector('.generacion-input');
 
-            if (e.target.value === 'egresado') {
+            const egresadoChecked = card.querySelector(
+                'input[value="egresado"]'
+            )?.checked;
+
+            if (egresadoChecked) {
                 generacionWrapper.classList.remove('d-none');
                 generacionInput.required = true;
             } else {

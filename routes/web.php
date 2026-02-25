@@ -1,10 +1,10 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CorteController;
 use App\Http\Controllers\Admin\TicketReprintController;
 use App\Http\Controllers\Admin\RegistrationController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\View\ProjectViewController;
 use App\Http\Controllers\View\PhaseViewController;
 use App\Http\Controllers\View\StageViewController;
@@ -33,8 +33,15 @@ Route::get('/lang/{lang}', [LocaleController::class, 'switch'])->name('lang.swit
 // =========================
 // Rutas del panel admin
 // =========================
-Route::middleware(['auth', AdminMiddleware::class])
-    ->group(function () {
+Route::middleware(['auth'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN (puede todo)
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin'])->group(function () {
+
         // =========================
         // CRUD Eventos
         // =========================
@@ -47,7 +54,6 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::delete('/events/{event}/configurator', [EventosController::class, 'destroyMapping'])->name('events.configurator.destroy');
 
         Route::get('/dashboards', action: [EventosController::class, 'index'])->name('dashboards.index');
-        Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])->name('events.configurator');
         Route::post('/evets/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
 
@@ -66,27 +72,69 @@ Route::middleware(['auth', AdminMiddleware::class])
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
         Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('admin.dashboard.data');
 
-        Route::get('/corte', [CorteController::class, 'index'])->name('admin.corte.index');
-        Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])->name('admin.corte.export.general');
+        Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
+        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])->name('admin.ticket_instances.index');
+
+        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
+        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
+        Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
+        Route::get('/admin/registrations/export', [RegistrationController::class, 'export'])->name('admin.registrations.export');
+
+        Route::resource('/users', UserController::class);
+
+        Route::get('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->name('roles.store');
+
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | ORGANIZER (maneja eventos)
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin|organizer'])->group(function () {
+
+        Route::get('/events/{event}/configurator', [EventosController::class, 'configurator'])->name('events.configurator');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | TAQUILLERO
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin|Taquillero'])->group(function () {
 
         Route::get('/taquilla', [TaquillaController::class, 'index']);
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
-
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
+        Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])->name('boletos.reprint');
+    });
 
-        Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
+    /*
+    |--------------------------------------------------------------------------
+    | SCANNER
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin|scanner'])->group(function () {
+
         Route::get('/checkin', [CheckinController::class, 'index']);
         Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
         Route::get('/checkin/stats', [CheckinController::class, 'stats'])->name('checkin.stats');
-        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])->name('admin.ticket_instances.index');
 
-        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprint'])->name('admin.ticket_instances.reprint');
-        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
-        Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
-        Route::get('/admin/registrations/export',[RegistrationController::class, 'export'])->name('admin.registrations.export');
-
-        Route::get('/boletos/reprint', [TicketReprintController::class, 'reprint'])->name('boletos.reprint');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | FINANCE
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware(['role:admin|finance'])->group(function () {
+
+        Route::get('/corte', [CorteController::class, 'index'])->name('admin.corte.index');
+        Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])->name('admin.corte.export.general');
+
+    });
+});
 
 Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form');
 Route::post('/pago/intent', [PaymentController::class, 'crearIntent'])->name('pago.intent');
@@ -101,7 +149,6 @@ Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear']
 Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])->name('eventPublic.index');
 Route::get('/wallet/{instance}', [WalletTestController::class, 'testWallet'])->name('wallet.add');
-Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])->name('boletos.reprint');
 
 // =========================
 // Auth Routes

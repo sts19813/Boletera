@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TicketInstance;
 use App\Models\RegistrationInstance;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
 use App\Services\TicketBuilderService;
-use App\Services\TicketPdfService;
 use App\Services\RegistrationBuilderService;
 use App\Models\Eventos;
 
@@ -21,11 +19,10 @@ class TicketReprintController extends Controller
             'ticket.stage',
         ])->orderByDesc('purchased_at')->get();
 
-
         return view('admin.ticket_instances.index', compact('instances'));
     }
 
-    public function reprint(
+    public function reprintAdmin(
         TicketInstance $instance,
         TicketBuilderService $builder
     ) {

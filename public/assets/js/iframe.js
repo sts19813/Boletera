@@ -322,7 +322,7 @@ function validateRegistrationForm() {
         const hasChecked = Array.from(checkboxes).some(cb => cb.checked);
 
         if (!hasChecked) {
-            toastr.error('Debes seleccionar al menos una opción en "Relación con Cumbres" para cada jugador.');
+            toastr.error('Debes seleccionar al menos una opción en cada sección requerida.');
             group.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return false;
         }

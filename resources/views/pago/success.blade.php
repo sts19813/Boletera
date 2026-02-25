@@ -42,7 +42,7 @@
 				@endif
 
 				{{-- BOTONES GOOGLE WALLET --}}
-				<div class="mt-6 no-print">
+				<div class="mt-6 no-print d-none">
 
 					<h4 class="fw-bold mb-4">Agregar boletos a Google Wallet</h4>
 
