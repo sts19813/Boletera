@@ -40,7 +40,8 @@
     <!-- Global Stylesheets -->
     <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/layout.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/css/layout.css') }}?v={{ filemtime(public_path('assets/css/layout.css')) }}"
+        rel="stylesheet">
 
     <script>
         // Forzar tema oscuro por defecto
@@ -53,7 +54,7 @@
 <body>
 
     {{-- HEADER EVENTO --}}
-    
+
     @yield('content')
 
 
