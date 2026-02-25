@@ -51,6 +51,7 @@ class TicketBuilderService
             ],
             'user' => [
                 'email' => $email,
+                'nombre' => $instance->nombre ?? '',
             ],
             'qr' => $this->makeQr([
                 'type' => $ticket->type ?? 'ticket',

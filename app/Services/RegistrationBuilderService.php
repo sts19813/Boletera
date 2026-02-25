@@ -27,7 +27,7 @@ class RegistrationBuilderService
                 'venue' => $evento->location,
             ],
             'ticket' => [
-                'name' => 'Inscripción',
+                'name' => 'General',
                 'row' => null,
                 'seat' => null,
                 'price' => $evento->price,
@@ -38,6 +38,7 @@ class RegistrationBuilderService
             ],
             'user' => [
                 'email' => $email,
+                'nombre' => $instance->nombre ?? '',
             ],
             'qr' => $this->makeQr([
                 'type' => 'registration',
