@@ -4,8 +4,11 @@
 
             {{-- INFO EVENTO --}}
             <div class="event-info">
-                <img src="{{ asset('assets/logo.svg') }}" alt="Stom Tickets" class="event-logo mb-6"
-                    style="width:180px;">
+                <a href="https://www.stomtickets.com/">
+                    <img src="{{ asset('assets/logo.svg') }}" alt="Stom Tickets" class="event-logo mb-6"
+                        style="width:180px;">
+                </a>
+
 
                 <h1 class="event-title">
                     {{ $evento->name }}

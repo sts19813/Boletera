@@ -69,4 +69,9 @@ class User extends Authenticatable
     {
         return $this->role === 'inscription';
     }
+
+    public function events()
+    {
+        return $this->belongsToMany(Eventos::class);
+    }
 }

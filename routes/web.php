@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CorteController;
 use App\Http\Controllers\Admin\TicketReprintController;
 use App\Http\Controllers\Admin\RegistrationController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\View\ProjectViewController;
 use App\Http\Controllers\View\PhaseViewController;
 use App\Http\Controllers\View\StageViewController;
@@ -83,6 +84,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
         Route::post('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->name('roles.store');
+        
+        Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
 
     });
 

@@ -48,4 +48,9 @@ class Eventos extends Model
         'price' => 'decimal:2',
         'allows_multiple_registrations' => 'boolean',
     ];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
+    }
 }
