@@ -31,8 +31,7 @@
                                 <span class="menu-title">{{ __('messages.tickets') }}</span>
                             </a>
                         </div>
-                        <div class="menu-item menu-accordion
-                                                                                                            {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
+                        <div class="menu-item menu-accordion                                                                                                      {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
                             data-kt-menu-trigger="click">
 
                             <span class="menu-link">
@@ -136,13 +135,13 @@
 
 
                     {{-- ================= INSCRIPCIONES ================= --}}
-                    @can('ver inscripciones')
+                    @can('ver registros cumbres')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->is('registrations*') ? 'active' : '' }}" href="/registrations">
                                 <span class="menu-icon">
                                     <i class="ki-outline ki-user-square fs-2"></i>
                                 </span>
-                                <span class="menu-title">Inscripciones</span>
+                                <span class="menu-title">Registros cumbres</span>
                             </a>
                         </div>
                     @endcan
@@ -190,6 +189,14 @@
                                                 <span class="bullet bullet-dot"></span>
                                             </span>
                                             <span class="menu-title">Roles</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a class="menu-link {{ request()->is('permissions*') ? 'active' : '' }}" href="/permissions">
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
+                                            <span class="menu-title">Permisos</span>
                                         </a>
                                     </div>
                                 @endcan

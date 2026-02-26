@@ -6,10 +6,12 @@ use App\Http\Controllers\Admin\TicketReprintController;
 use App\Http\Controllers\Admin\RegistrationController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SalesController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\View\ProjectViewController;
 use App\Http\Controllers\View\PhaseViewController;
 use App\Http\Controllers\View\StageViewController;
 use App\Http\Controllers\View\TicketViewController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventosController;
 use App\Http\Controllers\PaymentController;
@@ -82,10 +84,42 @@ Route::middleware(['auth'])->group(function () {
 
         Route::resource('/users', UserController::class);
 
-        Route::get('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'index'])->name('roles.index');
-        Route::post('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->name('roles.store');
-        
+
+        /*
+        |--------------------------------------------------------------------------
+        | ROLES
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+
+        Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])
+            ->name('roles.edit');
+
+        Route::put('/roles/{role}', [RoleController::class, 'update'])
+            ->name('roles.update');
+
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+            ->name('roles.destroy');
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
+
+
+        /*
+       |--------------------------------------------------------------------------
+       | PERMISOS
+       |--------------------------------------------------------------------------
+       */
+        Route::get('/permissions', [PermissionController::class, 'index'])
+            ->name('permissions.index');
+
+        Route::post('/permissions', [PermissionController::class, 'store'])
+            ->name('permissions.store');
+
+        Route::delete(
+            '/permissions/{permission}',
+            [PermissionController::class, 'destroy']
+        )->name('permissions.destroy');
 
     });
 

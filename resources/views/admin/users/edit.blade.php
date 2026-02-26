@@ -22,6 +22,7 @@
 
                 <div class="mb-5">
                     <label class="form-label">Rol</label>
+
                     <select name="role" class="form-select">
                         @foreach($roles as $role)
                             <option value="{{ $role->name }}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>

@@ -51,11 +51,10 @@ class UserController extends Controller
     {
         $user->update($request->only('name', 'email'));
 
-        if ($request->role) {
-            $user->syncRoles([$request->role]);
-        }
+        $user->syncRoles([$request->role]);
 
-        return back()->with('success', 'Usuario actualizado');
+        return redirect()->route('users.index')
+            ->with('success', 'Usuario actualizado');
     }
 
     public function destroy(User $user)
