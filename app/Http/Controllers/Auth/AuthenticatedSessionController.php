@@ -8,9 +8,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Traits\RedirectsByRole;
 
 class AuthenticatedSessionController extends Controller
 {
+    use RedirectsByRole;
     /**
      * Display the login view.
      */
@@ -25,22 +27,9 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
-        $user = auth()->user();
-
-        // 🔑 Redirección por rol
-        if ($user->isInscription()) {
-            return redirect()->route('admin.registrations.index');
-        }
-
-        if ($user->isAdmin()) {
-            return redirect()->route('events.index');
-        }
-
-        // Cliente / user
-        return redirect()->route('events.index'); // o la ruta que uses como home
+        return $this->redirectByRole(Auth::user());
     }
 
     /**
