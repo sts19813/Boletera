@@ -134,17 +134,7 @@
                     @endcan
 
 
-                    {{-- ================= INSCRIPCIONES ================= --}}
-                    @can('ver registros cumbres')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('registrations*') ? 'active' : '' }}" href="/registrations">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-user-square fs-2"></i>
-                                </span>
-                                <span class="menu-title">Registros cumbres</span>
-                            </a>
-                        </div>
-                    @endcan
+
 
 
                     {{-- ================= REPORTES ================= --}}
@@ -192,7 +182,8 @@
                                         </a>
                                     </div>
                                     <div class="menu-item">
-                                        <a class="menu-link {{ request()->is('permissions*') ? 'active' : '' }}" href="/permissions">
+                                        <a class="menu-link {{ request()->is('permissions*') ? 'active' : '' }}"
+                                            href="/permissions">
                                             <span class="menu-bullet">
                                                 <span class="bullet bullet-dot"></span>
                                             </span>
@@ -201,6 +192,18 @@
                                     </div>
                                 @endcan
                             </div>
+                        </div>
+                    @endcan
+
+                    {{-- ================= INSCRIPCIONES ================= --}}
+                    @can('ver registros cumbres')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->is('registrations*') ? 'active' : '' }}" href="/registrations">
+                                <span class="menu-icon">
+                                    <i class="ki-outline ki-user-square fs-2"></i>
+                                </span>
+                                <span class="menu-title">Registros cumbres</span>
+                            </a>
                         </div>
                     @endcan
                 @endauth

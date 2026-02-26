@@ -77,9 +77,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
         Route::get('/ticket-instances', [TicketReprintController::class, 'index'])->name('admin.ticket_instances.index');
 
-        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
-        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
-        Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
+
         Route::get('/admin/registrations/export', [RegistrationController::class, 'export'])->name('admin.registrations.export');
 
         Route::resource('/users', UserController::class);
@@ -171,6 +169,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])->name('admin.corte.export.general');
 
     });
+
+    Route::middleware(['role:admin|cumbres'])->group(function () {
+
+        Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
+        Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
+        Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
+
+    });
+
+
+
 });
 
 Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form');
