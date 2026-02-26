@@ -3,7 +3,7 @@
 @section('title', 'Pago exitoso')
 
 @section('content')
-	<x-event-header :evento="$evento" />	
+	<x-event-header :evento="$evento" />
 	<div class="container py-15 text-center" style="margin-top: -130px">
 
 		<div class="card card-flush shadow-sm mx-auto" style="max-width: 520px">
@@ -177,15 +177,17 @@
 			pdf.save('boletos.pdf');
 		}
 	</script>
-	@if(auth()->check() && auth()->user()->is_admin && !empty($reference))
-		<script>
-			document.addEventListener('DOMContentLoaded', function () {
-				const btn = document.getElementById('btnAutoPrint');
-				if (btn) {
-					btn.click();
-				}
-			});
-		</script>
-	@endif
 
+	{{-- Si es admin y hay referencia, autoimprimir
+	@if(auth()->check() && auth()->user()->is_admin && !empty($reference))
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			const btn = document.getElementById('btnAutoPrint');
+			if (btn) {
+				btn.click();
+			}
+		});
+	</script>
+	@endif
+	--}}
 @endsection

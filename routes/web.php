@@ -53,7 +53,6 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])->name('events.destroy');
         Route::delete('/events/{event}/configurator', [EventosController::class, 'destroyMapping'])->name('events.configurator.destroy');
 
-        Route::get('/dashboards', action: [EventosController::class, 'index'])->name('dashboards.index');
         Route::post('/evets/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
 
@@ -102,9 +101,10 @@ Route::middleware(['auth'])->group(function () {
     | TAQUILLERO
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:admin|Taquillero'])->group(function () {
+    Route::middleware(['role:admin|taquillero'])->group(function () {
 
-        Route::get('/taquilla', [TaquillaController::class, 'index']);
+        Route::get('/taquilla', [EventosController::class, 'index'])->name('taquilla.index');
+        Route::get('/taquilla/{event}/', [EventosController::class, 'iframe'])->name('eventPublic.index');
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
         Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])->name('boletos.reprint');

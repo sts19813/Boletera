@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'Error') | Videre</title>
+    <title>@yield('title', 'Error') | StomTickets</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 

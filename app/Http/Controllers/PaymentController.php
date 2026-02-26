@@ -5,29 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
-use App\Models\Ticket;
 use App\Models\TicketInstance;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BoletosMail;
 use App\Services\TicketBuilderService;
 use App\Models\Eventos;
-use App\Models\RegistrationInstance;
-use App\Models\Registration;
-use App\Models\Player;
-
-use App\Services\RegistrationBuilderService;
+use App\Services\TicketService;
+use App\Services\RegistrationStripeService;
 
 class PaymentController extends Controller
 {
 
     public function __construct(
         private TicketBuilderService $ticketBuilder,
-        private RegistrationBuilderService $registrationBuilder
+        private TicketService $ticketService,
+        private RegistrationStripeService $registrationStripeService
     ) {
     }
 
@@ -137,7 +130,7 @@ class PaymentController extends Controller
         }
 
         Stripe::setApiKey(config('services.stripe.secret'));
-        $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+        $intent = PaymentIntent::retrieve($paymentIntentId);
         $email = $intent->metadata->email ?? null;
         $cart = json_decode($intent->metadata->cart ?? '[]', true);
 
@@ -150,12 +143,12 @@ class PaymentController extends Controller
         );
 
         if ($isRegistration) {
-            $boletos = $this->generateRegistrationsFromPaymentIntent(
+            $boletos = $this->registrationStripeService->createFromStripeIntent(
                 $paymentIntentId
             );
 
         } else {
-            $boletos = $this->generateBoletosFromPaymentIntent(
+            $boletos = $this->ticketService->createFromStripeIntent(
                 $paymentIntentId
             );
         }
@@ -172,134 +165,6 @@ class PaymentController extends Controller
     }
 
 
-
-    private function generateRegistrationsFromPaymentIntent(
-        string $paymentIntentId,
-    ): array {
-
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        $intent = PaymentIntent::retrieve($paymentIntentId);
-
-        $email = $intent->metadata->email ?? null;
-        $nombre = $intent->metadata->nombre ?? null;
-        $celular = $intent->metadata->celular ?? null;
-
-        if ($intent->status !== 'succeeded') {
-            abort(403, 'Pago no confirmado');
-        }
-
-        $cart = json_decode($intent->metadata->cart ?? '[]', true);
-
-        if (empty($cart)) {
-            abort(400, 'Carrito vacío');
-        }
-
-        $purchaseAt = now();
-        $boletos = [];
-
-        foreach ($cart as $item) {
-
-            if (($item['type'] ?? null) !== 'registration') {
-                continue;
-            }
-
-            $evento = Eventos::findOrFail($item['event_id']);
-            $qty = max(1, (int) ($item['qty'] ?? 1));
-
-            /**
-             * 🔒 IDEMPOTENCIA POR EVENTO + PAYMENT
-             */
-            $existingInstances = RegistrationInstance::where(
-                'payment_intent_id',
-                $paymentIntentId
-            )
-                ->where('event_id', $evento->id)
-                ->get();
-
-            // ➜ Ya existen todas las necesarias
-            if ($existingInstances->count() >= $qty) {
-
-                foreach ($existingInstances as $instance) {
-                    $boletos[] = $this->registrationBuilder->build(
-                        $evento,
-                        $instance,
-                        $email
-                    );
-                }
-
-                continue;
-            }
-
-            // ➜ Validar cupo SOLO para las faltantes
-            $toCreate = $qty - $existingInstances->count();
-
-            if ($evento->max_capacity < $toCreate) {
-                abort(409, 'Cupo agotado');
-            }
-
-            // ➜ Crear SOLO las que faltan
-            for ($i = 0; $i < $toCreate; $i++) {
-
-                $instance = RegistrationInstance::create([
-                    'event_id' => $evento->id,
-                    'email' => $email,
-                    'nombre' => $nombre,
-                    'celular' => $celular,
-                    'payment_intent_id' => $paymentIntentId,
-                    'qr_hash' => (string) Str::uuid(),
-                    'registered_at' => $purchaseAt,
-                    'price' => $evento['price'] ?? 0,
-                ]);
-
-                $registrationForm = session('registration_form');
-                if ($registrationForm) {
-
-                    $existingRegistration = Registration::where(
-                        'registration_instance_id',
-                        $instance->id
-                    )->first();
-
-                    if (!$existingRegistration) {
-
-                        $subtotal = collect($cart)->sum(
-                            fn($i) => $i['price'] * ($i['qty'] ?? 1)
-                        );
-
-                        $commission = round($subtotal * 0.05, 2);
-                        $total = $subtotal;
-
-                        Registration::create([
-                            'registration_instance_id' => $instance->id,
-                            'event_id' => $evento->id,
-                            'subtotal' => $subtotal,
-                            'commission' => $commission,
-                            'total' => $total,
-                            'form_data' => $registrationForm, // 🔥 SIEMPRE JSON
-                        ]);
-                    }
-                }
-
-
-                $boletos[] = $this->registrationBuilder->build(
-                    $evento,
-                    $instance,
-                    $email
-                );
-            }
-
-            // 📉 Decrementar cupo SOLO una vez
-            if ($existingInstances->isEmpty()) {
-                $evento->decrement('max_capacity', $qty);
-            }
-
-            session()->forget('registration_form');
-
-        }
-
-        return $boletos;
-    }
-
     private function generateBoletosPdf(array $boletos, string $email)
     {
         return Pdf::loadView('pdf.boletos', [
@@ -307,153 +172,6 @@ class PaymentController extends Controller
             'email' => $email,
         ])->setPaper([0, 0, 400, 700])->output();
 
-    }
-
-
-
-    private function generateBoletosFromPaymentIntent(string $paymentIntentId): array
-    {
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        $intent = PaymentIntent::retrieve($paymentIntentId);
-
-        if ($intent->status !== 'succeeded') {
-            abort(403, 'Pago no confirmado');
-        }
-
-        $cart = json_decode($intent->metadata->cart ?? '[]', true);
-
-        if (empty($cart)) {
-            abort(400, 'Carrito vacío');
-        }
-
-        $email = $intent->metadata->email ?? null;
-        $nombre = $intent->metadata->nombre ?? null;
-        $celular = $intent->metadata->celular ?? null;
-
-        $purchaseAt = now();
-        $purchaseAtString = $purchaseAt->toDateTimeString();
-
-        $boletos = [];
-
-
-        foreach ($cart as $item) {
-            $evento = Eventos::findOrFail($item['event_id']);
-            $ticket = Ticket::findOrFail($item['id']);
-            $qty = max(1, (int) ($item['qty'] ?? 1));
-
-            if ($ticket->stock == 1) {
-
-                $existingInstance = TicketInstance::where('payment_intent_id', $paymentIntentId)
-                    ->where('ticket_id', $ticket->id)
-                    ->first();
-
-                if ($existingInstance) {
-                    $boletos[] = $this->ticketBuilder->build(
-                        $ticket,
-                        $instance,
-                        $email,
-                        $purchaseAtString,
-                        $evento,
-                        $paymentIntentId
-                    );
-                    continue;
-                }
-
-                $instance = TicketInstance::create([
-                    'event_id' => $evento->id,
-                    'ticket_id' => $ticket->id,
-                    'email' => $email,
-                    'nombre' => $nombre,
-                    'celular' => $celular,
-                    'purchased_at' => $purchaseAt,
-                    'qr_hash' => (string) Str::uuid(),
-                    'payment_intent_id' => $paymentIntentId,
-                    'reference' => $paymentIntentId,
-                    'price' => $ticket->total_price,
-                    'sale_channel' => 'stripe',
-                    'payment_method' => 'card',
-                ]);
-
-                $ticket->update([
-                    'stock' => 0,
-                    'sold' => 1,
-                    'status' => 'sold',
-                    'purchased_at' => $purchaseAt,
-                ]);
-
-                $boletos[] = $this->ticketBuilder->build(
-                    $ticket,
-                    $instance,
-                    $email,
-                    $purchaseAtString,
-                    $evento,
-                    $paymentIntentId
-                );
-
-                continue;
-            }
-
-
-            $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
-                ->where('ticket_id', $ticket->id)
-                ->get();
-
-            if ($existingInstances->isNotEmpty()) {
-
-                foreach ($existingInstances as $instance) {
-
-                    $boletos[] = $this->ticketBuilder->build(
-                        $ticket,
-                        $instance,
-                        $email,
-                        $purchaseAtString,
-                        $evento,
-                        $paymentIntentId
-                    );
-                }
-
-                continue;
-            }
-
-            for ($i = 0; $i < $qty; $i++) {
-
-                $instance = TicketInstance::create([
-                    'ticket_id' => $ticket->id,
-                    'event_id' => $evento->id,
-                    'email' => $email,
-                    'nombre' => $nombre,
-                    'celular' => $celular,
-                    'purchased_at' => $purchaseAt,
-                    'qr_hash' => (string) Str::uuid(),
-                    'payment_intent_id' => $paymentIntentId,
-                    'reference' => $paymentIntentId,
-                    'price' => $ticket->total_price,
-                    'sale_channel' => 'stripe',
-                    'payment_method' => 'card',
-                ]);
-
-                $boletos[] = $this->ticketBuilder->build(
-                    $ticket,
-                    $instance,
-                    $email,
-                    $purchaseAtString,
-                    $evento,
-                    $paymentIntentId
-                );
-            }
-
-            $ticket->increment('sold', $qty);
-            $ticket->decrement('stock', $qty);
-            if ($ticket->stock <= 0) {
-                $ticket->update([
-                    'stock' => 0,
-                    'status' => 'sold'
-                ]);
-            }
-        }
-
-        return $boletos;
     }
 
 

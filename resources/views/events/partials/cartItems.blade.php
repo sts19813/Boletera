@@ -18,20 +18,17 @@
             <span id="cartTotal" class="text-primary">$0</span>
         </div>
 
-        @if(!auth()->check() || !auth()->user()->is_admin)
+
+        @unlessrole('taquillero')
             <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
                 Continuar pago
             </button>
-        @endif
+        @endunlessrole
 
-        @if(auth()->check() && auth()->user()->is_admin)
-
-            <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold d-none" disabled>
-                Continuar pago
-            </button>
-
+        {{-- Opciones avanzadas si puede vender o reimprimir --}}
+        @canany(['vender boletos', 'reimprimir boletos'])
             <div class="mt-3">
-                <label class="form-label fw-bold mb-2">Tipo de venta</label>
+                <label class="form-label fw-bold mb-2">Venta Taquilla</label>
 
                 <div class="d-grid gap-2">
                     <button class="btn btn-success btn-lg fw-bold btn-metodo" data-metodo="cash">
@@ -42,9 +39,11 @@
                         💳 Tarjeta
                     </button>
 
-                    <button class="btn btn-secondary btn-lg fw-bold btn-metodo d-none" data-metodo="cortesia">
+                    @role('admin')
+                    <button class="btn btn-secondary btn-lg fw-bold btn-metodo" data-metodo="cortesia">
                         🎟️ Cortesía
                     </button>
+                    @endrole
                 </div>
             </div>
 
@@ -54,7 +53,7 @@
                 </label>
                 <input type="text" id="ventaNombre" class="form-control" placeholder="Ej. Juan Pérez o invitado@gmail.com">
             </div>
+        @endcanany
 
-        @endif
     </div>
 </div>

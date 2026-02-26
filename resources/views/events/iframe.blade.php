@@ -132,7 +132,7 @@
     @if(!$lot->has_seat_mapping)
         <script src="/assets/js/ticket-selects.js"></script>
     @endif
-    <script src="/assets/js/seat-map.js"></script>
+    <script src="/assets/js/seat-map.js?v={{ time() }}"></script>
     <script>
         window.isRegistration = @json($lot->is_registration);
         window.registrationTicket = {

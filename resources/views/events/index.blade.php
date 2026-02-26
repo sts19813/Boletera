@@ -17,13 +17,16 @@
             </div>
 
             <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('events.create') }}" class="btn btn-primary d-flex align-items-center gap-2">
-                    <i class="ki-duotone ki-plus fs-2"></i>
-                    <span>Nuevo Evento</span>
-                </a>
-                <button class="btn btn-light-success" id="btnActualizar">
-                    <i class="ki-outline ki-arrows-circle fs-2 me-1"></i> Actualizar
-                </button>
+
+                @can('crear eventos')
+                    <a href="{{ route('events.create') }}" class="btn btn-primary d-flex align-items-center gap-2">
+                        <i class="ki-duotone ki-plus fs-2"></i>
+                        <span>Nuevo Evento</span>
+                    </a>
+                    <button class="btn btn-light-success" id="btnActualizar">
+                        <i class="ki-outline ki-arrows-circle fs-2 me-1"></i> Actualizar
+                    </button>
+                @endcan
             </div>
         </div>
 
@@ -40,7 +43,6 @@
                             <th>ID</th>
                             <th>Nombre</th>
                             <th style="width: 300px !important">Descripción</th>
-                            <th>Total Asientos</th>
                             <th>Imagen</th>
                             <th>Creado</th>
                             <th>Acciones</th>
@@ -55,8 +57,6 @@
                                     title="{{ $event->description }}">
                                     {{ \Illuminate\Support\Str::limit($event->description, 35) }}
                                 </td>
-
-                                <td>{{ $event->total_asientos }}</td>
                                 <td>
                                     @if ($event->png_image || $event->svg_image)
                                         <div class="image-container" style="position: relative; height: 100px;">
@@ -74,21 +74,30 @@
                                 </td>
                                 <td>{{ $event->created_at->format('d/m/Y H:i') }}</td>
                                 <td>
-                                    @if($event->has_seat_mapping)
-                                        <a href="{{ route('events.configurator', $event->id) }}"
-                                            class="btn btn-sm btn-light-success">
-                                            Mapear asientos
+
+                                    @canany(['editar eventos', 'eliminar eventos'])
+                                        @if($event->has_seat_mapping)
+                                            <a href="{{ route('events.configurator', $event->id) }}"
+                                                class="btn btn-sm btn-light-success">
+                                                Mapear asientos
+                                            </a>
+                                        @endif
+
+                                        <a href="{{ url('event/' . $event->id) }}" class="btn btn-sm btn-secondary"
+                                            style="background-color:#3FB549 !important" target="_blank">
+                                            ver
                                         </a>
-                                    @endif
 
-                                    <a href="{{ url('event/' . $event->id) }}" class="btn btn-sm btn-secondary"
-                                        style="background-color:#3FB549 !important" target="_blank">
-                                        Iframe
-                                    </a>
+                                        <a href="{{ route('events.edit', $event->id) }}" class="btn btn-sm btn-warning">
+                                            Editar
+                                        </a>
+                                    @endcanany
 
-                                    <a href="{{ route('events.edit', $event->id) }}" class="btn btn-sm btn-warning">
-                                        Editar
+                                    @role('taquillero')
+                                    <a href="{{ url('taquilla/' . $event->id) }}" class="btn btn-sm btn-danger">
+                                        Taquilla
                                     </a>
+                                    @endrole
                                 </td>
                             </tr>
                         @endforeach
