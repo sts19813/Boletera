@@ -172,7 +172,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['role:admin|cumbres|taquillero'])->group(function () {
-
+ Route::get('/reimpresion', [RegistrationController::class, 'index'])->name('admin.registrations.index');
         Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
         Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
