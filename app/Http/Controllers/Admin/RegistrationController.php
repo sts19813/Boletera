@@ -57,75 +57,190 @@ class RegistrationController extends Controller
                 'Relación Cumbres',
 
                 'Subtotal',
-               
                 'Total',
             ]);
 
             foreach ($instances as $instance) {
 
                 $registration = $instance->registration;
+
                 if (!$registration) {
                     continue;
                 }
 
-                /**
-                 * ==========================
-                 * FILA PADRE (INSCRIPCIÓN)
-                 * ==========================
-                 */
-                fputcsv($file, [
-                    'INSCRIPCIÓN',
-                    $instance->evento?->name,
-                    $registration->team_name,
-                    $instance->email,
-                    optional($instance->registered_at)->format('d/m/Y H:i'),
+                $evento = $instance->evento?->name ?? '—';
+                $fecha = optional($instance->registered_at)->format('d/m/Y H:i');
 
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    $registration->subtotal,
-                    $registration->total,
-                ]);
+                /*
+                =====================================================
+                1️⃣ MODELO VIEJO (tabla players)
+                =====================================================
+                */
+                if ($registration->players && $registration->players->count() > 0) {
 
-                /**
-                 * ==========================
-                 * FILAS HIJAS (JUGADORES)
-                 * ==========================
-                 */
-                foreach ($registration->players as $player) {
-
+                    // Fila padre
                     fputcsv($file, [
-                        'JUGADOR',
+                        'INSCRIPCIÓN',
+                        $evento,
+                        $registration->team_name,
+                        $instance->email,
+                        $fecha,
+
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
                         '',
                         '',
                         '',
                         '',
 
-                        $player->name,
-                        $player->email,
-                        $player->phone,
-                        $player->campo,
-                        $player->handicap,
-                        $player->ghin,
-                        $player->shirt,
-                        $player->is_captain ? 'Sí' : 'No',
-                        implode(', ', $player->cumbres ?? []),
-
-                        '',
-                        '',
-                        '',
+                        $registration->subtotal,
+                        $registration->total,
                     ]);
+
+                    // Hijos
+                    foreach ($registration->players as $index => $player) {
+
+                        fputcsv($file, [
+                            'JUGADOR',
+                            '',
+                            '',
+                            '',
+                            '',
+
+                            $player->name,
+                            $player->email,
+                            $player->phone,
+                            $player->campo,
+                            $player->handicap,
+                            $player->ghin,
+                            $player->shirt,
+                            $player->is_captain ? 'Sí' : 'No',
+                            is_array($player->cumbres)
+                            ? implode(', ', $player->cumbres)
+                            : $player->cumbres,
+
+                            '',
+                            '',
+                        ]);
+                    }
                 }
 
-                /**
-                 * Línea en blanco para separar equipos
-                 */
+                /*
+                =====================================================
+                2️⃣ MODELO NUEVO (JSON form_data)
+                =====================================================
+                */ elseif ($registration->form_data) {
+
+                    $data = $registration->form_data;
+
+                    // -------------------------
+                    // EVENTO GOLF (players)
+                    // -------------------------
+                    if (isset($data['players']) && count($data['players']) > 0) {
+
+                        fputcsv($file, [
+                            'INSCRIPCIÓN',
+                            $evento,
+                            $data['team_name'] ?? 'Equipo',
+                            $instance->email,
+                            $fecha,
+
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+
+                            $registration->subtotal,
+                            $registration->total,
+                        ]);
+
+                        foreach ($data['players'] as $index => $player) {
+
+                            fputcsv($file, [
+                                'JUGADOR',
+                                '',
+                                '',
+                                '',
+                                '',
+
+                                $player['name'] ?? '—',
+                                $player['email'] ?? '—',
+                                $player['phone'] ?? '—',
+                                $player['campo'] ?? '—',
+                                $player['handicap'] ?? '—',
+                                $player['ghin'] ?? '—',
+                                $player['shirt'] ?? '—',
+                                $index === 0 ? 'Sí' : 'No',
+                                isset($player['cumbres'])
+                                ? implode(', ', $player['cumbres'])
+                                : '—',
+
+                                '',
+                                '',
+                            ]);
+                        }
+                    }
+
+                    // -------------------------
+                    // EVENTO CENA (participants)
+                    // -------------------------
+                    elseif (isset($data['participants']) && count($data['participants']) > 0) {
+
+                        fputcsv($file, [
+                            'INSCRIPCIÓN',
+                            $evento,
+                            'Invitados',
+                            $instance->email,
+                            $fecha,
+
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+                            '',
+
+                            $registration->subtotal,
+                            $registration->total,
+                        ]);
+
+                        foreach ($data['participants'] as $participant) {
+
+                            fputcsv($file, [
+                                'PARTICIPANTE',
+                                '',
+                                '',
+                                '',
+                                '',
+
+                                $participant['nombre'] ?? '—',
+                                $participant['email'] ?? '—',
+                                $participant['celular'] ?? '—',
+                                $participant['tipo'] ?? '—',
+                                $participant['generacion'] ?? '—',
+                                '',
+                                '',
+                                '',
+                                '',
+                                '',
+                                '',
+                            ]);
+                        }
+                    }
+                }
+
+                // Línea en blanco separadora
                 fputcsv($file, []);
             }
 
