@@ -13,6 +13,9 @@ use App\Services\TicketBuilderService;
 use App\Models\Eventos;
 use App\Services\TicketService;
 use App\Services\RegistrationStripeService;
+use App\Models\RegistrationInstance;
+use App\Services\RegistrationBuilderService;
+
 
 class PaymentController extends Controller
 {
@@ -20,7 +23,8 @@ class PaymentController extends Controller
     public function __construct(
         private TicketBuilderService $ticketBuilder,
         private TicketService $ticketService,
-        private RegistrationStripeService $registrationStripeService
+        private RegistrationStripeService $registrationStripeService,
+        private RegistrationBuilderService $registrationBuilder
     ) {
     }
 
@@ -184,33 +188,62 @@ class PaymentController extends Controller
             abort(400, 'Referencia requerida');
         }
 
-        // Buscar boletos existentes
-        $instances = TicketInstance::where(function ($q) use ($reference) {
+        // ================================
+        // 1️⃣ Buscar Tickets
+        // ================================
+        $ticketInstances = TicketInstance::where(function ($q) use ($reference) {
             $q->where('payment_intent_id', $reference)
                 ->orWhere('reference', $reference);
         })->get();
 
-        if ($instances->isEmpty()) {
-            abort(404, 'Boletos no encontrados');
+        if ($ticketInstances->isNotEmpty()) {
+
+            $instance = $ticketInstances->first();
+            $evento = Eventos::findOrFail($instance->event_id);
+
+            $boletos = $ticketInstances->map(
+                fn($instance) =>
+                $this->ticketBuilder->build(
+                    $instance->ticket,
+                    $instance,
+                    $email,
+                    $instance->purchased_at,
+                    $evento,
+                    $instance->payment_intent_id ?? $instance->reference
+                )
+            )->toArray();
         }
 
-        // Tomamos el primero (todos deberían ser del mismo evento)
-        $instance = $instances->first();
+        // ================================
+        // 2️⃣ Buscar Registrations
+        // ================================
+        else {
 
-        $evento = Eventos::findOrFail($instance->event_id);
+            $registrationInstances = RegistrationInstance::where(
+                'payment_intent_id',
+                $reference
+            )->get();
 
-        $boletos = $instances->map(
-            fn($instance) =>
-            $this->ticketBuilder->build(
-                $instance->ticket,
-                $instance,
-                $email,
-                $instance->purchased_at,
-                $evento,
-                $instance->payment_intent_id ?? $instance->reference
-            )
-        )->toArray();
+            if ($registrationInstances->isEmpty()) {
+                abort(404, 'Boletos o inscripciones no encontrados');
+            }
 
+            $instance = $registrationInstances->first();
+            $evento = Eventos::findOrFail($instance->event_id);
+
+            $boletos = $registrationInstances->map(
+                fn($instance) =>
+                $this->registrationBuilder->build(
+                    $evento,
+                    $instance,
+                    $instance->email
+                )
+            )->toArray();
+        }
+
+        // ================================
+        // PDF
+        // ================================
         $pdf = Pdf::loadView('pdf.boletos', [
             'boletos' => $boletos,
             'email' => $email,
