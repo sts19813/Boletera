@@ -59,11 +59,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/evets/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
 
-        //perfil
-        Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
-        Route::post('/perfil/actualizar', [ProfileController::class, 'update'])->name('profile.update');
-        Route::post('/perfil/foto', [ProfileController::class, 'updatePhoto'])->name('profile.update.photo');
-        Route::post('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
+
 
         // Catálogo
         Route::get('/projects', [ProjectViewController::class, 'index'])->name('projects.index');
@@ -176,6 +172,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
 
+
+    //perfil
+    Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/perfil/actualizar', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/perfil/foto', [ProfileController::class, 'updatePhoto'])->name('profile.update.photo');
+    Route::post('/perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.update.password');
 
 });
 

@@ -4,31 +4,6 @@
 
 @section('content')
 
-    <style>
-        /* Botón Ver registro */
-        .btn-light-primary,
-        .btn-view-registration {
-            background-color: #7723FF !important;
-            color: #ffffff !important;
-            border-color: #7723FF !important;
-        }
-
-        .btn-light-primary:hover,
-        .btn-view-registration:hover {
-            background-color: #5f1ccc !important;
-            border-color: #5f1ccc !important;
-            color: #ffffff !important;
-        }
-
-        /* Badge jugadores */
-        .badge-light-primary {
-            background-color: #7723FF !important;
-            color: #ffffff !important;
-        }
-    </style>
-
-
-
     <div class="card card-flush">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div class="card-title">

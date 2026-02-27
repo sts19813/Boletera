@@ -6,7 +6,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.users.store') }}">
+            <form method="POST" action="{{ route('users.store') }}">
                 @csrf
 
                 <div class="mb-5">

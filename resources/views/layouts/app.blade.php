@@ -18,7 +18,7 @@
 	<meta property="og:site_name" content="Metronic by Keenthemes" />
 	<link rel="canonical" href="https://preview.keenthemes.com/metronic8" />
 	<link rel="shortcut icon" href="{{ asset('assets/media/logos/favicon.ico') }}" />
- 	<meta name="csrf-token" content="{{ csrf_token() }}">
+	<meta name="csrf-token" content="{{ csrf_token() }}">
 	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 	<!-- Fonts -->
@@ -43,11 +43,33 @@
 
 	<style>
 		:root {
-			--bs-primary: #FF3364;
-			--bs-primary-active: #e6003c;
-			--bs-primary-light: #ff6f8c;
+			--bs-primary: #7723FF;
+			--bs-primary-active: #5E1BCC;
+			--bs-primary-light: #F2EBFF;
+		}
+
+		/* Botón Ver registro */
+		.btn-light-primary,
+		.btn-view-registration {
+			background-color: #7723FF !important;
+			color: #ffffff !important;
+			border-color: #7723FF !important;
+		}
+
+		.btn-light-primary:hover,
+		.btn-view-registration:hover {
+			background-color: #5f1ccc !important;
+			border-color: #5f1ccc !important;
+			color: #ffffff !important;
+		}
+
+		/* Badge jugadores */
+		.badge-light-primary {
+			background-color: #7723FF !important;
+			color: #ffffff !important;
 		}
 	</style>
+
 </head>
 
 <body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true"
