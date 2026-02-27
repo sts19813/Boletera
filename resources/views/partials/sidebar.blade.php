@@ -22,15 +22,7 @@
                                 <span class="menu-title">Eventos</span>
                             </a>
                         </div>
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}"
-                                href="/ticket-instances">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-element-7 fs-2"></i>
-                                </span>
-                                <span class="menu-title">{{ __('messages.tickets') }}</span>
-                            </a>
-                        </div>
+
                         <div class="menu-item menu-accordion                                                                                                      {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
                             data-kt-menu-trigger="click">
 
@@ -77,6 +69,15 @@
 
                     {{-- ================= TAQUILLA ================= --}}
                     @canany(['vender boletos', 'reimprimir boletos'])
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}"
+                                href="/ticket-instances">
+                                <span class="menu-icon">
+                                    <i class="ki-outline ki-element-7 fs-2"></i>
+                                </span>
+                                <span class="menu-title">{{ __('messages.tickets') }}</span>
+                            </a>
+                        </div>
 
                         <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
                             data-kt-menu-trigger="click">
@@ -112,7 +113,7 @@
                                             <span class="menu-bullet">
                                                 <span class="bullet bullet-dot"></span>
                                             </span>
-                                            <span class="menu-title">Reimpresión</span>
+                                            <span class="menu-title">Inscripciones</span>
                                         </a>
                                     </div>
                                 @endcan

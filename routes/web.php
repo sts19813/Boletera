@@ -75,11 +75,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('admin.dashboard.data');
 
         Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
-        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])->name('admin.ticket_instances.index');
-
-
-        
-
         Route::resource('/users', UserController::class);
 
 
@@ -143,7 +138,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
         Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])->name('boletos.reprint');
-        
+        Route::get('/ticket-instances', [TicketReprintController::class, 'index'])->name('admin.ticket_instances.index');
+
     });
 
     /*
@@ -172,7 +168,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['role:admin|cumbres|taquillero'])->group(function () {
- Route::get('/reimpresion', [RegistrationController::class, 'index'])->name('admin.registrations.index');
+        Route::get('/reimpresion', [RegistrationController::class, 'index'])->name('admin.registrations.index');
         Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
         Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
