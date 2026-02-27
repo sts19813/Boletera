@@ -13,6 +13,10 @@ use App\Services\RegistrationBuilderService;
 use App\Services\RegistrationService;
 use App\Services\TicketBuilderService;
 use App\Services\TicketService;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BoletosMail;
+
 class TaquillaController extends Controller
 {
     public function __construct(
@@ -45,9 +49,19 @@ class TaquillaController extends Controller
             $esCortesia = $paymentInput === 'cortesia';
             $paymentMethod = $esCortesia ? 'cash' : $paymentInput;
 
+            $emailInput = $request->input('email');
+
+            $validator = Validator::make(
+                ['email' => $emailInput],
+                ['email' => 'nullable|email']
+            );
+
+            $emailValido = !$validator->fails() && $emailInput;
+
             $email = $esCortesia
                 ? 'CORTESIA'
-                : ($request->input('email') ?: 'taquilla@local');
+                : ($emailValido ? $emailInput : 'taquilla@local');
+
 
             $reference = 'TAQ-' . now()->format('YmdHis');
             $boletos = [];
@@ -100,6 +114,24 @@ class TaquillaController extends Controller
                         $paymentMethod
                     )
                 );
+
+            }
+
+
+            if ($emailValido) {
+
+                if (
+                    $emailValido &&
+                    !$esCortesia &&
+                    $email !== 'taquilla@local' &&
+                    count($boletos) > 0
+                ) {
+                    $pdfContent = $this->generateBoletosPdf($boletos, $email);
+
+                    Mail::to($email)->send(
+                        new BoletosMail($pdfContent, $boletos)
+                    );
+                }
             }
 
             return view('pago.success', [
@@ -108,6 +140,15 @@ class TaquillaController extends Controller
                 'evento' => $evento
             ]);
         });
+    }
+
+    private function generateBoletosPdf(array $boletos, string $email)
+    {
+        return Pdf::loadView('pdf.boletos', [
+            'boletos' => $boletos,
+            'email' => $email,
+        ])->setPaper([0, 0, 400, 700])->output();
+
     }
 
     public function pdf(TicketInstance $instance)
