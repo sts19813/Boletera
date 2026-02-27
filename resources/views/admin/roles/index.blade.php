@@ -64,6 +64,23 @@
                                     </span>
                                 @endforeach
                             </td>
+                            <td class="text-end">
+                                <a href="{{ route('roles.edit', $role) }}" class="btn btn-sm btn-light-primary me-2">
+                                    <i class="ki-duotone ki-pencil fs-5"></i>
+                                    Editar
+                                </a>
+
+                                <form action="{{ route('roles.destroy', $role) }}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('¿Seguro que deseas eliminar este rol?')">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button class="btn btn-sm btn-light-danger">
+                                        <i class="ki-duotone ki-trash fs-5"></i>
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

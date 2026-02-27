@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 class RoleController extends Controller
 {
+
     public function index()
     {
         $roles = Role::with('permissions')->get();
@@ -16,33 +17,18 @@ class RoleController extends Controller
         return view('admin.roles.index', compact('roles', 'permissions'));
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|unique:roles,name'
-        ]);
-
-        $role = Role::create([
-            'name' => $request->name
-        ]);
-
-        if ($request->permissions) {
-            $role->syncPermissions($request->permissions);
-        }
-
-        return back()->with('success', 'Rol creado correctamente');
-    }
-
     public function edit(Role $role)
     {
         $permissions = Permission::all();
-        return view('admin.roles.edit', compact('role', 'permissions'));
+        $rolePermissions = $role->permissions->pluck('name')->toArray();
+
+        return view('admin.roles.edit', compact('role', 'permissions', 'rolePermissions'));
     }
 
     public function update(Request $request, Role $role)
     {
         $request->validate([
-            'name' => 'required'
+            'name' => 'required|string|max:255',
         ]);
 
         $role->update([
@@ -52,12 +38,14 @@ class RoleController extends Controller
         $role->syncPermissions($request->permissions ?? []);
 
         return redirect()->route('roles.index')
-            ->with('success', 'Rol actualizado');
+            ->with('success', 'Rol actualizado correctamente.');
     }
 
     public function destroy(Role $role)
     {
         $role->delete();
-        return back()->with('success', 'Rol eliminado');
+
+        return redirect()->route('roles.index')
+            ->with('success', 'Rol eliminado correctamente.');
     }
 }

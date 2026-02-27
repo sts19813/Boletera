@@ -143,6 +143,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/taquilla/sell', [TaquillaController::class, 'sell']);
         Route::get('/taquilla/ticket/{instance}/pdf', [TaquillaController::class, 'pdf']);
         Route::get('/boletos/reprint', [PaymentController::class, 'reprint'])->name('boletos.reprint');
+        
     });
 
     /*
@@ -170,7 +171,7 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-    Route::middleware(['role:admin|cumbres'])->group(function () {
+    Route::middleware(['role:admin|cumbres|taquillero'])->group(function () {
 
         Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
