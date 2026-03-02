@@ -4,12 +4,13 @@
 
 @section('content')
 
-    <div class="card card-flush">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div class="card-title">
-                <h3 class="fw-bold mb-0">Inscripciones</h3>
-            </div>
+    <div class="card-header d-flex align-items-center">
 
+        <div class="card-title">
+            <h3 class="fw-bold mb-0">Inscripciones</h3>
+        </div>
+
+        <div class="ms-auto d-flex gap-2">
             <a href="{{ route('admin.registrations.export', '019c0bfd-2e8e-7364-95cb-d930e70ba522') }}"
                 class="btn btn-sm btn-success">
                 Exportar Golf
@@ -19,50 +20,51 @@
                 class="btn btn-sm btn-primary">
                 Exportar Cena Gala
             </a>
-          
         </div>
 
-        <div class="card-body">
-            <table class="table align-middle table-row-dashed fs-6 gy-5" id="kt_registrations">
-                <thead>
-                    <tr class="text-start text-muted fw-bold fs-7 text-uppercase">
-                        <th>Email</th>
-                        <th>Evento</th>
+    </div>
 
-                        <th>Fecha</th>
-                        <th class="text-end">Acciones</th>
+    <div class="card-body">
+        <table class="table align-middle table-row-dashed fs-6 gy-5" id="kt_registrations">
+            <thead>
+                <tr class="text-start text-muted fw-bold fs-7 text-uppercase">
+                    <th>Email</th>
+                    <th>Evento</th>
+
+                    <th>Fecha</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach($instances as $instance)
+                    @php $registration = $instance->registration; @endphp
+                    <tr>
+                        <td>{{ $instance->email }}</td>
+                        <td>{{ $instance->evento?->name ?? '—' }}</td>
+                        <td>{{ $instance->registered_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                        <td class="text-end">
+                            @if($registration)
+                                <button class="btn btn-sm btn-light-primary btn-view-registration me-2"
+                                    data-instance='@json($instance)' data-registration='@json($registration)'>
+                                    Ver registro
+                                </button>
+
+                                <a target="_blank" href="{{ route('admin.registrations.reprint', $instance) }}"
+                                    class="btn btn-sm btn-light-primary">
+                                    Reimprimir
+                                </a>
+                            @else
+                                —
+                            @endif
+                        </td>
+
                     </tr>
-                </thead>
+                @endforeach
+            </tbody>
 
-                <tbody>
-                    @foreach($instances as $instance)
-                        @php $registration = $instance->registration; @endphp
-                        <tr>
-                            <td>{{ $instance->email }}</td>
-                            <td>{{ $instance->evento?->name ?? '—' }}</td>
-                            <td>{{ $instance->registered_at?->format('d/m/Y H:i') ?? '—' }}</td>
-                            <td class="text-end">
-                                @if($registration)
-                                    <button class="btn btn-sm btn-light-primary btn-view-registration me-2"
-                                        data-instance='@json($instance)' data-registration='@json($registration)'>
-                                        Ver registro
-                                    </button>
-
-                                    <a target="_blank" href="{{ route('admin.registrations.reprint', $instance) }}"
-                                        class="btn btn-sm btn-light-primary">
-                                        Reimprimir
-                                    </a>
-                                @else
-                                    —
-                                @endif
-                            </td>
-
-                        </tr>
-                    @endforeach
-                </tbody>
-
-            </table>
-        </div>
+        </table>
+    </div>
     </div>
 
     <div class="modal fade" id="registrationModal" tabindex="-1">
@@ -165,18 +167,18 @@
                 if (data.players && data.players.length > 0) {
 
                     headers = `
-                            <tr>
-                                <th>Jugador</th>
-                                <th>Email</th>
-                                <th>Celular</th>
-                                <th>Campo</th>
-                                <th>Handicap</th>
-                                <th>GHIN</th>
-                                <th>Playera</th>
-                                <th>Relación Cumbres</th>
-                                <th>Capitán</th>
-                            </tr>
-                        `;
+                                <tr>
+                                    <th>Jugador</th>
+                                    <th>Email</th>
+                                    <th>Celular</th>
+                                    <th>Campo</th>
+                                    <th>Handicap</th>
+                                    <th>GHIN</th>
+                                    <th>Playera</th>
+                                    <th>Relación Cumbres</th>
+                                    <th>Capitán</th>
+                                </tr>
+                            `;
 
                     data.players.forEach((p, index) => {
 
@@ -185,18 +187,18 @@
                             : '—';
 
                         rows += `
-                                <tr>
-                                    <td>${p.name ?? '—'}</td>
-                                    <td>${p.email ?? '—'}</td>
-                                    <td>${p.phone ?? '—'}</td>
-                                    <td>${p.campo ?? '—'}</td>
-                                    <td>${p.handicap ?? '—'}</td>
-                                    <td>${p.ghin ?? '—'}</td>
-                                    <td>${p.shirt ?? '—'}</td>
-                                    <td>${cumbres}</td>
-                                    <td>${index === 0 ? 'Sí' : '—'}</td>
-                                </tr>
-                            `;
+                                    <tr>
+                                        <td>${p.name ?? '—'}</td>
+                                        <td>${p.email ?? '—'}</td>
+                                        <td>${p.phone ?? '—'}</td>
+                                        <td>${p.campo ?? '—'}</td>
+                                        <td>${p.handicap ?? '—'}</td>
+                                        <td>${p.ghin ?? '—'}</td>
+                                        <td>${p.shirt ?? '—'}</td>
+                                        <td>${cumbres}</td>
+                                        <td>${index === 0 ? 'Sí' : '—'}</td>
+                                    </tr>
+                                `;
                     });
 
                     teamName = data.team_name ?? teamName;
@@ -210,26 +212,26 @@
                 else if (data.participants && data.participants.length > 0) {
 
                     headers = `
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Email</th>
-                                <th>Celular</th>
-                                <th>Tipo</th>
-                                <th>Generación</th>
-                            </tr>
-                        `;
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Celular</th>
+                                    <th>Tipo</th>
+                                    <th>Generación</th>
+                                </tr>
+                            `;
 
                     data.participants.forEach(p => {
 
                         rows += `
-                                <tr>
-                                    <td>${p.nombre ?? '—'}</td>
-                                    <td>${p.email ?? '—'}</td>
-                                    <td>${p.celular ?? '—'}</td>
-                                    <td>${p.tipo ?? '—'}</td>
-                                    <td>${p.generacion ?? '—'}</td>
-                                </tr>
-                            `;
+                                    <tr>
+                                        <td>${p.nombre ?? '—'}</td>
+                                        <td>${p.email ?? '—'}</td>
+                                        <td>${p.celular ?? '—'}</td>
+                                        <td>${p.tipo ?? '—'}</td>
+                                        <td>${p.generacion ?? '—'}</td>
+                                    </tr>
+                                `;
                     });
 
                     teamName = 'Invitados';
