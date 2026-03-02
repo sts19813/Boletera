@@ -20,12 +20,14 @@ class RegistrationController extends Controller
         return view('admin.registrations.index', compact('instances'));
     }
 
-    public function export()
+    public function export($eventId)
     {
         $instances = RegistrationInstance::with([
             'evento',
             'registration.players'
-        ])->get();
+        ])
+            ->where('event_id', $eventId)
+            ->get();
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -33,6 +35,13 @@ class RegistrationController extends Controller
         ];
 
         $callback = function () use ($instances) {
+
+            $clean = function ($value) {
+                if (is_array($value)) {
+                    return implode(', ', array_map(fn($v) => strip_tags((string) $v), $value));
+                }
+                return is_string($value) ? strip_tags($value) : $value;
+            };
 
             $file = fopen('php://output', 'w');
 
@@ -68,7 +77,7 @@ class RegistrationController extends Controller
                     continue;
                 }
 
-                $evento = $instance->evento?->name ?? '—';
+                $evento = $clean($instance->evento?->name ?? '—');
                 $fecha = optional($instance->registered_at)->format('d/m/Y H:i');
 
                 /*
@@ -78,12 +87,11 @@ class RegistrationController extends Controller
                 */
                 if ($registration->players && $registration->players->count() > 0) {
 
-                    // Fila padre
                     fputcsv($file, [
                         'INSCRIPCIÓN',
                         $evento,
-                        $registration->team_name,
-                        $instance->email,
+                        $clean($registration->team_name),
+                        $clean($instance->email),
                         $fecha,
 
                         '',
@@ -100,7 +108,6 @@ class RegistrationController extends Controller
                         $registration->total,
                     ]);
 
-                    // Hijos
                     foreach ($registration->players as $index => $player) {
 
                         fputcsv($file, [
@@ -110,17 +117,15 @@ class RegistrationController extends Controller
                             '',
                             '',
 
-                            $player->name,
-                            $player->email,
-                            $player->phone,
-                            $player->campo,
-                            $player->handicap,
-                            $player->ghin,
-                            $player->shirt,
+                            $clean($player->name),
+                            $clean($player->email),
+                            $clean($player->phone),
+                            $clean($player->campo),
+                            $clean($player->handicap),
+                            $clean($player->ghin),
+                            $clean($player->shirt),
                             $player->is_captain ? 'Sí' : 'No',
-                            is_array($player->cumbres)
-                            ? implode(', ', $player->cumbres)
-                            : $player->cumbres,
+                            $clean($player->cumbres),
 
                             '',
                             '',
@@ -136,16 +141,18 @@ class RegistrationController extends Controller
 
                     $data = $registration->form_data;
 
-                    // -------------------------
-                    // EVENTO GOLF (players)
-                    // -------------------------
+                    /*
+                    =========================
+                    EVENTO GOLF (players)
+                    =========================
+                    */
                     if (isset($data['players']) && count($data['players']) > 0) {
 
                         fputcsv($file, [
                             'INSCRIPCIÓN',
                             $evento,
-                            $data['team_name'] ?? 'Equipo',
-                            $instance->email,
+                            $clean($data['team_name'] ?? 'Equipo'),
+                            $clean($instance->email),
                             $fecha,
 
                             '',
@@ -171,17 +178,15 @@ class RegistrationController extends Controller
                                 '',
                                 '',
 
-                                $player['name'] ?? '—',
-                                $player['email'] ?? '—',
-                                $player['phone'] ?? '—',
-                                $player['campo'] ?? '—',
-                                $player['handicap'] ?? '—',
-                                $player['ghin'] ?? '—',
-                                $player['shirt'] ?? '—',
+                                $clean($player['name'] ?? '—'),
+                                $clean($player['email'] ?? '—'),
+                                $clean($player['phone'] ?? '—'),
+                                $clean($player['campo'] ?? '—'),
+                                $clean($player['handicap'] ?? '—'),
+                                $clean($player['ghin'] ?? '—'),
+                                $clean($player['shirt'] ?? '—'),
                                 $index === 0 ? 'Sí' : 'No',
-                                isset($player['cumbres'])
-                                ? implode(', ', $player['cumbres'])
-                                : '—',
+                                $clean($player['cumbres'] ?? '—'),
 
                                 '',
                                 '',
@@ -189,16 +194,17 @@ class RegistrationController extends Controller
                         }
                     }
 
-                    // -------------------------
-                    // EVENTO CENA (participants)
-                    // -------------------------
-                    elseif (isset($data['participants']) && count($data['participants']) > 0) {
+                    /*
+                    =========================
+                    EVENTO CENA (participants)
+                    =========================
+                    */ elseif (isset($data['participants']) && count($data['participants']) > 0) {
 
                         fputcsv($file, [
                             'INSCRIPCIÓN',
                             $evento,
                             'Invitados',
-                            $instance->email,
+                            $clean($instance->email),
                             $fecha,
 
                             '',
@@ -224,11 +230,11 @@ class RegistrationController extends Controller
                                 '',
                                 '',
 
-                                $participant['nombre'] ?? '—',
-                                $participant['email'] ?? '—',
-                                $participant['celular'] ?? '—',
-                                $participant['tipo'] ?? '—',
-                                $participant['generacion'] ?? '—',
+                                $clean($participant['nombre'] ?? '—'),
+                                $clean($participant['email'] ?? '—'),
+                                $clean($participant['celular'] ?? '—'),
+                                $clean($participant['tipo'] ?? '—'),
+                                $clean($participant['generacion'] ?? '—'),
                                 '',
                                 '',
                                 '',
@@ -240,7 +246,6 @@ class RegistrationController extends Controller
                     }
                 }
 
-                // Línea en blanco separadora
                 fputcsv($file, []);
             }
 

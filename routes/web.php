@@ -168,7 +168,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/registrations', [RegistrationController::class, 'index'])->name('admin.registrations.index');
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
         Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
-        Route::get('/admin/registrations/export', [RegistrationController::class, 'export'])->name('admin.registrations.export');
+
+        Route::get('/admin/registrations/export/{event}', [RegistrationController::class, 'export'])->name('admin.registrations.export');
     });
 
 
