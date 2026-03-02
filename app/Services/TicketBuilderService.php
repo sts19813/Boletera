@@ -38,7 +38,7 @@ class TicketBuilderService
                 'name' => $ticket->name,
                 'row' => $ticket->row ?? null,
                 'seat' => $ticket->seat ?? null,
-                'price' => $ticket->total_price,
+                'price' => $instance->price ?? $ticket->total_price,
             ],
             'order' => [
                 'reference' => $instance?->reference,

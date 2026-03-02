@@ -30,7 +30,7 @@ class RegistrationBuilderService
                 'name' => 'General',
                 'row' => null,
                 'seat' => null,
-                'price' => $evento->price,
+                'price' => $instance->price ?? $evento->price,
             ],
             'order' => [
                 'payment_intent' => $instance->payment_intent_id,
