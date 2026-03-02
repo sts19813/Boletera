@@ -6,6 +6,7 @@ use App\Models\Eventos;
 use App\Models\RegistrationInstance;
 use App\Models\Registration;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class RegistrationService
 {
@@ -34,6 +35,7 @@ class RegistrationService
 
             $instance = RegistrationInstance::create([
                 'event_id' => $evento->id,
+                'user_id' => Auth::id(),
                 'email' => $email,
                 'nombre' => $nombre,
                 'celular' => $celular,

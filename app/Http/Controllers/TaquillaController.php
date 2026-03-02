@@ -49,19 +49,42 @@ class TaquillaController extends Controller
             $esCortesia = $paymentInput === 'cortesia';
             $paymentMethod = $esCortesia ? 'cash' : $paymentInput;
 
-            $emailInput = $request->input('email');
+            $emailInput = trim($request->input('email'));
 
-            $validator = Validator::make(
-                ['email' => $emailInput],
-                ['email' => 'nullable|email']
-            );
+            $emailEsValido = !empty($emailInput) && filter_var($emailInput, FILTER_VALIDATE_EMAIL);
 
-            $emailValido = !$validator->fails() && $emailInput;
+            // ==============================
+            // DETERMINAR NOMBRE DEL COMPRADOR
+            // ==============================
+
+            if ($esCortesia) {
+
+                // Si es cortesía y escribieron algo, guardar eso
+                if (!empty($emailInput)) {
+                    $nombreComprador = $emailInput;
+                } else {
+                    $nombreComprador = 'CORTESIA';
+                }
+
+            } else {
+
+                // Venta normal
+                if ($emailEsValido) {
+                    $nombreComprador = 'taquilla';
+                } elseif (!empty($emailInput)) {
+                    $nombreComprador = $emailInput;
+                } else {
+                    $nombreComprador = 'taquilla';
+                }
+            }
+
+            // ==============================
+            // DETERMINAR EMAIL FINAL
+            // ==============================
 
             $email = $esCortesia
                 ? 'CORTESIA'
-                : ($emailValido ? $emailInput : 'taquilla@local');
-
+                : ($emailEsValido ? $emailInput : 'taquilla@local');
 
             $reference = 'TAQ-' . now()->format('YmdHis');
             $boletos = [];
@@ -80,7 +103,7 @@ class TaquillaController extends Controller
                         [
                             'qty' => $item['qty'] ?? 1,
                             'email' => $email,
-                            'nombre' => 'taquilla',
+                            'nombre' => $nombreComprador,
                             'celular' => null,
                             'form_data' => $request->input('registration'),
                             'reference' => $reference,
@@ -110,6 +133,7 @@ class TaquillaController extends Controller
                         $evento,
                         $item,
                         $email,
+                        $nombreComprador,
                         $reference,
                         $paymentMethod
                     )
@@ -118,20 +142,17 @@ class TaquillaController extends Controller
             }
 
 
-            if ($emailValido) {
+            if (
+                $emailEsValido &&
+                !$esCortesia &&
+                $email !== 'taquilla@local' &&
+                count($boletos) > 0
+            ) {
+                $pdfContent = $this->generateBoletosPdf($boletos, $email);
 
-                if (
-                    $emailValido &&
-                    !$esCortesia &&
-                    $email !== 'taquilla@local' &&
-                    count($boletos) > 0
-                ) {
-                    $pdfContent = $this->generateBoletosPdf($boletos, $email);
-
-                    Mail::to($email)->send(
-                        new BoletosMail($pdfContent, $boletos)
-                    );
-                }
+                Mail::to($email)->send(
+                    new BoletosMail($pdfContent, $boletos)
+                );
             }
 
             return view('pago.success', [

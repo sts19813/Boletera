@@ -192,14 +192,18 @@ class DashboardController extends Controller
      */
     public function boletos()
     {
-        $boletos = TicketInstance::with('ticket')
+        $boletos = TicketInstance::with(['ticket', 'evento'])
             ->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'user_name' => $item->user?->name ?? 'StomTickets',
                     'tipo' => 'boleto',
+                    'evento' => $item->evento->name ?? 'Evento',
                     'boleto' => $item->ticket->name ?? 'Boleto',
                     'email' => $item->email ?? 'Taquilla',
+                    'nombre' => $item->nombre ?? '-',
                     'metodo' => $item->payment_method,
                     'referencia' => $item->reference,
                     'precio' => $item->price,
@@ -212,11 +216,15 @@ class DashboardController extends Controller
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'user_name' => $item->user?->name ?? 'StomTickets',
                     'tipo' => 'inscripcion',
-                    'boleto' => $item->evento->name ?? 'Inscripción',
+                    'evento' => $item->evento->name ?? 'Evento',
+                    'boleto' => 'N/A - Inscripción',
+                     'nombre' => $item->nombre ?? '-',
                     'email' => $item->email,
                     'metodo' => 'card',
-                    'referencia' =>  '',
+                    'referencia' => $item->payment_intent_id,
                     'precio' => $item->price,
                     'fecha' => $item->registered_at,
                 ];

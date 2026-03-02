@@ -9,7 +9,7 @@ use App\Models\TicketInstance;
 use App\Models\Eventos;
 use Illuminate\Support\Str;
 use App\Services\TicketBuilderService;
-
+use Illuminate\Support\Facades\Auth;
 class TicketService
 {
     public function __construct(
@@ -68,6 +68,7 @@ class TicketService
 
                 $instance = TicketInstance::create([
                     'event_id' => $evento->id,
+                    'user_id' => Auth::id(),
                     'ticket_id' => $ticket->id,
                     'email' => $email,
                     'nombre' => $nombre,
@@ -125,6 +126,7 @@ class TicketService
 
                 $instance = TicketInstance::create([
                     'ticket_id' => $ticket->id,
+                    'user_id' => Auth::id(),
                     'event_id' => $evento->id,
                     'email' => $email,
                     'nombre' => $nombre,
@@ -167,6 +169,7 @@ class TicketService
         Eventos $evento,
         array $item,
         string $email,
+        string $nombreComprador,
         string $reference,
         string $paymentMethod
     ): array {
@@ -184,8 +187,9 @@ class TicketService
 
             $instance = TicketInstance::create([
                 'ticket_id' => $ticket->id,
+                'user_id' => Auth::id(),
                 'event_id' => $evento->id,
-                'nombre' => 'taquilla',
+                'nombre' => $nombreComprador,
                 'email' => $email,
                 'purchased_at' => now(),
                 'qr_hash' => (string) Str::uuid(),

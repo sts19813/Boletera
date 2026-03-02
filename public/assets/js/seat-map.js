@@ -35,13 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-metodo').forEach(btn => {
         btn.addEventListener('click', () => {
 
-            const metodoPago = btn.dataset.metodo;
-            const nombreInput = document.getElementById('ventaNombre')?.value.trim();
-            const esCortesia = metodoPago === 'cortesia';
 
-            let email = 'taquilla@local';
-            if (nombreInput) email = nombreInput;
-            if (esCortesia) email = 'CORTESIA';
+            const metodoPago = btn.dataset.metodo;
+            const nombreInput = document.getElementById('ventaNombre')?.value.trim() || '';
 
             let registrationData = null;
 
@@ -51,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const form = document.getElementById('registrationForm');
                 registrationData = formDataToObject(form);
             }
+            debugger
 
             fetch('/taquilla/sell', {
                 method: 'POST',
@@ -67,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         qty: t.qty,
                         type: t.id === 'registration' ? 'registration' : 'ticket'
                     })),
-                    email: email,
+                    email: nombreInput,
                     event_id: window.EVENT_ID,
                     payment_method: metodoPago,
                     registration: registrationData,

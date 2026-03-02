@@ -14,6 +14,7 @@ class RegistrationInstance extends Model
 
     protected $fillable = [
         'event_id',
+        'user_id',
         'email',
         'payment_intent_id',
         'qr_hash',
@@ -34,5 +35,10 @@ class RegistrationInstance extends Model
     public function registration()
     {
         return $this->hasOne(Registration::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -11,8 +11,9 @@ class TicketInstance extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-     protected $fillable = [
+    protected $fillable = [
         'ticket_id',
+        'user_id',
         'event_id',
         'email',
         'nombre',
@@ -43,6 +44,11 @@ class TicketInstance extends Model
         });
     }
 
+    public function evento()
+    {
+        return $this->belongsTo(Eventos::class, 'event_id');
+    }
+
     public function ticket()
     {
         return $this->belongsTo(Ticket::class);
@@ -51,5 +57,10 @@ class TicketInstance extends Model
     public function checkins()
     {
         return $this->hasMany(TicketCheckin::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
