@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Eventos;
 use Spatie\Permission\Models\Role;
+
 class UserController extends Controller
 {
     public function index()
@@ -44,17 +46,32 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $roles = Role::all();
-        return view('admin.users.edit', compact('user', 'roles'));
+        $events = Eventos::all();
+
+        return view('admin.users.edit', compact('user', 'roles', 'events'));
     }
 
     public function update(Request $request, User $user)
     {
-        $user->update($request->only('name', 'email'));
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'role' => 'required'
+        ]);
 
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        // Actualizar rol
         $user->syncRoles([$request->role]);
 
+        // Sincronizar eventos
+        $user->events()->sync($request->events ?? []);
+
         return redirect()->route('users.index')
-            ->with('success', 'Usuario actualizado');
+            ->with('success', 'Usuario actualizado correctamente');
     }
 
     public function destroy(User $user)

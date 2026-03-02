@@ -49,8 +49,14 @@ class Eventos extends Model
         'allows_multiple_registrations' => 'boolean',
     ];
 
+
     public function users()
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(
+            \App\Models\User::class,
+            'event_user',
+            'event_id',
+            'user_id'
+        );
     }
 }

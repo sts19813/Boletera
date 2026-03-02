@@ -72,6 +72,12 @@ class User extends Authenticatable
 
     public function events()
     {
-        return $this->belongsToMany(Eventos::class);
+        return $this->belongsToMany(
+            \App\Models\Eventos::class,
+            'event_user',   // nombre EXACTO de tu tabla pivote
+            'user_id',      // foreign key de este modelo
+            'event_id'      // foreign key del otro modelo
+        );
     }
+
 }

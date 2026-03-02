@@ -10,14 +10,34 @@ class RegistrationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($event = null)
     {
-        $instances = RegistrationInstance::with([
+        $user = auth()->user();
+
+        $query = RegistrationInstance::with([
             'evento',
             'registration.players'
-        ])->latest()->get();
+        ])->latest();
 
-        return view('admin.registrations.index', compact('instances'));
+        // 🔹 Si no es admin, limitar a sus eventos
+        if (!$user->hasRole('admin')) {
+            $allowedEventIds = $user->events()->pluck('eventos.id');
+
+            $query->whereIn('event_id', $allowedEventIds);
+        }
+
+        if ($event) {
+            $query->where('event_id', $event);
+        }
+
+        $instances = $query->get();
+
+        // Para mostrar menú de eventos disponibles
+        $events = $user->hasRole('admin')
+            ? \App\Models\Eventos::all()
+            : $user->events;
+
+        return view('admin.registrations.index', compact('instances', 'events'));
     }
 
     public function export($eventId)

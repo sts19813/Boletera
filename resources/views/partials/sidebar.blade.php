@@ -12,201 +12,235 @@
                 class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary px-3 mb-5">
 
                 @auth
-                    {{-- ================= EVENTOS ================= --}}
-                    @canany(['crear eventos', 'editar eventos', 'eliminar eventos', 'configurar eventos'])
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('events*') ? 'active' : '' }}" href="/events">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-home-2 fs-2"></i>
-                                </span>
-                                <span class="menu-title">Eventos</span>
-                            </a>
-                        </div>
-
-                        <div class="menu-item menu-accordion                                                                                                      {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
-                            data-kt-menu-trigger="click">
-
-                            <span class="menu-link">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-briefcase fs-2"></i>
-                                </span>
-                                <span class="menu-title">{{ __('messages.catalogo_naboo') }}</span>
-                                <span class="menu-arrow"></span>
+                {{-- ================= EVENTOS ================= --}}
+                @canany(['crear eventos', 'editar eventos', 'eliminar eventos', 'configurar eventos'])
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('events*') ? 'active' : '' }}" href="/events">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-home-2 fs-2"></i>
                             </span>
+                            <span class="menu-title">Eventos</span>
+                        </a>
+                    </div>
 
-                            <div class="menu-sub menu-sub-accordion">
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('projects*') ? 'active' : '' }}" href="/projects">
-                                        <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                        <span class="menu-title">{{ __('messages.proyectos') }}</span>
-                                    </a>
-                                </div>
+                    <div class="menu-item menu-accordion                                                                                                      {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
+                        data-kt-menu-trigger="click">
 
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('phases*') ? 'active' : '' }}" href="/phases">
-                                        <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                        <span class="menu-title">{{ __('messages.fases') }}</span>
-                                    </a>
-                                </div>
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-briefcase fs-2"></i>
+                            </span>
+                            <span class="menu-title">{{ __('messages.catalogo_naboo') }}</span>
+                            <span class="menu-arrow"></span>
+                        </span>
 
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('stages*') ? 'active' : '' }}" href="/stages">
-                                        <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                        <span class="menu-title">{{ __('messages.etapas') }}</span>
-                                    </a>
-                                </div>
+                        <div class="menu-sub menu-sub-accordion">
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('projects*') ? 'active' : '' }}" href="/projects">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">{{ __('messages.proyectos') }}</span>
+                                </a>
+                            </div>
 
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('tickets*') ? 'active' : '' }}" href="/tickets">
-                                        <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                        <span class="menu-title">{{ __('messages.tickets') }}</span>
-                                    </a>
-                                </div>
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('phases*') ? 'active' : '' }}" href="/phases">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">{{ __('messages.fases') }}</span>
+                                </a>
+                            </div>
+
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('stages*') ? 'active' : '' }}" href="/stages">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">{{ __('messages.etapas') }}</span>
+                                </a>
+                            </div>
+
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('tickets*') ? 'active' : '' }}" href="/tickets">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">{{ __('messages.tickets') }}</span>
+                                </a>
                             </div>
                         </div>
-                    @endcanany
+                    </div>
+                @endcanany
 
 
-                    {{-- ================= TAQUILLA ================= --}}
-                    @canany(['vender boletos', 'reimprimir boletos'])
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}"
-                                href="/ticket-instances">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-element-7 fs-2"></i>
-                                </span>
-                                <span class="menu-title">{{ __('messages.tickets') }}</span>
-                            </a>
-                        </div>
-
-                        <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
-                            data-kt-menu-trigger="click">
-
-                            <span class="menu-link">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-element-7 fs-2"></i>
-                                </span>
-                                <span class="menu-title">Taquilla</span>
-                                <span class="menu-arrow"></span>
+                {{-- ================= TAQUILLA ================= --}}
+                @canany(['vender boletos', 'reimprimir boletos'])
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}"
+                            href="/ticket-instances">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-element-7 fs-2"></i>
                             </span>
+                            <span class="menu-title">{{ __('messages.tickets') }}</span>
+                        </a>
+                    </div>
 
-                            <div class="menu-sub menu-sub-accordion">
+                    <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
+                        data-kt-menu-trigger="click">
 
-                                {{-- Venta --}}
-                                @can('vender boletos')
-                                    <div class="menu-item">
-                                        <a class="menu-link {{ request()->is('taquilla*') ? 'active' : '' }}" href="/taquilla">
-                                            <span class="menu-bullet">
-                                                <span class="bullet bullet-dot"></span>
-                                            </span>
-                                            <span class="menu-title">Venta</span>
-                                        </a>
-                                    </div>
-                                @endcan
-
-
-                                {{-- Reimpresión --}}
-                                @can('reimprimir boletos')
-                                    <div class="menu-item">
-                                        <a class="menu-link {{ request()->is('reimpresion*') ? 'active' : '' }}"
-                                            href="/reimpresion">
-                                            <span class="menu-bullet">
-                                                <span class="bullet bullet-dot"></span>
-                                            </span>
-                                            <span class="menu-title">Inscripciones</span>
-                                        </a>
-                                    </div>
-                                @endcan
-                            </div>
-                        </div>
-                    @endcanany
-
-
-                    {{-- ================= ESCANER ================= --}}
-                    @can('escanear boletos')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('checkin*') ? 'active' : '' }}" href="/checkin">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-scan-barcode fs-2"></i>
-                                </span>
-                                <span class="menu-title">Escanear boletos</span>
-                            </a>
-                        </div>
-                    @endcan
-
-
-
-
-
-                    {{-- ================= REPORTES ================= --}}
-                    @canany(['ver reportes', 'exportar reportes'])
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->is('dashboard*') ? 'active' : '' }}" href="/dashboard">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-chart-line fs-2"></i>
-                                </span>
-                                <span class="menu-title">Reportes</span>
-                            </a>
-                        </div>
-                    @endcanany
-
-
-                    {{-- ================= CONFIGURACIONES () =================--}}
-                    @can('crear eventos')
-                        <div class="menu-item menu-accordion {{ request()->is('users*') ? 'show' : '' }}"
-                            data-kt-menu-trigger="click">
-
-                            <span class="menu-link">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-setting-3 fs-2"></i>
-                                </span>
-                                <span class="menu-title">Configuraciones</span>
-                                <span class="menu-arrow"></span>
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-element-7 fs-2"></i>
                             </span>
+                            <span class="menu-title">Taquilla</span>
+                            <span class="menu-arrow"></span>
+                        </span>
 
-                            <div class="menu-sub menu-sub-accordion">
-                                @can('crear eventos')
-                                    <div class="menu-item">
-                                        <a class="menu-link {{ request()->is('users*') ? 'active' : '' }}" href="/users">
-                                            <span class="menu-bullet">
-                                                <span class="bullet bullet-dot"></span>
-                                            </span>
-                                            <span class="menu-title">Usuarios</span>
-                                        </a>
-                                    </div>
-                                    <div class="menu-item">
-                                        <a class="menu-link {{ request()->is('roles*') ? 'active' : '' }}" href="/roles">
-                                            <span class="menu-bullet">
-                                                <span class="bullet bullet-dot"></span>
-                                            </span>
-                                            <span class="menu-title">Roles</span>
-                                        </a>
-                                    </div>
-                                    <div class="menu-item">
-                                        <a class="menu-link {{ request()->is('permissions*') ? 'active' : '' }}"
-                                            href="/permissions">
-                                            <span class="menu-bullet">
-                                                <span class="bullet bullet-dot"></span>
-                                            </span>
-                                            <span class="menu-title">Permisos</span>
-                                        </a>
-                                    </div>
-                                @endcan
-                            </div>
+                        <div class="menu-sub menu-sub-accordion">
+
+                            {{-- Venta --}}
+                            @can('vender boletos')
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('taquilla*') ? 'active' : '' }}" href="/taquilla">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Venta</span>
+                                    </a>
+                                </div>
+                            @endcan
+
+
+                            {{-- Reimpresión --}}
+                            @can('reimprimir boletos')
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('reimpresion*') ? 'active' : '' }}"
+                                        href="/reimpresion">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Inscripciones</span>
+                                    </a>
+                                </div>
+                            @endcan
                         </div>
-                    @endcan
+                    </div>
+                @endcanany
 
-                    {{-- ================= INSCRIPCIONES ================= --}}
-                    @can('ver registros cumbres')
+
+                {{-- ================= ESCANER ================= --}}
+                @can('escanear boletos')
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('checkin*') ? 'active' : '' }}" href="/checkin">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-scan-barcode fs-2"></i>
+                            </span>
+                            <span class="menu-title">Escanear boletos</span>
+                        </a>
+                    </div>
+                @endcan
+
+
+
+
+
+                {{-- ================= REPORTES ================= --}}
+                @canany(['ver reportes', 'exportar reportes'])
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('dashboard*') ? 'active' : '' }}" href="/dashboard">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-chart-line fs-2"></i>
+                            </span>
+                            <span class="menu-title">Reportes</span>
+                        </a>
+                    </div>
+                @endcanany
+
+
+                {{-- ================= CONFIGURACIONES () =================--}}
+                @can('crear eventos')
+                    <div class="menu-item menu-accordion {{ request()->is('users*') ? 'show' : '' }}"
+                        data-kt-menu-trigger="click">
+
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-setting-3 fs-2"></i>
+                            </span>
+                            <span class="menu-title">Configuraciones</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+
+                        <div class="menu-sub menu-sub-accordion">
+                            @can('crear eventos')
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('users*') ? 'active' : '' }}" href="/users">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Usuarios</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('roles*') ? 'active' : '' }}" href="/roles">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Roles</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('permissions*') ? 'active' : '' }}"
+                                        href="/permissions">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Permisos</span>
+                                    </a>
+                                </div>
+                            @endcan
+                        </div>
+                    </div>
+                @endcan
+
+                {{-- ================= INSCRIPCIONES ================= --}}
+                @can('ver registros cumbres')
+                <div class="menu-item menu-accordion {{ request()->is('registrations*') ? 'show' : '' }}"
+                    data-kt-menu-trigger="click">
+
+                    <span class="menu-link">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-user-square fs-2"></i>
+                        </span>
+                        <span class="menu-title">Ventas</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+
+                    <div class="menu-sub menu-sub-accordion">
+
+                        @canany(['crear eventos', 'editar eventos', 'eliminar eventos', 'configurar eventos'])
+                        {{-- Ver todos --}}
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->is('registrations*') ? 'active' : '' }}" href="/registrations">
-                                <span class="menu-icon">
-                                    <i class="ki-outline ki-user-square fs-2"></i>
+                            <a class="menu-link {{ request()->is('registrations') ? 'active' : '' }}"
+                                href="{{ route('admin.registrations.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Registros cumbres</span>
+                                <span class="menu-title">Todos</span>
                             </a>
                         </div>
-                    @endcan
+                        @endcan
+                        {{-- Eventos dinámicos --}}
+                        @foreach($sidebarEvents as $event)
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('registrations/' . $event->id) ? 'active' : '' }}"
+                                    href="{{ route('admin.registrations.index', $event->id) }}">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">
+                                        {{ $event->name }}
+                                    </span>
+                                </a>
+                            </div>
+                        @endforeach
+
+                    </div>
+                </div>
+                @endcan
                 @endauth
             </div>
         </div>
