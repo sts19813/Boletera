@@ -87,6 +87,7 @@ class RegistrationStripeService
                     'qr_hash' => (string) Str::uuid(),
                     'registered_at' => $purchaseAt,
                     'price' => $evento['price'] ?? 0,
+                    'payment_method' => 'card',
                 ]);
 
                 $registrationForm = session('registration_form');

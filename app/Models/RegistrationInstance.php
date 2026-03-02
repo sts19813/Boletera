@@ -22,6 +22,7 @@ class RegistrationInstance extends Model
         'price',
         'nombre',
         'celular',
+        'payment_method',
     ];
 
     protected $casts = [

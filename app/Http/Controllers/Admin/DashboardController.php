@@ -223,7 +223,7 @@ class DashboardController extends Controller
                     'boleto' => 'N/A - Inscripción',
                      'nombre' => $item->nombre ?? '-',
                     'email' => $item->email,
-                    'metodo' => 'card',
+                    'metodo' =>  $item->payment_method,
                     'referencia' => $item->payment_intent_id,
                     'precio' => $item->price,
                     'fecha' => $item->registered_at,
