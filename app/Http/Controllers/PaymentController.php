@@ -116,7 +116,7 @@ class PaymentController extends Controller
                     ], 409);
                 }
 
-                $disponibles = $ticket->stock ;
+                $disponibles = $ticket->stock;
 
                 if ($disponibles <= 0) {
 
@@ -191,11 +191,7 @@ class PaymentController extends Controller
             'currency' => 'mxn',
             'automatic_payment_methods' => ['enabled' => true],
             'metadata' => [
-                'cart' => json_encode($carrito),
-                'subtotal' => $subtotal,
-                'comision' => $comision,
-                'comision_aplicada' => false,
-
+                'event_id' => session('event_id'),
                 'nombre' => $request->nombre,
                 'celular' => $request->celular,
                 'email' => $request->email,
@@ -222,10 +218,10 @@ class PaymentController extends Controller
         Stripe::setApiKey(config('services.stripe.secret'));
         $intent = PaymentIntent::retrieve($paymentIntentId);
         $email = $intent->metadata->email ?? null;
-        $cart = json_decode($intent->metadata->cart ?? '[]', true);
+        $cart = session('svg_cart', []);
 
         if (empty($cart)) {
-            abort(400, 'Carrito vacío');
+            abort(400, 'Carrito vacío o sesión expirada');
         }
 
         $isRegistration = collect($cart)->contains(

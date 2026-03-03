@@ -31,10 +31,10 @@ class RegistrationStripeService
             abort(403, 'Pago no confirmado');
         }
 
-        $cart = json_decode($intent->metadata->cart ?? '[]', true);
+        $cart = session('svg_cart', []);
 
         if (empty($cart)) {
-            abort(400, 'Carrito vacío');
+            abort(400, 'Carrito vacío o sesión expirada');
         }
 
         $purchaseAt = now();

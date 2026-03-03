@@ -193,8 +193,6 @@ Route::get('/pago/cancel', [PaymentController::class, 'cancel'])->name('pago.can
 
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'get'])->name('cart.get');
 Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/remove', [App\Http\Controllers\CartController::class, 'remove'])->name('cart.remove');
-Route::post('/cart/clear', [App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
 
 Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])->name('eventPublic.index');
