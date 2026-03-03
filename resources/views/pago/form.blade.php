@@ -256,7 +256,6 @@
             const payButton = document.getElementById('payButton');
             const errorBox = document.getElementById('card-errors');
 
-            
             let clientSecret = null;
 
             // ===============================
@@ -301,7 +300,19 @@
                     });
 
                     if (!intentRes.ok) {
-                        throw new Error('No se pudo crear el PaymentIntent');
+
+                        const errorData = await intentRes.json();
+
+                        errorBox.innerHTML = `
+                            <div class="alert alert-danger">
+                                <strong>${errorData.error}</strong><br>
+                                ${errorData.detalle ?? ''}
+                            </div>
+                        `;
+
+                        payButton.disabled = false;
+                        payButton.textContent = 'Completar compra';
+                        return;
                     }
 
                     const intentData = await intentRes.json();

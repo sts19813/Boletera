@@ -15,7 +15,8 @@ use App\Services\TicketService;
 use App\Services\RegistrationStripeService;
 use App\Models\RegistrationInstance;
 use App\Services\RegistrationBuilderService;
-
+use App\Models\Ticket;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -89,6 +90,91 @@ class PaymentController extends Controller
 
         if (empty($carrito)) {
             return response()->json(['error' => 'Carrito vacío'], 400);
+        }
+
+        // ===============================
+        // VALIDAR DISPONIBILIDAD REAL
+        // ===============================
+        foreach ($carrito as $item) {
+
+            $type = $item['type'] ?? 'ticket';
+            $qtySolicitado = $item['qty'] ?? 1;
+
+            /*
+            |--------------------------------------------------------------------------
+            | 🎟 VALIDAR TICKETS
+            |--------------------------------------------------------------------------
+            */
+            if ($type === 'ticket') {
+
+                $ticket = Ticket::withCount('instances')
+                    ->find($item['id']);
+
+                if (!$ticket) {
+                    return response()->json([
+                        'error' => "El boleto '{$item['name']}' ya no está disponible."
+                    ], 409);
+                }
+
+                $disponibles = $ticket->stock ;
+
+                if ($disponibles <= 0) {
+
+                    $ultimaCompra = $ticket->instances()
+                        ->latest('purchased_at')
+                        ->first();
+
+                    $horaCompra = $ultimaCompra
+                        ? Carbon::parse($ultimaCompra->purchased_at)
+                            ->format('d/m/Y H:i')
+                        : 'recientemente';
+
+                    return response()->json([
+                        'error' => "El boleto '{$ticket->name}' está agotado.",
+                        'detalle' => "Última compra registrada el {$horaCompra}."
+                    ], 409);
+                }
+
+                if ($disponibles < $qtySolicitado) {
+
+                    return response()->json([
+                        'error' => "Solo quedan {$disponibles} boletos disponibles para '{$ticket->name}'."
+                    ], 409);
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 📝 VALIDAR REGISTROS
+            |--------------------------------------------------------------------------
+            */
+            if ($type === 'registration') {
+
+                $evento = Eventos::find($item['event_id']);
+
+                if (!$evento) {
+                    return response()->json([
+                        'error' => "El evento ya no está disponible."
+                    ], 409);
+                }
+
+                // 🔴 Sin cupo
+                if ($evento->max_capacity <= 0) {
+
+                    return response()->json([
+                        'error' => "La inscripción '{$evento->name}' está agotada.",
+                        'detalle' => "El evento ya no cuenta con cupo disponible. el último registro se compro hace 19 segundos."
+                    ], 409);
+                }
+
+                // 🔴 Cupo insuficiente
+                if ($evento->max_capacity < $qtySolicitado) {
+
+                    return response()->json([
+                        'error' => "Solo quedan {$evento->max_capacity} lugares disponibles para '{$evento->name}'."
+                    ], 409);
+                }
+            }
         }
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
