@@ -20,38 +20,44 @@
 
 
         @unlessrole('taquillero')
-            <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
-                Continuar pago
-            </button>
+        <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>
+            Continuar pago
+        </button>
         @endunlessrole
 
-        {{-- Opciones avanzadas si puede vender o reimprimir --}}
         @canany(['vender boletos', 'reimprimir boletos'])
-            <div class="mt-3">
-                <label class="form-label fw-bold mb-2">Venta Taquilla</label>
+            <div id="taquillaVentaWrapper">
 
-                <div class="d-grid gap-2">
-                    <button class="btn btn-success btn-lg fw-bold btn-metodo" data-metodo="cash">
-                        💵 Efectivo
-                    </button>
+                <div id="alertaCupoTaquilla"></div>
 
-                    <button class="btn btn-primary btn-lg fw-bold btn-metodo" data-metodo="card">
-                        💳 Tarjeta
-                    </button>
+                <div class="mt-3">
+                    <label class="form-label fw-bold mb-2">Venta Taquilla</label>
 
-                    @can('genera cortesias')
-                    <button class="btn btn-secondary btn-lg fw-bold btn-metodo" data-metodo="cortesia">
-                        🎟️ Cortesía
-                    </button>
-                    @endcan
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-lg fw-bold btn-metodo" data-metodo="cash">
+                            💵 Efectivo
+                        </button>
+
+                        <button class="btn btn-primary btn-lg fw-bold btn-metodo" data-metodo="card">
+                            💳 Tarjeta
+                        </button>
+
+                        @can('genera cortesias')
+                            <button class="btn btn-secondary btn-lg fw-bold btn-metodo" data-metodo="cortesia">
+                                🎟️ Cortesía
+                            </button>
+                        @endcan
+                    </div>
                 </div>
-            </div>
 
-            <div class="mt-3">
-                <label class="form-label fw-bold">
-                    Nombre o correo <span class="text-muted">(opcional)</span>
-                </label>
-                <input type="text" id="ventaNombre" class="form-control" placeholder="Ej. Juan Pérez o invitado@gmail.com">
+                <div class="mt-3">
+                    <label class="form-label fw-bold">
+                        Nombre o correo <span class="text-muted">(opcional)</span>
+                    </label>
+                    <input type="text" id="ventaNombre" class="form-control"
+                        placeholder="Ej. Juan Pérez o invitado@gmail.com">
+                </div>
+
             </div>
         @endcanany
 

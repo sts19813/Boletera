@@ -25,9 +25,13 @@ class RegistrationService
         $paymentMethod = $data['payment_method'] ?? 'cash';
         $price = $data['price'] ?? $evento->price ?? 0;
 
-        if ($evento->max_capacity < $qty) {
-            abort(409, 'Cupo agotado');
-        }
+
+        // Validar cupo se omite en taquilla,
+        // se asume que el taquillero es consciente de la capacidad del evento y no permitirá ventas que excedan el cupo disponible.
+        // Sin embargo, si se desea implementar una validación de cupo, se puede descomentar el siguiente bloque de código:
+        //if ($evento->max_capacity < $qty) {
+        //    abort(409, 'Cupo agotado');
+        //}
 
         $instances = [];
 
@@ -62,7 +66,10 @@ class RegistrationService
             $instances[] = $instance;
         }
 
-        $evento->decrement('max_capacity', $qty);
+        if ($evento->max_capacity > 0) {
+            $nuevoCupo = max(0, $evento->max_capacity - $qty);
+            $evento->update(['max_capacity' => $nuevoCupo]);
+        }
 
         return $instances;
     }

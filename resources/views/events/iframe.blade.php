@@ -162,6 +162,22 @@
                 }
             }
 
+            if (window.currentLot?.max_capacity === 0) {
+
+                const alerta = document.getElementById('alertaCupoTaquilla');
+
+                if (alerta) {
+
+                    alerta.innerHTML = `
+                    <div class="alert alert-warning fw-bold">
+                        ⚠️ No hay cupo disponible.
+                        <br>
+                        El taquillero aun puede continuar con la venta.
+                    </div>
+                `;
+                }
+            }
+
         });
     </script>
 @endpush
