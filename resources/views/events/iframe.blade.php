@@ -144,4 +144,24 @@
             svg_selector: null
         };
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            if (window.isRegistration && window.currentLot?.max_capacity === 0) {
+
+                const btn = document.getElementById('btnCheckout');
+
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('disabled');
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.6';
+
+                    btn.innerText = 'Evento agotado';
+                }
+            }
+
+        });
+    </script>
 @endpush
