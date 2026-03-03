@@ -78,50 +78,68 @@
 
 
                 {{-- ================= TAQUILLA ================= --}}
-                @canany(['vender boletos', 'reimprimir boletos'])
+                @role('taquillero')
 
 
-                    <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
-                        data-kt-menu-trigger="click">
+                <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
+                    data-kt-menu-trigger="click">
 
-                        <span class="menu-link">
-                            <span class="menu-icon">
-                                <i class="ki-outline ki-element-7 fs-2"></i>
-                            </span>
-                            <span class="menu-title">Taquilla</span>
-                            <span class="menu-arrow"></span>
+                    <span class="menu-link">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-element-7 fs-2"></i>
                         </span>
+                        <span class="menu-title">Taquilla</span>
+                        <span class="menu-arrow"></span>
+                    </span>
 
-                        <div class="menu-sub menu-sub-accordion">
+                    <div class="menu-sub menu-sub-accordion">
 
-                            {{-- Venta --}}
-                            @can('vender boletos')
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('taquilla*') ? 'active' : '' }}" href="/taquilla">
-                                        <span class="menu-bullet">
-                                            <span class="bullet bullet-dot"></span>
-                                        </span>
-                                        <span class="menu-title">Venta</span>
-                                    </a>
-                                </div>
-                            @endcan
-
-
-                            {{-- Reimpresión --}}
-                            @can('reimprimir boletos')
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('reimpresion*') ? 'active' : '' }}"
-                                        href="/reimpresion">
-                                        <span class="menu-bullet">
-                                            <span class="bullet bullet-dot"></span>
-                                        </span>
-                                        <span class="menu-title">Inscripciones</span>
-                                    </a>
-                                </div>
-                            @endcan
-                        </div>
+                        {{-- Venta --}}
+                        @can('vender boletos')
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('taquilla*') ? 'active' : '' }}" href="/taquilla">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">Venta</span>
+                                </a>
+                            </div>
+                        @endcan
                     </div>
-                @endcanany
+                </div>
+
+
+                <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
+                    data-kt-menu-trigger="click">
+
+                    <span class="menu-link">
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-element-7 fs-2"></i>
+                        </span>
+                        <span class="menu-title">Reimpresión</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+
+                    <div class="menu-sub menu-sub-accordion">
+
+                        {{-- Eventos dinámicos --}}
+                        @foreach($sidebarEvents as $event)
+                            <div class="menu-item">
+                                <a class="menu-link {{ request()->is('registrations/' . $event->id) ? 'active' : '' }}"
+                                    href="{{ route('admin.registrations.index', $event->id) }}">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">
+                                        {{ $event->name }}
+                                    </span>
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endrole
+
 
 
                 {{-- ================= ESCANER ================= --}}
