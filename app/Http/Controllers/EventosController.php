@@ -32,7 +32,18 @@ class EventosController extends Controller
      */
     public function index()
     {
-        $events = Eventos::orderBy('created_at', 'desc')->get();
+        $user = auth()->user();
+
+        if ($user->hasRole('admin')) {
+            $events = Eventos::orderBy('created_at', 'desc')->get();
+        } else {
+            $allowedEventIds = $user->events()->pluck('eventos.id');
+
+            $events = Eventos::whereIn('id', $allowedEventIds)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
         return view('events.index', compact('events'));
     }
 

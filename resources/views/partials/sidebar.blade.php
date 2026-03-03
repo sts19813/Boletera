@@ -64,11 +64,7 @@
                             </div>
                         </div>
                     </div>
-                @endcanany
 
-
-                {{-- ================= TAQUILLA ================= --}}
-                @canany(['vender boletos', 'reimprimir boletos'])
                     <div class="menu-item">
                         <a class="menu-link {{ request()->is('ticket-instances*') ? 'active' : '' }}"
                             href="/ticket-instances">
@@ -78,6 +74,12 @@
                             <span class="menu-title">{{ __('messages.tickets') }}</span>
                         </a>
                     </div>
+                @endcanany
+
+
+                {{-- ================= TAQUILLA ================= --}}
+                @canany(['vender boletos', 'reimprimir boletos'])
+
 
                     <div class="menu-item menu-accordion {{ request()->is('taquilla*', 'reimpresion*') ? 'show' : '' }}"
                         data-kt-menu-trigger="click">
@@ -197,7 +199,7 @@
                 @endcan
 
                 {{-- ================= INSCRIPCIONES ================= --}}
-                @can('ver registros cumbres')
+                @canany(['ver registros cumbres', 'ver inscripciones'])
                 <div class="menu-item menu-accordion {{ request()->is('registrations*') ? 'show' : '' }}"
                     data-kt-menu-trigger="click">
 

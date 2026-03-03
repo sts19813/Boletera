@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RegistrationInstance;
+use App\Models\TicketInstance;
+use App\Models\Eventos; 
 class RegistrationController extends Controller
 {
     /**
@@ -14,32 +16,77 @@ class RegistrationController extends Controller
     {
         $user = auth()->user();
 
-        $query = RegistrationInstance::with([
-            'evento',
-            'registration.players'
-        ])->latest();
+        /*
+        |--------------------------------------------------------------------------
+        | QUERY REGISTRATIONS
+        |--------------------------------------------------------------------------
+        */
+        $registrations = RegistrationInstance::with([
+            'evento'
+        ]);
 
-        // 🔹 Si no es admin, limitar a sus eventos
+        /*
+        |--------------------------------------------------------------------------
+        | QUERY TICKETS
+        |--------------------------------------------------------------------------
+        */
+        $tickets = TicketInstance::with([
+            'ticket',
+            'evento'
+        ]);
+
+        // 🔹 Limitar eventos si no es admin
         if (!$user->hasRole('admin')) {
+
             $allowedEventIds = $user->events()->pluck('eventos.id');
 
-            $query->whereIn('event_id', $allowedEventIds);
+            $registrations->whereIn('event_id', $allowedEventIds);
+            $tickets->whereIn('event_id', $allowedEventIds);
         }
 
+        // Filtrar por evento específico
         if ($event) {
-            $query->where('event_id', $event);
+            $registrations->where('event_id', $event);
+            $tickets->where('event_id', $event);
         }
 
-        $instances = $query->get();
+        // Ejecutar queries
+        $registrations = $registrations->get();
+        $tickets = $tickets->get();
 
-        // Para mostrar menú de eventos disponibles
+        /*
+        |--------------------------------------------------------------------------
+        | Unificamos en una sola colección
+        |--------------------------------------------------------------------------
+        */
+        $sales = collect()
+            ->merge($registrations->map(function ($r) {
+                return [
+                    'type' => 'registration',
+                    'email' => $r->email,
+                    'event' => $r->evento?->name,
+                    'date' => $r->registered_at,
+                    'model' => $r
+                ];
+            }))
+            ->merge($tickets->map(function ($t) {
+                return [
+                    'type' => 'ticket',
+                    'email' => $t->email,
+                    'event' => $t->evento?->name ?? '—',
+                    'date' => $t->purchased_at,
+                    'model' => $t
+                ];
+            }))
+            ->sortByDesc('date')
+            ->values();
+
         $events = $user->hasRole('admin')
-            ? \App\Models\Eventos::all()
+            ? Eventos::all()
             : $user->events;
 
-        return view('admin.registrations.index', compact('instances', 'events'));
+        return view('admin.registrations.index', compact('sales', 'events'));
     }
-
     public function export($eventId)
     {
         $instances = RegistrationInstance::with([

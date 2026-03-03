@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Eventos;
 use Spatie\Permission\Models\Role;
-
+use Spatie\Permission\Models\Permission;
 class UserController extends Controller
 {
     public function index()
@@ -19,8 +19,12 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
-        return view('admin.users.create', compact('roles'));
+        $events = Eventos::all();
+        $permissions = Permission::all();
+
+        return view('admin.users.create', compact('roles', 'events', 'permissions'));
     }
+
 
     public function store(Request $request)
     {
@@ -38,8 +42,12 @@ class UserController extends Controller
         ]);
 
         $user->assignRole($request->role);
+        $user->syncPermissions($request->permissions ?? []);
 
-        return redirect()->route('admin.users.index')
+        // sincronizar eventos
+        $user->events()->sync($request->events ?? []);
+
+        return redirect()->route('users.index')
             ->with('success', 'Usuario creado correctamente');
     }
 
@@ -47,9 +55,11 @@ class UserController extends Controller
     {
         $roles = Role::all();
         $events = Eventos::all();
+        $permissions = Permission::all();
 
-        return view('admin.users.edit', compact('user', 'roles', 'events'));
+        return view('admin.users.edit', compact('user', 'roles', 'events', 'permissions'));
     }
+
 
     public function update(Request $request, User $user)
     {
@@ -64,10 +74,9 @@ class UserController extends Controller
             'email' => $request->email,
         ]);
 
-        // Actualizar rol
         $user->syncRoles([$request->role]);
+        $user->syncPermissions($request->permissions ?? []);
 
-        // Sincronizar eventos
         $user->events()->sync($request->events ?? []);
 
         return redirect()->route('users.index')

@@ -56,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])->name('events.destroy');
         Route::delete('/events/{event}/configurator', [EventosController::class, 'destroyMapping'])->name('events.configurator.destroy');
 
-        Route::post('/evets/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
+        Route::post('/events/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
 
 
@@ -127,7 +127,7 @@ Route::middleware(['auth'])->group(function () {
     | TAQUILLERO
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:admin|taquillero'])->group(function () {
+    Route::middleware(['role:admin|taquillero|viewer'])->group(function () {
 
         Route::get('/taquilla', [EventosController::class, 'index'])->name('taquilla.index');
         Route::get('/taquilla/{event}/', [EventosController::class, 'iframe'])->name('eventPublic.index');
@@ -163,13 +163,17 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-    Route::middleware(['role:admin|cumbres|taquillero'])->group(function () {
-        Route::get('/registrations/{event?}', [RegistrationController::class, 'index'])->name('admin.registrations.index');
+    Route::middleware(['role:admin|cumbres|taquillero|viewer'])->group(function () {
+
+        // Reimpresión de boletos en pdf individual
         Route::get('/ticket-instances/{instance}/reprint', [TicketReprintController::class, 'reprintAdmin'])->name('admin.ticket_instances.reprint');
         Route::get('/registrations/{instance}/reprint', [TicketReprintController::class, 'reprintInscription'])->name('admin.registrations.reprint');
-        Route::get('/reimpresion/{event?}', [RegistrationController::class, 'index'])
-            ->name('admin.registrations.index');
-        Route::get('/admin/registrations/export/{event}', [RegistrationController::class, 'export'])->name('admin.registrations.export');
+
+        // Exportar registros de un evento a Excel
+        Route::get('/admin/registrations/export/{event}', [RegistrationController::class, 'export'])->name('admin.registrations.export');//excel
+
+        // Listado de registros, con opción a filtrar por evento en url
+        Route::get('/registrations/{event?}', [RegistrationController::class, 'index'])->name('admin.registrations.index');
     });
 
 

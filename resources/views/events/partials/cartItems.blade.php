@@ -39,11 +39,11 @@
                         💳 Tarjeta
                     </button>
 
-                    @role('admin')
+                    @can('genera cortesias')
                     <button class="btn btn-secondary btn-lg fw-bold btn-metodo" data-metodo="cortesia">
                         🎟️ Cortesía
                     </button>
-                    @endrole
+                    @endcan
                 </div>
             </div>
 

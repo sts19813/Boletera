@@ -93,11 +93,11 @@
                                         </a>
                                     @endcanany
 
-                                    @role('taquillero')
-                                    <a href="{{ url('taquilla/' . $event->id) }}" class="btn btn-sm btn-danger">
-                                        Taquilla
-                                    </a>
-                                    @endrole
+                                    @can('vender boletos')
+                                        <a href="{{ url('taquilla/' . $event->id) }}" class="btn btn-sm btn-danger">
+                                            Taquilla
+                                        </a>
+                                    @endcan
                                 </td>
                             </tr>
                         @endforeach
