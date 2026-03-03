@@ -29,6 +29,9 @@ trait RedirectsByRole
         if ($user->hasRole('cumbres')) {
             return redirect()->route('admin.registrations.index');
         }
+        if ($user->hasRole('viewer')) {
+            return redirect()->route('admin.registrations.index');
+        }
 
         return redirect()->route('unauthorized');
     }
