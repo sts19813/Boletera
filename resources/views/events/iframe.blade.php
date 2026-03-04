@@ -157,7 +157,6 @@
                     btn.classList.add('disabled');
                     btn.style.pointerEvents = 'none';
                     btn.style.opacity = '0.6';
-
                     btn.innerText = 'Evento agotado';
                 }
             }
@@ -169,10 +168,10 @@
                 if (alerta) {
 
                     alerta.innerHTML = `
-                    <div class="alert alert-warning fw-bold">
+                    <div class="alert alert-warning fw-bold mt-4">
                         ⚠️ No hay cupo disponible.
                         <br>
-                        El taquillero aun puede continuar con la venta.
+                        Aún puede continuar con la venta.
                     </div>
                 `;
                 }
