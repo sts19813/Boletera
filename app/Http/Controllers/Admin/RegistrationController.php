@@ -163,6 +163,7 @@ class RegistrationController extends Controller
                 fputcsv($file, [
                     'Tipo',
                     'Evento',
+                    'Mesa',
                     'Nombre',
                     'Email',
                     'Celular',
@@ -235,11 +236,13 @@ class RegistrationController extends Controller
                 if ($eventId === '019c8c31-f771-709d-817f-500abcb8c03a') {
 
                     $evento = $clean($instance->evento?->name ?? '—');
+                    $mesa = $clean($instance->ticket?->name ?? '—'); // ← AQUÍ
                     $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
 
                     fputcsv($file, [
                         'TICKET',
                         $evento,
+                        $mesa,
                         $clean($instance->nombre),
                         $clean($instance->email),
                         $clean($instance->celular),
