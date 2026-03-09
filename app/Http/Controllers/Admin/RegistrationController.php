@@ -218,7 +218,7 @@ class RegistrationController extends Controller
                     'Talla',
                     'Capitán',
                     'Relación Cumbres',
-
+                    'Método Pago',
                     'Subtotal',
                     'Total',
                 ]);
@@ -328,6 +328,12 @@ GOLF (modelo nuevo + modelo viejo)
 
                 if ($registration->players && $registration->players->count() > 0) {
 
+
+                    $paymentMethod = match ($instance->payment_method) {
+                        'cash' => 'Cash',
+                        'card' => 'Card',
+                        default => 'Card'
+                    };
                     // NUEVO MODELO (tabla players)
 
                     fputcsv($file, [
@@ -346,7 +352,7 @@ GOLF (modelo nuevo + modelo viejo)
                         '',
                         '',
                         '',
-
+                        $paymentMethod, // 👈 aquí
                         $registration->subtotal,
                         $registration->total,
                     ]);
@@ -377,6 +383,12 @@ GOLF (modelo nuevo + modelo viejo)
 
                 } elseif ($registration->form_data && isset($registration->form_data['players'])) {
 
+                    $paymentMethod = match ($instance->payment_method) {
+                        'cash' => 'Cash',
+                        'card' => 'Card',
+                        default => 'Card'
+                    };
+
                     // MODELO VIEJO (players dentro de form_data JSON)
 
                     $data = $registration->form_data;
@@ -397,7 +409,7 @@ GOLF (modelo nuevo + modelo viejo)
                         '',
                         '',
                         '',
-
+                        $paymentMethod, // 👈 aquí
                         $registration->subtotal,
                         $registration->total,
                     ]);
