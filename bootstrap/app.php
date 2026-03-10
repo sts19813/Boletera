@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias de middlewares personalizados
         $middleware->alias([
             'locale' => \App\Http\Middleware\SetLocale::class,
+            'chatbot.admin' => \App\Http\Middleware\EnsureChatbotAdminToken::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

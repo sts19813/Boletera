@@ -321,10 +321,10 @@ class RegistrationController extends Controller
                 }
 
                 /*
-=====================================================
-GOLF (modelo nuevo + modelo viejo)
-=====================================================
-*/
+                ====================================================================
+                GOLF (modelo nuevo + modelo viejo)
+                ======================================
+                */
 
                 if ($registration->players && $registration->players->count() > 0) {
 
@@ -352,7 +352,7 @@ GOLF (modelo nuevo + modelo viejo)
                         '',
                         '',
                         '',
-                        $paymentMethod, // 👈 aquí
+                        $paymentMethod,
                         $registration->subtotal,
                         $registration->total,
                     ]);
@@ -409,7 +409,7 @@ GOLF (modelo nuevo + modelo viejo)
                         '',
                         '',
                         '',
-                        $paymentMethod, // 👈 aquí
+                        $paymentMethod,
                         $registration->subtotal,
                         $registration->total,
                     ]);

@@ -44,4 +44,8 @@ return [
         'secret' => env('STRIPE_SECRET'),
     ],
 
+    'chatbot' => [
+        'admin_token' => env('CHATBOT_ADMIN_TOKEN'),
+    ],
+
 ];
