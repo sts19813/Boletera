@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Eventos;
-use App\Models\Lote;
 use App\Models\Ticket;
 use App\Models\TicketSvgMapping;
 use Illuminate\Http\Request;
