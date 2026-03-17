@@ -3,10 +3,9 @@
 namespace App\Services;
 
 use App\Models\Eventos;
-use App\Models\RegistrationInstance;
-use App\Models\Registration;
-use Illuminate\Support\Str;
+use App\Models\TicketInstance;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class RegistrationService
 {
@@ -14,7 +13,6 @@ class RegistrationService
         Eventos $evento,
         array $data
     ): array {
-
         $qty = max(1, (int) ($data['qty'] ?? 1));
         $email = $data['email'] ?? 'taquilla@local';
         $nombre = $data['nombre'] ?? null;
@@ -24,7 +22,6 @@ class RegistrationService
         $saleChannel = $data['sale_channel'] ?? 'taquilla';
         $paymentMethod = $data['payment_method'] ?? 'cash';
         $price = $data['price'] ?? $evento->price ?? 0;
-
 
         // Validar cupo se omite en taquilla,
         // se asume que el taquillero es consciente de la capacidad del evento y no permitirá ventas que excedan el cupo disponible.
@@ -36,32 +33,30 @@ class RegistrationService
         $instances = [];
 
         for ($i = 0; $i < $qty; $i++) {
+            $registeredAt = now();
 
-            $instance = RegistrationInstance::create([
+            $instance = TicketInstance::create([
+                'ticket_id' => null,
+                'sale_type' => 'registration',
                 'event_id' => $evento->id,
                 'user_id' => Auth::id(),
                 'email' => $email,
                 'nombre' => $nombre,
                 'celular' => $celular,
+                'team_name' => $formData['team_name'] ?? null,
                 'qr_hash' => (string) Str::uuid(),
-                'registered_at' => now(),
+                'registered_at' => $registeredAt,
+                'purchased_at' => $registeredAt,
                 'price' => $price,
+                'subtotal' => $price,
+                'commission' => 0.00,
+                'total' => $price,
+                'form_data' => $formData,
                 'payment_intent_id' => $reference,
+                'reference' => $reference,
                 'sale_channel' => $saleChannel,
                 'payment_method' => $paymentMethod,
             ]);
-
-            if ($formData) {
-
-                Registration::create([
-                    'registration_instance_id' => $instance->id,
-                    'event_id' => $evento->id,
-                    'subtotal' => $price,
-                    'commission' => 0.00,
-                    'total' => $price,
-                    'form_data' => $formData,
-                ]);
-            }
 
             $instances[] = $instance;
         }

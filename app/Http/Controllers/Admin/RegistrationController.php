@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\RegistrationInstance;
-use App\Models\TicketInstance;
 use App\Models\Eventos;
+use App\Models\TicketInstance;
+
 class RegistrationController extends Controller
 {
     /**
@@ -15,66 +15,40 @@ class RegistrationController extends Controller
     {
         $user = auth()->user();
 
-        /*
-        |--------------------------------------------------------------------------
-        | QUERY REGISTRATIONS
-        |--------------------------------------------------------------------------
-        */
-        $registrations = RegistrationInstance::with([
-            'evento'
-        ]);
+        $registrations = TicketInstance::registrationSales()->with(['evento']);
+        $tickets = TicketInstance::ticketSales()->with(['ticket', 'evento']);
 
-        /*
-        |--------------------------------------------------------------------------
-        | QUERY TICKETS
-        |--------------------------------------------------------------------------
-        */
-        $tickets = TicketInstance::with([
-            'ticket',
-            'evento'
-        ]);
-
-        // 🔹 Limitar eventos si no es admin
         if (!$user->hasRole('admin')) {
-
             $allowedEventIds = $user->events()->pluck('eventos.id');
-
             $registrations->whereIn('event_id', $allowedEventIds);
             $tickets->whereIn('event_id', $allowedEventIds);
         }
 
-        // Filtrar por evento específico
         if ($event) {
             $registrations->where('event_id', $event);
             $tickets->where('event_id', $event);
         }
 
-        // Ejecutar queries
         $registrations = $registrations->get();
         $tickets = $tickets->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Unificamos en una sola colección
-        |--------------------------------------------------------------------------
-        */
         $sales = collect()
             ->merge($registrations->map(function ($r) {
                 return [
                     'type' => 'registration',
                     'email' => $r->email,
                     'event' => $r->evento?->name,
-                    'date' => $r->registered_at,
-                    'model' => $r
+                    'date' => $r->purchased_at,
+                    'model' => $r,
                 ];
             }))
             ->merge($tickets->map(function ($t) {
                 return [
                     'type' => 'ticket',
                     'email' => $t->email,
-                    'event' => $t->evento?->name ?? '—',
+                    'event' => $t->evento?->name ?? '-',
                     'date' => $t->purchased_at,
-                    'model' => $t
+                    'model' => $t,
                 ];
             }))
             ->sortByDesc('date')
@@ -86,52 +60,32 @@ class RegistrationController extends Controller
 
         return view('admin.registrations.index', compact('sales', 'events'));
     }
+
     public function export($eventId)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | REGISTRATIONS
-        |--------------------------------------------------------------------------
-        */
-        $registrations = RegistrationInstance::with([
-            'evento',
-            'registration.players'
-        ])
-            ->where('event_id', $eventId)
-            ->whereNotNull('payment_intent_id')
-            ->distinct('payment_intent_id')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | TICKETS
-        |--------------------------------------------------------------------------
-        */
-        $tickets = TicketInstance::with([
-            'evento',
-            'ticket'
-        ])
+        $registrations = TicketInstance::registrationSales()
+            ->with(['evento'])
             ->where('event_id', $eventId)
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | UNIFICAR
-        |--------------------------------------------------------------------------
-        */
+        $tickets = TicketInstance::ticketSales()
+            ->with(['evento', 'ticket'])
+            ->where('event_id', $eventId)
+            ->get();
+
         $instances = collect();
 
         foreach ($registrations as $r) {
             $instances->push([
                 'type' => 'registration',
-                'model' => $r
+                'model' => $r,
             ]);
         }
 
         foreach ($tickets as $t) {
             $instances->push([
                 'type' => 'ticket',
-                'model' => $t
+                'model' => $t,
             ]);
         }
 
@@ -141,7 +95,6 @@ class RegistrationController extends Controller
         ];
 
         $callback = function () use ($instances, $eventId) {
-
             $clean = function ($value) {
                 if (is_array($value)) {
                     return implode(', ', array_map(fn($v) => strip_tags((string) $v), $value));
@@ -152,13 +105,7 @@ class RegistrationController extends Controller
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-            /*
-            =====================================================
-            EVENTO PASARELA (tickets)
-            =====================================================
-            */
             if ($eventId === '019c8c31-f771-709d-817f-500abcb8c03a') {
-
                 fputcsv($file, [
                     'Tipo',
                     'Evento',
@@ -170,15 +117,7 @@ class RegistrationController extends Controller
                     'Subtotal',
                     'Total',
                 ]);
-
-            }
-
-            /*
-            =====================================================
-            EVENTO CENA GALA
-            =====================================================
-            */ elseif ($eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835') {
-
+            } elseif ($eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835') {
                 fputcsv($file, [
                     'Tipo',
                     'Evento',
@@ -188,26 +127,17 @@ class RegistrationController extends Controller
                     'Email',
                     'Celular',
                     'Tipo Invitado',
-                    'Generación',
+                    'Generacion',
                     'Subtotal',
                     'Total',
                 ]);
-
-            }
-
-            /*
-            =====================================================
-            EVENTO GOLF
-            =====================================================
-            */ else {
-
+            } else {
                 fputcsv($file, [
                     'Tipo',
                     'Evento',
                     'Equipo',
                     'Email Registro',
                     'Fecha Registro',
-
                     'Jugador',
                     'Email Jugador',
                     'Celular',
@@ -215,27 +145,20 @@ class RegistrationController extends Controller
                     'Handicap',
                     'GHIN',
                     'Talla',
-                    'Capitán',
-                    'Relación Cumbres',
-                    'Método Pago',
+                    'Capitan',
+                    'Relacion Cumbres',
+                    'Metodo Pago',
                     'Subtotal',
                     'Total',
                 ]);
             }
 
             foreach ($instances as $row) {
-
                 $instance = $row['model'];
 
-                /*
-                =====================================================
-                PASARELA (ticket_instances)
-                =====================================================
-                */
                 if ($eventId === '019c8c31-f771-709d-817f-500abcb8c03a') {
-
-                    $evento = $clean($instance->evento?->name ?? '—');
-                    $mesa = $clean($instance->ticket?->name ?? '—'); // ← AQUÍ
+                    $evento = $clean($instance->evento?->name ?? '-');
+                    $mesa = $clean($instance->ticket?->name ?? '-');
                     $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
 
                     fputcsv($file, [
@@ -246,46 +169,28 @@ class RegistrationController extends Controller
                         $clean($instance->email),
                         $clean($instance->celular),
                         $fecha,
-                        $instance->price,
-                        $instance->price,
+                        $instance->subtotal ?? $instance->price,
+                        $instance->total ?? $instance->price,
                     ]);
 
                     continue;
                 }
 
-                /*
-                =====================================================
-                RESTO DE EVENTOS (tu lógica original)
-                =====================================================
-                */
-
                 if ($row['type'] !== 'registration') {
                     continue;
                 }
 
-                $registration = $instance->registration;
-                if (!$registration)
-                    continue;
+                $evento = $clean($instance->evento?->name ?? '-');
+                $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
+                $data = is_array($instance->form_data) ? $instance->form_data : [];
 
-                $evento = $clean($instance->evento?->name ?? '—');
-                $fecha = optional($instance->registered_at)->format('d/m/Y H:i');
-
-                /*
-                =====================================================
-                CENA GALA
-                =====================================================
-                */
                 if ($eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835') {
-
-                    if (!$registration->form_data)
+                    if (!isset($data['participants']) || !is_array($data['participants'])) {
                         continue;
-
-                    $data = $registration->form_data;
-                    if (!isset($data['participants']))
-                        continue;
+                    }
 
                     fputcsv($file, [
-                        'INSCRIPCIÓN',
+                        'INSCRIPCION',
                         $evento,
                         $clean($instance->email),
                         $fecha,
@@ -294,22 +199,21 @@ class RegistrationController extends Controller
                         '',
                         '',
                         '',
-                        $registration->subtotal,
-                        $registration->total,
+                        $instance->subtotal,
+                        $instance->total,
                     ]);
 
                     foreach ($data['participants'] as $participant) {
-
                         fputcsv($file, [
                             'PARTICIPANTE',
                             '',
                             '',
                             '',
-                            $clean($participant['nombre'] ?? '—'),
-                            $clean($participant['email'] ?? '—'),
-                            $clean($participant['celular'] ?? '—'),
-                            $clean($participant['tipo'] ?? '—'),
-                            $clean($participant['generacion'] ?? '—'),
+                            $clean($participant['nombre'] ?? '-'),
+                            $clean($participant['email'] ?? '-'),
+                            $clean($participant['celular'] ?? '-'),
+                            $clean($participant['tipo'] ?? '-'),
+                            $clean($participant['generacion'] ?? '-'),
                             '',
                             '',
                         ]);
@@ -319,124 +223,59 @@ class RegistrationController extends Controller
                     continue;
                 }
 
-                /*
-                ====================================================================
-                GOLF (modelo nuevo + modelo viejo)
-                ======================================
-                */
+                if (!isset($data['players']) || !is_array($data['players']) || count($data['players']) === 0) {
+                    continue;
+                }
 
-                if ($registration->players && $registration->players->count() > 0) {
+                $paymentMethod = match ($instance->payment_method) {
+                    'cash' => 'Cash',
+                    'card' => 'Card',
+                    default => 'Card',
+                };
 
+                fputcsv($file, [
+                    'INSCRIPCION',
+                    $evento,
+                    $clean($data['team_name'] ?? $instance->team_name ?? 'Equipo'),
+                    $clean($instance->email),
+                    $fecha,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    $paymentMethod,
+                    $instance->subtotal,
+                    $instance->total,
+                ]);
 
-                    $paymentMethod = match ($instance->payment_method) {
-                        'cash' => 'Cash',
-                        'card' => 'Card',
-                        default => 'Card'
-                    };
-                    // NUEVO MODELO (tabla players)
-
-                    fputcsv($file, [
-                        'INSCRIPCIÓN',
-                        $evento,
-                        $clean($registration->team_name),
-                        $clean($instance->email),
-                        $fecha,
-
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        $paymentMethod,
-                        $registration->subtotal,
-                        $registration->total,
-                    ]);
-
-                    foreach ($registration->players as $index => $player) {
-
-                        fputcsv($file, [
-                            'JUGADOR',
-                            '',
-                            '',
-                            '',
-                            '',
-
-                            $clean($player->name),
-                            $clean($player->email),
-                            $clean($player->phone),
-                            $clean($player->campo),
-                            $clean($player->handicap),
-                            $clean($player->ghin),
-                            $clean($player->shirt),
-                            $player->is_captain ? 'Sí' : 'No',
-                            $clean($player->cumbres),
-
-                            '',
-                            '',
-                        ]);
-                    }
-
-                } elseif ($registration->form_data && isset($registration->form_data['players'])) {
-
-                    $paymentMethod = match ($instance->payment_method) {
-                        'cash' => 'Cash',
-                        'card' => 'Card',
-                        default => 'Card'
-                    };
-
-                    // MODELO VIEJO (players dentro de form_data JSON)
-
-                    $data = $registration->form_data;
+                foreach ($data['players'] as $index => $player) {
+                    $captain = array_key_exists('is_captain', $player)
+                        ? (bool) $player['is_captain']
+                        : $index === 0;
 
                     fputcsv($file, [
-                        'INSCRIPCIÓN',
-                        $evento,
-                        $clean($data['team_name'] ?? 'Equipo'),
-                        $clean($instance->email),
-                        $fecha,
-
+                        'JUGADOR',
                         '',
                         '',
                         '',
                         '',
+                        $clean($player['name'] ?? '-'),
+                        $clean($player['email'] ?? '-'),
+                        $clean($player['phone'] ?? '-'),
+                        $clean($player['campo'] ?? '-'),
+                        $clean($player['handicap'] ?? '-'),
+                        $clean($player['ghin'] ?? '-'),
+                        $clean($player['shirt'] ?? '-'),
+                        $captain ? 'Si' : 'No',
+                        $clean($player['cumbres'] ?? '-'),
                         '',
                         '',
-                        '',
-                        '',
-                        '',
-                        $paymentMethod,
-                        $registration->subtotal,
-                        $registration->total,
                     ]);
-
-                    foreach ($data['players'] as $index => $player) {
-
-                        fputcsv($file, [
-                            'JUGADOR',
-                            '',
-                            '',
-                            '',
-                            '',
-
-                            $clean($player['name'] ?? '—'),
-                            $clean($player['email'] ?? '—'),
-                            $clean($player['phone'] ?? '—'),
-                            $clean($player['campo'] ?? '—'),
-                            $clean($player['handicap'] ?? '—'),
-                            $clean($player['ghin'] ?? '—'),
-                            $clean($player['shirt'] ?? '—'),
-                            $index === 0 ? 'Sí' : 'No',
-                            $clean($player['cumbres'] ?? '—'),
-
-                            '',
-                            '',
-                        ]);
-                    }
-
                 }
 
                 fputcsv($file, []);

@@ -214,9 +214,9 @@
                 // ==============================
                 if (sale.type === 'registration') {
 
-                    const registration = sale.instance.registration;
+                    const formData = sale.instance.form_data;
 
-                    if (registration && registration.form_data) {
+                    if (formData) {
 
                         html += `
                                 <div class="card card-bordered">
@@ -226,7 +226,7 @@
                                             <tbody>
                             `;
 
-                        Object.entries(registration.form_data).forEach(([key, value]) => {
+                        Object.entries(formData).forEach(([key, value]) => {
 
                             if (typeof value === 'object') {
                                 value = JSON.stringify(value);

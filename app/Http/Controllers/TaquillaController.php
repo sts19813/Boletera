@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Ticket;
 use App\Models\Eventos;
@@ -13,7 +12,6 @@ use App\Services\RegistrationBuilderService;
 use App\Services\RegistrationService;
 use App\Services\TicketBuilderService;
 use App\Services\TicketService;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BoletosMail;
 

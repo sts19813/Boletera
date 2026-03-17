@@ -4,7 +4,6 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Eventos;
-use App\Models\RegistrationInstance;
 use App\Models\Ticket;
 use App\Models\TicketInstance;
 use App\Services\RegistrationService;
@@ -91,7 +90,7 @@ class ChatbotAdminController extends Controller
                 'available_until',
             ]);
 
-        $ticketSales = TicketInstance::query()
+        $ticketSales = TicketInstance::query()->ticketSales()
             ->where('event_id', $evento->id)
             ->select(
                 'ticket_id',
@@ -103,13 +102,13 @@ class ChatbotAdminController extends Controller
             ->get()
             ->keyBy('ticket_id');
 
-        $registrationStats = RegistrationInstance::query()
+        $registrationStats = TicketInstance::query()->registrationSales()
             ->where('event_id', $evento->id)
             ->select(
                 DB::raw('COUNT(*) as vendidos'),
                 DB::raw("SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as cortesia"),
                 DB::raw('SUM(price) as ingresos'),
-                DB::raw('MAX(registered_at) as ultima_venta')
+                DB::raw('MAX(purchased_at) as ultima_venta')
             )
             ->first();
 
@@ -155,8 +154,8 @@ class ChatbotAdminController extends Controller
             'event_id' => 'nullable|uuid|exists:eventos,id',
         ]);
 
-        $ticketQuery = TicketInstance::query();
-        $registrationQuery = RegistrationInstance::query();
+        $ticketQuery = TicketInstance::query()->ticketSales();
+        $registrationQuery = TicketInstance::query()->registrationSales();
 
         if (!empty($validated['event_id'])) {
             $ticketQuery->where('event_id', $validated['event_id']);
@@ -169,7 +168,7 @@ class ChatbotAdminController extends Controller
                 $validated['to'] . ' 23:59:59',
             ]);
 
-            $registrationQuery->whereBetween('registered_at', [
+            $registrationQuery->whereBetween('purchased_at', [
                 $validated['from'] . ' 00:00:00',
                 $validated['to'] . ' 23:59:59',
             ]);
@@ -182,7 +181,7 @@ class ChatbotAdminController extends Controller
         $courtesyTickets = (clone $ticketQuery)->where('email', 'CORTESIA')->count();
         $courtesyRegistrations = (clone $registrationQuery)->where('price', 0)->count();
         $lastTicketSale = (clone $ticketQuery)->max('purchased_at');
-        $lastRegistrationSale = (clone $registrationQuery)->max('registered_at');
+        $lastRegistrationSale = (clone $registrationQuery)->max('purchased_at');
 
         return response()->json([
             'generated_at' => now()->toIso8601String(),
@@ -563,8 +562,8 @@ class ChatbotAdminController extends Controller
 
     private function buildSalesData(array $filters, string $type, int $limit): array
     {
-        $ticketQuery = TicketInstance::query()->with(['ticket:id,name', 'evento:id,name']);
-        $registrationQuery = RegistrationInstance::query()->with(['evento:id,name']);
+        $ticketQuery = TicketInstance::query()->ticketSales()->with(['ticket:id,name', 'evento:id,name']);
+        $registrationQuery = TicketInstance::query()->registrationSales()->with(['evento:id,name']);
 
         $this->applySalesFiltersToTickets($ticketQuery, $filters);
         $this->applySalesFiltersToRegistrations($registrationQuery, $filters);
@@ -607,10 +606,12 @@ class ChatbotAdminController extends Controller
         $registrations = collect();
         if ($includeRegistrations) {
             $registrations = (clone $registrationQuery)
-                ->latest('registered_at')
+                ->latest('purchased_at')
                 ->limit($limit)
                 ->get()
-                ->map(function (RegistrationInstance $sale) {
+                ->map(function (TicketInstance $sale) {
+                    $reference = $sale->payment_intent_id ?: $sale->reference;
+
                     return [
                         'sale_type' => 'registration',
                         'instance_id' => $sale->id,
@@ -622,11 +623,11 @@ class ChatbotAdminController extends Controller
                         'customer_phone' => $sale->celular,
                         'price' => round((float) $sale->price, 2),
                         'payment_method' => $sale->payment_method,
-                        'reference' => $sale->payment_intent_id,
-                        'sold_at' => $sale->registered_at?->toIso8601String(),
+                        'reference' => $reference,
+                        'sold_at' => $sale->purchased_at?->toIso8601String(),
                         'status' => 'registered',
-                        'pdf_url' => $this->buildReprintUrl($sale->payment_intent_id, $sale->email),
-                        '_sort_at' => $sale->registered_at?->timestamp ?? 0,
+                        'pdf_url' => $this->buildReprintUrl($reference, $sale->email),
+                        '_sort_at' => $sale->purchased_at?->timestamp ?? 0,
                     ];
                 });
         }
@@ -703,17 +704,18 @@ class ChatbotAdminController extends Controller
             $query->where(function ($q) use ($filters) {
                 $q->where('nombre', 'like', '%' . $filters['q'] . '%')
                     ->orWhere('email', 'like', '%' . $filters['q'] . '%')
-                    ->orWhere('payment_intent_id', 'like', '%' . $filters['q'] . '%');
+                    ->orWhere('payment_intent_id', 'like', '%' . $filters['q'] . '%')
+                    ->orWhere('reference', 'like', '%' . $filters['q'] . '%');
             });
         }
 
         if (!empty($filters['date'])) {
-            $query->whereDate('registered_at', $filters['date']);
+            $query->whereDate('purchased_at', $filters['date']);
             return;
         }
 
         if (!empty($filters['from']) && !empty($filters['to'])) {
-            $query->whereBetween('registered_at', [
+            $query->whereBetween('purchased_at', [
                 $filters['from'] . ' 00:00:00',
                 $filters['to'] . ' 23:59:59',
             ]);
@@ -754,7 +756,7 @@ class ChatbotAdminController extends Controller
             )
             ->first();
 
-        $ticketStats = TicketInstance::query()
+        $ticketStats = TicketInstance::query()->ticketSales()
             ->where('event_id', $event->id)
             ->select(
                 DB::raw('COUNT(*) as boletos_vendidos'),
@@ -764,13 +766,13 @@ class ChatbotAdminController extends Controller
             )
             ->first();
 
-        $registrationStats = RegistrationInstance::query()
+        $registrationStats = TicketInstance::query()->registrationSales()
             ->where('event_id', $event->id)
             ->select(
                 DB::raw('COUNT(*) as inscripciones_vendidas'),
                 DB::raw("SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as inscripciones_cortesia"),
                 DB::raw('SUM(price) as ingresos_inscripciones'),
-                DB::raw('MAX(registered_at) as ultima_inscripcion')
+                DB::raw('MAX(purchased_at) as ultima_inscripcion')
             )
             ->first();
 

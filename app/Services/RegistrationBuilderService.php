@@ -1,18 +1,16 @@
 <?php
 
-
 namespace App\Services;
 
 use App\Models\Eventos;
-use App\Models\RegistrationInstance;
-use Illuminate\Support\Str;
+use App\Models\TicketInstance;
 use Carbon\Carbon;
 
 class RegistrationBuilderService
 {
     public function build(
         Eventos $evento,
-        RegistrationInstance $instance,
+        TicketInstance $instance,
         string $email
     ): array {
         return [
@@ -34,7 +32,7 @@ class RegistrationBuilderService
             ],
             'order' => [
                 'payment_intent' => $instance->payment_intent_id,
-                'purchased_at' => $instance->registered_at,
+                'purchased_at' => $instance->sold_at,
             ],
             'user' => [
                 'email' => $email,
@@ -43,7 +41,7 @@ class RegistrationBuilderService
             'qr' => $this->makeQr([
                 'type' => 'registration',
                 'event_id' => $evento->id,
-                'registration_instance_id' => $instance->id,
+                'ticket_instance_id' => $instance->id,
                 'hash' => $instance->qr_hash,
             ]),
         ];

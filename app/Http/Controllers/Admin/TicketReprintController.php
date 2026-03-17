@@ -3,21 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\TicketInstance;
-use App\Models\RegistrationInstance;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Services\TicketBuilderService;
-use App\Services\RegistrationBuilderService;
 use App\Models\Eventos;
+use App\Models\TicketInstance;
+use App\Services\RegistrationBuilderService;
+use App\Services\TicketBuilderService;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TicketReprintController extends Controller
 {
     public function index()
     {
-        $instances = TicketInstance::with([
-            'ticket',
-            'ticket.stage',
-        ])->orderByDesc('purchased_at')->get();
+        $instances = TicketInstance::ticketSales()
+            ->with([
+                'ticket',
+                'ticket.stage',
+            ])
+            ->orderByDesc('purchased_at')
+            ->get();
 
         return view('admin.ticket_instances.index', compact('instances'));
     }
@@ -26,6 +28,10 @@ class TicketReprintController extends Controller
         TicketInstance $instance,
         TicketBuilderService $builder
     ) {
+        if ($instance->sale_type === 'registration') {
+            abort(404, 'La instancia corresponde a una inscripcion');
+        }
+
         $ticket = $instance->ticket;
         $email = $instance->email ?? 'taquilla@local';
         $evento = Eventos::findOrFail($instance->event_id);
@@ -47,11 +53,14 @@ class TicketReprintController extends Controller
             ->stream("boleto-{$instance->reference}.pdf");
     }
 
-
     public function reprintInscription(
-        RegistrationInstance $instance,
+        TicketInstance $instance,
         RegistrationBuilderService $builder
     ) {
+        if ($instance->sale_type !== 'registration') {
+            abort(404, 'La instancia no corresponde a una inscripcion');
+        }
+
         $evento = $instance->evento;
         $email = $instance->email ?? 'taquilla@local';
 

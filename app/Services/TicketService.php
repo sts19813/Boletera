@@ -43,6 +43,9 @@ class TicketService
         $boletos = [];
 
         foreach ($cart as $item) {
+            if (($item['type'] ?? 'ticket') !== 'ticket') {
+                continue;
+            }
 
             $evento = Eventos::findOrFail($item['event_id']);
             $ticket = Ticket::findOrFail($item['id']);
@@ -50,7 +53,8 @@ class TicketService
 
             if ($ticket->stock == 1) {
 
-                $existingInstance = TicketInstance::where('payment_intent_id', $paymentIntentId)
+                $existingInstance = TicketInstance::ticketSales()
+                    ->where('payment_intent_id', $paymentIntentId)
                     ->where('ticket_id', $ticket->id)
                     ->first();
 
@@ -67,6 +71,7 @@ class TicketService
                 }
 
                 $instance = TicketInstance::create([
+                    'sale_type' => 'ticket',
                     'event_id' => $evento->id,
                     'user_id' => Auth::id(),
                     'ticket_id' => $ticket->id,
@@ -101,7 +106,8 @@ class TicketService
                 continue;
             }
 
-            $existingInstances = TicketInstance::where('payment_intent_id', $paymentIntentId)
+            $existingInstances = TicketInstance::ticketSales()
+                ->where('payment_intent_id', $paymentIntentId)
                 ->where('ticket_id', $ticket->id)
                 ->get();
 
@@ -125,6 +131,7 @@ class TicketService
             for ($i = 0; $i < $qty; $i++) {
 
                 $instance = TicketInstance::create([
+                    'sale_type' => 'ticket',
                     'ticket_id' => $ticket->id,
                     'user_id' => Auth::id(),
                     'event_id' => $evento->id,
@@ -186,6 +193,7 @@ class TicketService
         for ($i = 0; $i < $qty; $i++) {
 
             $instance = TicketInstance::create([
+                'sale_type' => 'ticket',
                 'ticket_id' => $ticket->id,
                 'user_id' => Auth::id(),
                 'event_id' => $evento->id,

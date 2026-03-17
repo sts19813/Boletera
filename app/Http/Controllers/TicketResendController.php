@@ -22,7 +22,9 @@ class TicketResendController extends Controller
         /**
          * Buscar boletos generales
          */
-        $instances = TicketInstance::where('email', $email)->get();
+        $instances = TicketInstance::ticketSales()
+            ->where('email', $email)
+            ->get();
 
         /**
          * Buscar boletos únicos

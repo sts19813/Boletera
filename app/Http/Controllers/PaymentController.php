@@ -2,25 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Stripe\Stripe;
-use Stripe\PaymentIntent;
-use App\Models\TicketInstance;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Mail;
 use App\Mail\BoletosMail;
-use App\Services\TicketBuilderService;
 use App\Models\Eventos;
-use App\Services\TicketService;
-use App\Services\RegistrationStripeService;
-use App\Models\RegistrationInstance;
-use App\Services\RegistrationBuilderService;
 use App\Models\Ticket;
+use App\Models\TicketInstance;
+use App\Services\RegistrationBuilderService;
+use App\Services\RegistrationStripeService;
+use App\Services\TicketBuilderService;
+use App\Services\TicketService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 class PaymentController extends Controller
 {
-
     public function __construct(
         private TicketBuilderService $ticketBuilder,
         private TicketService $ticketService,
@@ -34,11 +32,10 @@ class PaymentController extends Controller
      */
     public function formulario(Request $request)
     {
-        // Normalmente esto vendrá del carrito en sesión
         $carrito = session('svg_cart', []);
 
         if (empty($carrito)) {
-            abort(404, 'Carrito vacío');
+            abort(404, 'Carrito vacio');
         }
 
         $eventId = session('event_id');
@@ -48,20 +45,10 @@ class PaymentController extends Controller
         }
 
         $registration = session('registration_form');
-
-
         $evento = Eventos::findOrFail($eventId);
 
-
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
-
-        // comisión ejemplo
-        $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
-
-        // cargo solo informativo
         $comision = round($subtotal * 0.05, 2);
-
-        // TOTAL SIN COMISIÓN
         $total = $subtotal;
 
         return view('pago.form', compact(
@@ -79,7 +66,6 @@ class PaymentController extends Controller
      */
     public function crearIntent(Request $request)
     {
-
         $request->validate([
             'nombre' => 'required|string|max:255',
             'celular' => 'required|string|max:20',
@@ -89,102 +75,74 @@ class PaymentController extends Controller
         $carrito = session('svg_cart', []);
 
         if (empty($carrito)) {
-            return response()->json(['error' => 'Carrito vacío'], 400);
+            return response()->json(['error' => 'Carrito vacio'], 400);
         }
 
-        // ===============================
-        // VALIDAR DISPONIBILIDAD REAL
-        // ===============================
         foreach ($carrito as $item) {
-
             $type = $item['type'] ?? 'ticket';
             $qtySolicitado = $item['qty'] ?? 1;
 
-            /*
-            |--------------------------------------------------------------------------
-            | 🎟 VALIDAR TICKETS
-            |--------------------------------------------------------------------------
-            */
             if ($type === 'ticket') {
-
-                $ticket = Ticket::withCount('instances')
-                    ->find($item['id']);
+                $ticket = Ticket::withCount('instances')->find($item['id']);
 
                 if (!$ticket) {
                     return response()->json([
-                        'error' => "El boleto '{$item['name']}' ya no está disponible."
+                        'error' => "El boleto '{$item['name']}' ya no esta disponible.",
                     ], 409);
                 }
 
                 $disponibles = $ticket->stock;
 
                 if ($disponibles <= 0) {
-
                     $ultimaCompra = $ticket->instances()
                         ->latest('purchased_at')
                         ->first();
 
                     $horaCompra = $ultimaCompra
-                        ? Carbon::parse($ultimaCompra->purchased_at)
-                            ->format('d/m/Y H:i')
+                        ? Carbon::parse($ultimaCompra->purchased_at)->format('d/m/Y H:i')
                         : 'recientemente';
 
                     return response()->json([
-                        'error' => "El boleto '{$ticket->name}' está agotado.",
-                        'detalle' => "Última compra registrada el {$horaCompra}."
+                        'error' => "El boleto '{$ticket->name}' esta agotado.",
+                        'detalle' => "Ultima compra registrada el {$horaCompra}.",
                     ], 409);
                 }
 
                 if ($disponibles < $qtySolicitado) {
-
                     return response()->json([
-                        'error' => "Solo quedan {$disponibles} boletos disponibles para '{$ticket->name}'."
+                        'error' => "Solo quedan {$disponibles} boletos disponibles para '{$ticket->name}'.",
                     ], 409);
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | 📝 VALIDAR REGISTROS
-            |--------------------------------------------------------------------------
-            */
             if ($type === 'registration') {
-
                 $evento = Eventos::find($item['event_id']);
 
                 if (!$evento) {
                     return response()->json([
-                        'error' => "El evento ya no está disponible."
+                        'error' => 'El evento ya no esta disponible.',
                     ], 409);
                 }
 
-                // 🔴 Sin cupo
                 if ($evento->max_capacity <= 0) {
-
                     return response()->json([
-                        'error' => "La inscripción '{$evento->name}' está agotada.",
-                        'detalle' => "El evento ya no cuenta con cupo disponible. el último registro se compro hace 19 segundos."
+                        'error' => "La inscripcion '{$evento->name}' esta agotada.",
+                        'detalle' => 'El evento ya no cuenta con cupo disponible.',
                     ], 409);
                 }
 
-                // 🔴 Cupo insuficiente
                 if ($evento->max_capacity < $qtySolicitado) {
-
                     return response()->json([
-                        'error' => "Solo quedan {$evento->max_capacity} lugares disponibles para '{$evento->name}'."
+                        'error' => "Solo quedan {$evento->max_capacity} lugares disponibles para '{$evento->name}'.",
                     ], 409);
                 }
             }
         }
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
-
-        // solo informativo
-        $comision = round($subtotal * 0.05, 2);
+        $total = $subtotal;
 
         Stripe::setApiKey(config('services.stripe.secret'));
-        // Stripe cobra SOLO el subtotal
-        $total = $subtotal;
 
         $intent = PaymentIntent::create([
             'amount' => (int) round($total * 100),
@@ -199,20 +157,16 @@ class PaymentController extends Controller
         ]);
 
         return response()->json([
-            'clientSecret' => $intent->client_secret
+            'clientSecret' => $intent->client_secret,
         ]);
     }
-
-
-
 
     public function success(Request $request)
     {
         $paymentIntentId = $request->query('pi');
 
-
         if (!$paymentIntentId) {
-            abort(400, 'Pago inválido');
+            abort(400, 'Pago invalido');
         }
 
         Stripe::setApiKey(config('services.stripe.secret'));
@@ -221,22 +175,34 @@ class PaymentController extends Controller
         $cart = session('svg_cart', []);
 
         if (empty($cart)) {
-            abort(400, 'Carrito vacío o sesión expirada');
+            abort(400, 'Carrito vacio o sesion expirada');
         }
 
-        $isRegistration = collect($cart)->contains(
+        $containsTickets = collect($cart)->contains(
+            fn($i) => ($i['type'] ?? 'ticket') === 'ticket'
+        );
+        $containsRegistrations = collect($cart)->contains(
             fn($i) => ($i['type'] ?? null) === 'registration'
         );
 
-        if ($isRegistration) {
-            $boletos = $this->registrationStripeService->createFromStripeIntent(
-                $paymentIntentId
-            );
+        $boletos = [];
 
-        } else {
-            $boletos = $this->ticketService->createFromStripeIntent(
-                $paymentIntentId
+        if ($containsTickets) {
+            $boletos = array_merge(
+                $boletos,
+                $this->ticketService->createFromStripeIntent($paymentIntentId)
             );
+        }
+
+        if ($containsRegistrations) {
+            $boletos = array_merge(
+                $boletos,
+                $this->registrationStripeService->createFromStripeIntent($paymentIntentId)
+            );
+        }
+
+        if (empty($boletos)) {
+            abort(400, 'No se generaron boletos para esta compra');
         }
 
         $pdfContent = $this->generateBoletosPdf($boletos, $email);
@@ -244,12 +210,12 @@ class PaymentController extends Controller
         Mail::to($email)->send(
             new BoletosMail($pdfContent, $boletos)
         );
+
         $eventId = $cart[0]['event_id'] ?? null;
         $evento = Eventos::findOrFail($eventId);
 
         return view('pago.success', compact('boletos', 'email', 'evento'));
     }
-
 
     private function generateBoletosPdf(array $boletos, string $email)
     {
@@ -257,9 +223,7 @@ class PaymentController extends Controller
             'boletos' => $boletos,
             'email' => $email,
         ])->setPaper([0, 0, 400, 700])->output();
-
     }
-
 
     public function reprint(Request $request)
     {
@@ -270,62 +234,39 @@ class PaymentController extends Controller
             abort(400, 'Referencia requerida');
         }
 
-        // ================================
-        // 1️⃣ Buscar Tickets
-        // ================================
-        $ticketInstances = TicketInstance::where(function ($q) use ($reference) {
-            $q->where('payment_intent_id', $reference)
-                ->orWhere('reference', $reference);
-        })->get();
+        $instances = TicketInstance::with(['ticket', 'evento'])
+            ->where(function ($q) use ($reference) {
+                $q->where('payment_intent_id', $reference)
+                    ->orWhere('reference', $reference);
+            })
+            ->orderBy('purchased_at')
+            ->get();
 
-        if ($ticketInstances->isNotEmpty()) {
-
-            $instance = $ticketInstances->first();
-            $evento = Eventos::findOrFail($instance->event_id);
-
-            $boletos = $ticketInstances->map(
-                fn($instance) =>
-                $this->ticketBuilder->build(
-                    $instance->ticket,
-                    $instance,
-                    $email,
-                    $instance->purchased_at,
-                    $evento,
-                    $instance->payment_intent_id ?? $instance->reference
-                )
-            )->toArray();
+        if ($instances->isEmpty()) {
+            abort(404, 'Boletos o inscripciones no encontrados');
         }
 
-        // ================================
-        // 2️⃣ Buscar Registrations
-        // ================================
-        else {
+        $boletos = $instances->map(function (TicketInstance $instance) use ($email) {
+            $evento = $instance->evento ?? Eventos::findOrFail($instance->event_id);
 
-            $registrationInstances = RegistrationInstance::where(
-                'payment_intent_id',
-                $reference
-            )->get();
-
-            if ($registrationInstances->isEmpty()) {
-                abort(404, 'Boletos o inscripciones no encontrados');
+            if ($instance->sale_type === 'registration') {
+                return $this->registrationBuilder->build(
+                    $evento,
+                    $instance,
+                    $instance->email ?? $email
+                );
             }
 
-            $instance = $registrationInstances->first();
-            $evento = Eventos::findOrFail($instance->event_id);
+            return $this->ticketBuilder->build(
+                $instance->ticket,
+                $instance,
+                $instance->email ?? $email,
+                $instance->purchased_at,
+                $evento,
+                $instance->payment_intent_id ?? $instance->reference
+            );
+        })->toArray();
 
-            $boletos = $registrationInstances->map(
-                fn($instance) =>
-                $this->registrationBuilder->build(
-                    $evento,
-                    $instance,
-                    $instance->email
-                )
-            )->toArray();
-        }
-
-        // ================================
-        // PDF
-        // ================================
         $pdf = Pdf::loadView('pdf.boletos', [
             'boletos' => $boletos,
             'email' => $email,

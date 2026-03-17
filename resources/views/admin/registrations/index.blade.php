@@ -26,7 +26,6 @@
                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase">
                     <th>Email</th>
                     <th>Evento</th>
-
                     <th>Fecha</th>
                     <th class="text-end">Acciones</th>
                 </tr>
@@ -40,10 +39,9 @@
                         <td>{{ optional($sale['date'])->format('d/m/Y H:i') }}</td>
                         <td class="text-end">
 
-                            {{-- ================= REGISTRATION ================= --}}
                             @if($sale['type'] === 'registration')
                                 <button class="btn btn-sm btn-light-primary btn-view-registration me-2"
-                                    data-instance='@json($sale["model"])' data-registration='@json($sale["model"]->registration)'>
+                                    data-instance='@json($sale["model"])'>
                                     Ver registro
                                 </button>
 
@@ -53,8 +51,6 @@
                                 </a>
                             @endif
 
-
-                            {{-- ================= TICKET NORMAL ================= --}}
                             @if($sale['type'] === 'ticket')
                                 <a target="_blank" href="{{ route('admin.ticket_instances.reprint', $sale['model']) }}"
                                     class="btn btn-sm btn-light-primary">
@@ -96,8 +92,8 @@
                                 <th>Handicap</th>
                                 <th>GHIN</th>
                                 <th>Playera</th>
-                                <th>Relación Cumbres</th>
-                                <th>Capitán</th>
+                                <th>Relacion Cumbres</th>
+                                <th>Capitan</th>
                             </tr>
                         </thead>
                         <tbody id="modalPlayers"></tbody>
@@ -135,39 +131,19 @@
             $('.btn-view-registration').on('click', function () {
 
                 const instance = $(this).data('instance');
-                const registration = $(this).data('registration');
 
-                $('#modalEvent').text(instance.evento?.name ?? '—');
+                $('#modalEvent').text(instance.evento?.name ?? '-');
                 $('#modalEmail').text(instance.email);
 
                 let headers = '';
                 let rows = '';
                 let teamName = 'Registro';
 
-                let data = null;
-
-                // ================================
-                // 1️⃣ MODELO VIEJO
-                // ================================
-                if (registration.players && registration.players.length > 0) {
-                    data = { players: registration.players };
-                    teamName = registration.team_name ?? 'Equipo';
-                }
-
-                // ================================
-                // 2️⃣ MODELO NUEVO JSON
-                // ================================
-                else if (registration.form_data) {
-                    data = registration.form_data;
-                }
+                const data = instance.form_data ?? null;
+                teamName = data?.team_name ?? instance.team_name ?? teamName;
 
                 if (!data) return;
 
-                /*
-                ======================================================
-                EVENTO GOLF (players)
-                ======================================================
-                */
                 if (data.players && data.players.length > 0) {
 
                     headers = `
@@ -179,40 +155,37 @@
                             <th>Handicap</th>
                             <th>GHIN</th>
                             <th>Playera</th>
-                            <th>Relación Cumbres</th>
-                            <th>Capitán</th>
+                            <th>Relacion Cumbres</th>
+                            <th>Capitan</th>
                         </tr>
                     `;
 
                     data.players.forEach((p, index) => {
 
-                        const cumbres = (p.cumbres && p.cumbres.length)
+                        const cumbres = Array.isArray(p.cumbres)
                             ? p.cumbres.join(', ')
-                            : '—';
+                            : (p.cumbres ?? '-');
+
+                        const isCaptain = p.is_captain !== undefined
+                            ? Boolean(p.is_captain)
+                            : index === 0;
 
                         rows += `
                             <tr>
-                                <td>${p.name ?? '—'}</td>
-                                <td>${p.email ?? '—'}</td>
-                                <td>${p.phone ?? '—'}</td>
-                                <td>${p.campo ?? '—'}</td>
-                                <td>${p.handicap ?? '—'}</td>
-                                <td>${p.ghin ?? '—'}</td>
-                                <td>${p.shirt ?? '—'}</td>
+                                <td>${p.name ?? '-'}</td>
+                                <td>${p.email ?? '-'}</td>
+                                <td>${p.phone ?? '-'}</td>
+                                <td>${p.campo ?? '-'}</td>
+                                <td>${p.handicap ?? '-'}</td>
+                                <td>${p.ghin ?? '-'}</td>
+                                <td>${p.shirt ?? '-'}</td>
                                 <td>${cumbres}</td>
-                                <td>${index === 0 ? 'Sí' : '—'}</td>
+                                <td>${isCaptain ? 'Si' : '-'}</td>
                             </tr>
                         `;
                     });
-
-                    teamName = data.team_name ?? teamName;
                 }
 
-                /*
-                ======================================================
-                EVENTO CENA (participants)
-                ======================================================
-                */
                 else if (data.participants && data.participants.length > 0) {
 
                     headers = `
@@ -221,7 +194,7 @@
                             <th>Email</th>
                             <th>Celular</th>
                             <th>Tipo</th>
-                            <th>Generación</th>
+                            <th>Generacion</th>
                         </tr>
                     `;
 
@@ -229,11 +202,11 @@
 
                         rows += `
                             <tr>
-                                <td>${p.nombre ?? '—'}</td>
-                                <td>${p.email ?? '—'}</td>
-                                <td>${p.celular ?? '—'}</td>
-                                <td>${p.tipo ?? '—'}</td>
-                                <td>${p.generacion ?? '—'}</td>
+                                <td>${p.nombre ?? '-'}</td>
+                                <td>${p.email ?? '-'}</td>
+                                <td>${p.celular ?? '-'}</td>
+                                <td>${p.tipo ?? '-'}</td>
+                                <td>${p.generacion ?? '-'}</td>
                             </tr>
                         `;
                     });
