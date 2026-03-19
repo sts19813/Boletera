@@ -12,7 +12,7 @@ class SalesController extends Controller
         $tickets = TicketInstance::ticketSales()
             ->with([
                 'ticket',
-                'ticket.stage',
+                'ticket.event',
                 'evento',
             ])
             ->get()

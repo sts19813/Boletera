@@ -157,7 +157,6 @@
 		window.Laravel = {
 			csrfToken: "{{ csrf_token() }}",
 			routes: {
-				eventsFetch: "{{ route('events.fetch') }}",
 				eventsStore: "{{ route('eventsSettings.store') }}",
 				eventDelete: "{{ route('events.configurator.destroy', $lot->id) }}"
 			}
@@ -167,7 +166,6 @@
 		window.currentLot = @json($lot);
 		window.dbLotes = @json($dbLotes);
 
-		window.projects = @json($projects);
 		window.idDesarrollo = @json($lot->id);
 
 		let redireccion = false;

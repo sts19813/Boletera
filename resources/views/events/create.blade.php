@@ -78,7 +78,7 @@
 
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Total de asientos</label>
-                                <input type="number" name="total_asientos" min="1" class="form-control">
+                                <input type="number" id="total_asientos" name="total_asientos" min="1" class="form-control">
                             </div>
 
                             <div class="col-md-3">
@@ -123,6 +123,12 @@
                                 <input type="number" min="1" name="max_capacity" class="form-control" placeholder="Ej. 150">
                             </div>
 
+                            <div class="col-md-4 d-none" id="registration_max_checkins_wrapper">
+                                <label class="form-label fw-bold">Check-ins por registro</label>
+                                <input type="number" min="1" name="registration_max_checkins" class="form-control"
+                                    value="{{ old('registration_max_checkins', 1) }}" placeholder="Ej. 3">
+                            </div>
+
                             <div class="col-md-4 d-none" id="template_wrapper">
                                 <label class="form-label fw-bold">Plantilla</label>
                                 <select name="template" class="form-select">
@@ -152,42 +158,6 @@
 
 
                 <!-- ===============================
-                            CATÁLOGO NABOO
-                            ================================ -->
-                <div class="card shadow-sm mb-5">
-                    <div class="card-header">
-                        <h4 class="card-title fw-bold">Ubicación (Catálogo de boletos)</h4>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="row g-4">
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Proyecto</label>
-                                <select name="project_id" id="project_id" class="form-select">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Fase</label>
-                                <select name="phase_id" id="phase_id" class="form-select" disabled>
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Etapa</label>
-                                <select name="stage_id" id="stage_id" class="form-select" disabled>
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===============================
                                                              IMÁGENES
                                                         ================================ -->
                 <div class="card shadow-sm mb-5">
@@ -205,7 +175,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Imagen SVG</label>
-                                <input type="file" name="svg_image" accept=".svg" class="form-control">
+                                <input type="file" id="svg_input" name="svg_image" accept=".svg" class="form-control">
                             </div>
 
                         </div>
@@ -240,7 +210,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">Selector SVG / Modal</label>
-                                <input type="text" name="modal_selector" class="form-control" placeholder="svg *">
+                                <input type="text" id="modal_selector" name="modal_selector" class="form-control" placeholder="svg *">
                             </div>
 
                         </div>
@@ -288,8 +258,7 @@
     </div>
 @endsection
 @push('scripts')
-    <script src="/assets/js/events/events.js"></script>
-    <script src="/assets/js/events/procesarSVG.js"></script>
+        <script src="/assets/js/events/procesarSVG.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -344,6 +313,7 @@
             const priceWrapper = document.getElementById('price_wrapper');
             const templateWrapper = document.getElementById('template_wrapper');
             const maxCapacityWrapper = document.getElementById('max_capacity_wrapper');
+            const registrationMaxCheckinsWrapper = document.getElementById('registration_max_checkins_wrapper');
 
             const registrationFields = document.querySelectorAll('.registration-field');
 
@@ -358,6 +328,7 @@
                 priceWrapper.classList.toggle('d-none', !isReg);
                 templateWrapper.classList.toggle('d-none', !isReg);
                 maxCapacityWrapper.classList.toggle('d-none', !isReg);
+                registrationMaxCheckinsWrapper.classList.toggle('d-none', !isReg);
 
                 // 🔥 Mostrar / ocultar los campos adicionales
                 registrationFields.forEach(field => {

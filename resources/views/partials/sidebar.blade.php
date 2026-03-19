@@ -23,7 +23,7 @@
                         </a>
                     </div>
 
-                    <div class="menu-item menu-accordion                                                                                                      {{ request()->is('projects*', 'phases*', 'stages*', 'tickets*') ? 'show' : '' }}"
+                    <div class="menu-item menu-accordion {{ request()->is('tickets*') ? 'show' : '' }}"
                         data-kt-menu-trigger="click">
 
                         <span class="menu-link">
@@ -35,27 +35,6 @@
                         </span>
 
                         <div class="menu-sub menu-sub-accordion">
-                            <div class="menu-item">
-                                <a class="menu-link {{ request()->is('projects*') ? 'active' : '' }}" href="/projects">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">{{ __('messages.proyectos') }}</span>
-                                </a>
-                            </div>
-
-                            <div class="menu-item">
-                                <a class="menu-link {{ request()->is('phases*') ? 'active' : '' }}" href="/phases">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">{{ __('messages.fases') }}</span>
-                                </a>
-                            </div>
-
-                            <div class="menu-item">
-                                <a class="menu-link {{ request()->is('stages*') ? 'active' : '' }}" href="/stages">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">{{ __('messages.etapas') }}</span>
-                                </a>
-                            </div>
-
                             <div class="menu-item">
                                 <a class="menu-link {{ request()->is('tickets*') ? 'active' : '' }}" href="/tickets">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>

@@ -5,30 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Eventos;
 use App\Models\Ticket;
 use App\Models\TicketSvgMapping;
-use Illuminate\Http\Request;
 use App\Services\FileUploadService;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EventosController extends Controller
 {
-
-    protected FileUploadService $fileUploadService;
-
-    /**
-     * Constructor
-     * Inyecta los servicios necesarios
-     */
-    public function __construct(FileUploadService $fileUploadService)
-    {
-        $this->fileUploadService = $fileUploadService;
+    public function __construct(
+        protected FileUploadService $fileUploadService
+    ) {
     }
 
-
-
-    /**
-     * Listado de Eventos públicos
-     */
     public function index()
     {
         $user = auth()->user();
@@ -46,80 +34,50 @@ class EventosController extends Controller
         return view('events.index', compact('events'));
     }
 
-    /**
-     * Listado de Eventos administrativos
-     */
     public function admin()
     {
         $lots = Eventos::orderBy('updated_at', 'desc')->get();
+
         return view('lots.admin', compact('lots'));
     }
 
-    /**
-     * Fetch de lotes para un proyecto/fase/etapa específico
-     */
     public function fetch(Request $request)
     {
-        $request->validate([
-            'project_id' => 'required|integer',
-            'phase_id' => 'required|integer',
-            'stage_id' => 'required|integer',
-        ]);
-
-
-
-        return response()->json();
+        return response()->json([], 410);
     }
 
-    /**
-     * Formulario para crear un nuevo desarrollo
-     */
     public function create()
     {
-
         $Eventos = Eventos::select('id', 'name')->get();
+
         return view('events.create', compact('Eventos'));
     }
 
-    /**
-     * Guardar un nuevo evento en la base de datos
-     */
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
-
             'event_date' => 'required|date',
             'hora_inicio' => 'nullable',
             'hora_fin' => 'nullable',
-
-            // Evento normal
             'total_asientos' => 'required|integer|min:0',
             'has_seat_mapping' => 'nullable|boolean',
-
-            // Tipo de evento
             'is_registration' => 'nullable|boolean',
             'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
             'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
             'template' => 'nullable|string|max:100',
             'template_form' => 'nullable|required_if:is_registration,1|string|max:100',
             'allows_multiple_registrations' => 'nullable|boolean',
-
-            'project_id' => 'nullable|integer',
-            'phase_id' => 'nullable|integer',
-            'stage_id' => 'nullable|integer',
-
+            'registration_max_checkins' => 'nullable|required_if:is_registration,1|integer|min:1',
             'modal_color' => 'nullable|string|max:50',
             'modal_selector' => 'nullable|string|max:255',
             'color_primario' => 'nullable|string|max:50',
             'color_acento' => 'nullable|string|max:50',
-
             'redirect_return' => 'nullable|string|max:255',
             'redirect_next' => 'nullable|string|max:255',
             'redirect_previous' => 'nullable|string|max:255',
-
             'svg_image' => 'nullable|mimes:svg,xml',
             'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
         ]);
@@ -127,7 +85,6 @@ class EventosController extends Controller
         DB::beginTransaction();
 
         try {
-
             $data = $request->only([
                 'name',
                 'description',
@@ -141,9 +98,7 @@ class EventosController extends Controller
                 'price',
                 'max_capacity',
                 'template',
-                'project_id',
-                'phase_id',
-                'stage_id',
+                'registration_max_checkins',
                 'modal_color',
                 'modal_selector',
                 'color_primario',
@@ -154,27 +109,23 @@ class EventosController extends Controller
                 'template_form',
             ]);
 
-            /**
-             * Normalización para eventos de inscripción
-             */
             if (!empty($data['is_registration'])) {
                 $data['total_asientos'] = 0;
                 $data['has_seat_mapping'] = false;
                 $data['template'] = $data['template'] ?? 'registration';
+                $data['registration_max_checkins'] = max(1, (int) ($data['registration_max_checkins'] ?? 1));
             } else {
-                // Evento normal
                 $data['price'] = null;
                 $data['max_capacity'] = null;
                 $data['template'] = $data['template'] ?? 'default';
+                $data['registration_max_checkins'] = 1;
             }
 
-            // Upload SVG
             if ($request->hasFile('svg_image')) {
                 $data['svg_image'] = $this->fileUploadService
                     ->upload($request->file('svg_image'), 'eventos-assets');
             }
 
-            // Upload PNG
             if ($request->hasFile('png_image')) {
                 $data['png_image'] = $this->fileUploadService
                     ->upload($request->file('png_image'), 'eventos-assets');
@@ -190,155 +141,109 @@ class EventosController extends Controller
             return redirect()
                 ->route('events.index')
                 ->with('success', 'Evento creado correctamente.');
-
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             Log::error('Error al crear evento', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return back()
-                ->withErrors(['error' => 'Ocurrió un error al crear el evento'])
+                ->withErrors(['error' => 'Ocurrio un error al crear el evento'])
                 ->withInput();
         }
     }
 
-
-    //guarda el mapeo de los boletos del configurador
     public function storeSettings(Request $request)
     {
         try {
-            // Validación
             $request->validate([
-                'project_id' => 'nullable|integer',
-                'phase_id' => 'nullable|integer',
-                'stage_id' => 'nullable|integer',
-                'lot_id' => 'nullable|string',
-                'polygonId' => 'nullable|string',
+                'lot_id' => 'nullable|uuid|exists:tickets,id',
+                'polygonId' => 'required|string',
                 'redirect' => 'nullable|boolean',
                 'redirect_url' => 'nullable|string',
-                'desarrollo_id' => 'required|uuid',
+                'desarrollo_id' => 'required|uuid|exists:eventos,id',
                 'color' => 'nullable|string|max:9',
                 'color_active' => 'nullable|string|max:9',
             ]);
 
-            // Solo tomar redirect_url si está marcado
             $redirectChecked = $request->has('redirect') && $request->redirect;
             $redirectUrl = $redirectChecked ? $request->redirect_url : null;
 
-            // Crear registro
-            $lote = TicketSvgMapping::create([
-                'evento_id' => $request->desarrollo_id,
-                'project_id' => $request->project_id ?: null,
-                'phase_id' => $request->phase_id ?: null,
-                'stage_id' => $request->stage_id ?: null,
-                'ticket_id' => $request->lot_id ?: null,
-                'svg_selector' => $request->polygonId,
-                'redirect' => $redirectChecked,
-                'redirect_url' => $redirectUrl,
-                'color' => $redirectChecked ? $request->color : null,
-                'color_active' => $redirectChecked ? $request->color_active : null,
-            ]);
+            $mapping = TicketSvgMapping::updateOrCreate(
+                [
+                    'evento_id' => $request->desarrollo_id,
+                    'svg_selector' => $request->polygonId,
+                ],
+                [
+                    'ticket_id' => $request->lot_id ?: null,
+                    'redirect' => $redirectChecked,
+                    'redirect_url' => $redirectUrl,
+                    'color' => $redirectChecked ? $request->color : null,
+                    'color_active' => $redirectChecked ? $request->color_active : null,
+                ]
+            );
 
             return response()->json([
                 'success' => true,
-                'lote' => $lote
+                'lote' => $mapping,
             ]);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Devolver errores de validación en JSON
             return response()->json([
                 'success' => false,
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
-
-        } catch (\Exception $e) {
-            // Captura cualquier otro error
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
-    /**
-     * Configurador de un evento (vincula boletos con SVG)
-     */
-    public function configurator($id)
+    public function configurator(string $id)
     {
         $lot = Eventos::findOrFail($id);
         $Eventos = Eventos::all();
         $sourceType = $lot->source_type ?? 'adara';
 
-        $projects = [];
-        $lots = [];
-        $dbLotes = [];
+        $lots = Ticket::where('event_id', $lot->id)
+            ->orderBy('name')
+            ->get();
 
+        $dbLotes = TicketSvgMapping::where('evento_id', $lot->id)->get();
 
-        $projects = Eventos::all();
-
-        $lots = Ticket::where('stage_id', $lot->stage_id)->get();
-        $dbLotes = TicketSvgMapping::where([
-            'evento_id' => $lot->id,
-            'project_id' => $lot->project_id,
-            'phase_id' => $lot->phase_id,
-            'stage_id' => $lot->stage_id
-        ])->get();
-
-
-        return view('events.configurator', compact('lot', 'projects', 'lots', 'dbLotes', 'Eventos'))
+        return view('events.configurator', compact('lot', 'lots', 'dbLotes', 'Eventos'))
             ->with('sourceType', $sourceType);
     }
 
-    /**
-     * Vista de iframe para mostrar lotes en SVG
-     */
-    public function iframe($id)
+    public function iframe(string $id)
     {
         $lot = Eventos::findOrFail($id);
-        $projects = Eventos::all();
 
-        $lots = [];
-        $dbLotes = [];
-
-        $lots = Ticket::where('stage_id', $lot->stage_id)->get();
-
-        $tickets = Ticket::where('stage_id', $lot->stage_id)
-            ->where('status', 'available')
+        $lots = Ticket::where('event_id', $lot->id)
+            ->orderBy('name')
             ->get();
 
-        $dbLotes = TicketSvgMapping::where([
-            'evento_id' => $lot->id,
-            'project_id' => $lot->project_id,
-            'phase_id' => $lot->phase_id,
-            'stage_id' => $lot->stage_id
-        ])->get();
+        $tickets = Ticket::where('event_id', $lot->id)
+            ->where('status', 'available')
+            ->orderBy('name')
+            ->get();
 
-        return view('events.iframe', compact('lot', 'projects', 'lots', 'dbLotes', 'tickets'));
+        $dbLotes = TicketSvgMapping::where('evento_id', $lot->id)->get();
+
+        return view('events.iframe', compact('lot', 'lots', 'dbLotes', 'tickets'));
     }
 
-    /**
-     * Formulario de edición de un desarrollo
-     */
-    public function edit($id)
+    public function edit(string $id)
     {
         $event = Eventos::findOrFail($id);
-        $sourceType = $lot->source_type ?? 'adara';
-        $projects = [];
-        $phases = [];
-        $stages = [];
-
         $Eventos = Eventos::select('id', 'name')->get();
 
-        return view('events.edit', compact('event', 'projects', 'phases', 'stages', 'Eventos'));
+        return view('events.edit', compact('event', 'Eventos'));
     }
 
-    /**
-     * Actualizar un evento existente
-     */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
         $event = Eventos::findOrFail($id);
 
@@ -346,36 +251,25 @@ class EventosController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
-
             'event_date' => 'required|date',
             'hora_inicio' => 'nullable',
             'hora_fin' => 'nullable',
-
-            // Evento normal
             'total_asientos' => 'required|integer|min:0',
             'has_seat_mapping' => 'nullable|boolean',
-
-            // Tipo de evento
             'is_registration' => 'nullable|boolean',
             'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
             'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
             'template' => 'nullable|string|max:100',
             'template_form' => 'nullable|required_if:is_registration,1|string|max:100',
             'allows_multiple_registrations' => 'nullable|boolean',
-
-            'project_id' => 'nullable|integer',
-            'phase_id' => 'nullable|integer',
-            'stage_id' => 'nullable|integer',
-
+            'registration_max_checkins' => 'nullable|required_if:is_registration,1|integer|min:1',
             'modal_color' => 'nullable|string|max:50',
             'modal_selector' => 'nullable|string|max:255',
             'color_primario' => 'nullable|string|max:50',
             'color_acento' => 'nullable|string|max:50',
-
             'redirect_return' => 'nullable|string|max:255',
             'redirect_next' => 'nullable|string|max:255',
             'redirect_previous' => 'nullable|string|max:255',
-
             'svg_image' => 'nullable|mimes:svg,xml',
             'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
         ]);
@@ -383,7 +277,6 @@ class EventosController extends Controller
         DB::beginTransaction();
 
         try {
-
             $data = $request->only([
                 'name',
                 'description',
@@ -393,17 +286,12 @@ class EventosController extends Controller
                 'hora_fin',
                 'total_asientos',
                 'has_seat_mapping',
-
-                // Nuevos campos
                 'is_registration',
                 'price',
                 'max_capacity',
                 'template',
                 'template_form',
-
-                'project_id',
-                'phase_id',
-                'stage_id',
+                'registration_max_checkins',
                 'modal_color',
                 'modal_selector',
                 'color_primario',
@@ -416,31 +304,26 @@ class EventosController extends Controller
             $data['has_seat_mapping'] = $request->boolean('has_seat_mapping');
             $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
             $data['is_registration'] = $request->boolean('is_registration');
-            /**
-             * Normalización según tipo de evento
-             */
-            if ($data['is_registration']) {
 
+            if ($data['is_registration']) {
                 $data['total_asientos'] = 0;
                 $data['has_seat_mapping'] = false;
                 $data['template'] = $data['template'] ?? 'registration';
-
+                $data['registration_max_checkins'] = max(1, (int) ($data['registration_max_checkins'] ?? 1));
             } else {
-
                 $data['price'] = null;
                 $data['max_capacity'] = null;
                 $data['template_form'] = null;
                 $data['allows_multiple_registrations'] = false;
                 $data['template'] = $data['template'] ?? 'default';
+                $data['registration_max_checkins'] = 1;
             }
 
-            // SVG nuevo (si se sube)
             if ($request->hasFile('svg_image')) {
                 $data['svg_image'] = $this->fileUploadService
                     ->upload($request->file('svg_image'), 'eventos-assets');
             }
 
-            // PNG nuevo (si se sube)
             if ($request->hasFile('png_image')) {
                 $data['png_image'] = $this->fileUploadService
                     ->upload($request->file('png_image'), 'eventos-assets');
@@ -453,43 +336,40 @@ class EventosController extends Controller
             return redirect()
                 ->route('events.index')
                 ->with('success', 'Evento actualizado correctamente.');
-
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             Log::error('Error al actualizar evento', [
                 'event_id' => $event->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return back()
-                ->withErrors(['error' => 'Ocurrió un error al actualizar el evento'])
+                ->withErrors(['error' => 'Ocurrio un error al actualizar el evento'])
                 ->withInput();
         }
     }
 
-
-
-    /**
-     * Eliminar desarrollo
-     */
-    public function destroy($id)
+    public function destroy(string $id)
     {
         $desarrollo = Eventos::findOrFail($id);
         $desarrollo->delete();
 
-        return redirect()->route('Eventos.index')->with('success', 'Desarrollo eliminado correctamente.');
+        return redirect()
+            ->route('events.index')
+            ->with('success', 'Evento eliminado correctamente.');
     }
 
-    /// Eliminar un mapeo específico
     public function destroyMapping(Request $request, Eventos $event)
     {
-        $mapping = TicketSvgMapping::findOrFail($request->id);
+        $mapping = TicketSvgMapping::where('evento_id', $event->id)
+            ->where('id', $request->id)
+            ->firstOrFail();
+
         $mapping->delete();
 
         return response()->json([
-            'success' => true
+            'success' => true,
         ]);
     }
 }

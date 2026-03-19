@@ -76,7 +76,7 @@ class ChatbotAdminController extends Controller
     public function showEvent(Eventos $evento)
     {
         $ticketRows = Ticket::query()
-            ->where('stage_id', $evento->stage_id)
+            ->where('event_id', $evento->id)
             ->orderBy('name')
             ->get([
                 'id',
@@ -314,16 +314,16 @@ class ChatbotAdminController extends Controller
             ->limit($limit)
             ->get();
 
-        $stageIds = $events->pluck('stage_id')->filter()->unique()->values();
-        $ticketsByStage = collect();
+        $eventIds = $events->pluck('id')->filter()->unique()->values();
+        $ticketsByEvent = collect();
 
-        if ($stageIds->isNotEmpty()) {
-            $ticketsByStage = Ticket::query()
-                ->whereIn('stage_id', $stageIds)
+        if ($eventIds->isNotEmpty()) {
+            $ticketsByEvent = Ticket::query()
+                ->whereIn('event_id', $eventIds)
                 ->orderBy('name')
                 ->get([
                     'id',
-                    'stage_id',
+                    'event_id',
                     'name',
                     'type',
                     'total_price',
@@ -333,11 +333,11 @@ class ChatbotAdminController extends Controller
                     'available_from',
                     'available_until',
                 ])
-                ->groupBy('stage_id');
+                ->groupBy('event_id');
         }
 
-        $data = $events->map(function (Eventos $event) use ($ticketsByStage) {
-            $tickets = collect($ticketsByStage->get($event->stage_id, collect()))
+        $data = $events->map(function (Eventos $event) use ($ticketsByEvent) {
+            $tickets = collect($ticketsByEvent->get($event->id, collect()))
                 ->map(function (Ticket $ticket) {
                     $stock = $ticket->stock !== null ? max(0, (int) $ticket->stock) : 0;
 
@@ -747,7 +747,7 @@ class ChatbotAdminController extends Controller
     private function eventSummary(Eventos $event): array
     {
         $ticketCatalog = Ticket::query()
-            ->where('stage_id', $event->stage_id)
+            ->where('event_id', $event->id)
             ->select(
                 DB::raw('COUNT(*) as tipos_boletos'),
                 DB::raw('SUM(COALESCE(stock, 0)) as boletos_disponibles'),

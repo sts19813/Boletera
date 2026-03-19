@@ -28,7 +28,7 @@
                         <td>
                             <div class="fw-bold">{{ $instance->ticket->name }}</div>
                             <div class="text-muted fs-7">
-                                {{ optional($instance->ticket->stage)->name }}
+                                {{ optional($instance->evento)->name }}
                             </div>
                         </td>
 

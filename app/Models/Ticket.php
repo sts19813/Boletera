@@ -15,7 +15,7 @@ class Ticket extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'stage_id',
+        'event_id',
         'name',
         'type',
         'total_price',
@@ -39,9 +39,9 @@ class Ticket extends Model
     ];
 
     // Relaciones
-    public function stage()
+    public function event()
     {
-        return $this->belongsTo(Stage::class);
+        return $this->belongsTo(Eventos::class, 'event_id');
     }
 
     public function customFields()

@@ -106,14 +106,10 @@
 
         window.Laravel = {
             csrfToken: "{{ csrf_token() }}",
-            routes: {
-                lotsFetch: "{{ route('events.fetch') }}",
-                lotesStore: "{{ route('events.store') }}"
-            }
+            routes: {}
         };
         window.preloadedLots = @json($lots);
         window.currentLot = @json($lot);
-        window.projects = @json($projects);
         window.dbLotes = @json($dbLotes);
         window.idDesarrollo = @json($lot->id);
         window.EVENT_ID = @json($lot->id);

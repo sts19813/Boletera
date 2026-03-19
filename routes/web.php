@@ -8,9 +8,6 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\View\ProjectViewController;
-use App\Http\Controllers\View\PhaseViewController;
-use App\Http\Controllers\View\StageViewController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventosController;
@@ -56,15 +53,11 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])->name('events.destroy');
         Route::delete('/events/{event}/configurator', [EventosController::class, 'destroyMapping'])->name('events.configurator.destroy');
 
-        Route::post('/events/fetch', action: [EventosController::class, 'fetch'])->name('events.fetch');
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
 
 
 
         // Catálogo
-        Route::get('/projects', [ProjectViewController::class, 'index'])->name('projects.index');
-        Route::get('/phases', [PhaseViewController::class, 'index'])->name('phases.index');
-        Route::get('/stages', [StageViewController::class, 'index'])->name('stages.index');
         Route::get('/tickets', [TicketViewController::class, 'index'])->name('tickets.index');
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');

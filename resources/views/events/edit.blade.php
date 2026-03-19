@@ -86,13 +86,13 @@
 
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Total de asientos</label>
-                                <input type="number" name="total_asientos" min="1" class="form-control"
+                                <input type="number" id="total_asientos" name="total_asientos" min="1" class="form-control"
                                     value="{{ old('total_asientos', $event->total_asientos) }}" required>
                             </div>
 
                             <div class="col-md-3">
                                 <label class="form-label fw-bold">Mapa de asientos</label>
-                                <select name="has_seat_mapping" class="form-select">
+                                <select id="has_seat_mapping" name="has_seat_mapping" class="form-select">
                                     <option value="0" {{ old('has_seat_mapping', $event->has_seat_mapping) == false ? 'selected' : '' }}>
                                         No
                                     </option>
@@ -147,6 +147,15 @@
                             </div>
 
                             {{-- Plantilla visual --}}
+                            <div class="col-md-3 registration-field" id="registration_max_checkins_wrapper">
+                                <label class="form-label fw-bold">Check-ins por registro</label>
+                                <input type="number"
+                                    min="1"
+                                    name="registration_max_checkins"
+                                    class="form-control"
+                                    value="{{ old('registration_max_checkins', $event->registration_max_checkins ?? 1) }}">
+                            </div>
+
                             <div class="col-md-3 registration-field" id="template_wrapper">
                                 <label class="form-label fw-bold">Plantilla</label>
                                 <select name="template" class="form-select">
@@ -191,42 +200,6 @@
 
 
                 <!-- ===============================
-                                UBICACIÓN NABOO
-                        ================================ -->
-                <div class="card shadow-sm mb-5">
-                    <div class="card-header">
-                        <h4 class="card-title fw-bold">Ubicación (Catálogo de boletos)</h4>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="row g-4">
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Proyecto</label>
-                                <select name="project_id" id="project_id" class="form-select">
-                                    <option value="">Seleccione un proyecto</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Fase</label>
-                                <select name="phase_id" id="phase_id" class="form-select" disabled>
-                                    <option value="">Seleccione una fase</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Etapa</label>
-                                <select name="stage_id" id="stage_id" class="form-select" disabled>
-                                    <option value="">Seleccione una etapa</option>
-                                </select>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===============================
                                 IMÁGENES
                         ================================ -->
                 <div class="card shadow-sm mb-5">
@@ -249,7 +222,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Imagen SVG</label>
-                                <input type="file" name="svg_image" accept=" .svg" class="form-control">
+                                <input type="file" id="svg_input" name="svg_image" accept=" .svg" class="form-control">
                                 @if ($event->svg_image)
                                     <small class="text-muted d-block mt-1">
                                         Actual: {{ basename($event->svg_image) }}
@@ -292,7 +265,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">Selector SVG / Modal</label>
-                                <input type="text" name="modal_selector" class="form-control"
+                                <input type="text" id="modal_selector" name="modal_selector" class="form-control"
                                     value="{{ old('modal_selector', $event->modal_selector) }}">
                             </div>
 
@@ -346,16 +319,7 @@
 @endsection
 
 @push('scripts')
-
-    {{-- Precarga para JS NABOO --}}
-    <script>
-        window.selectedProject = "{{ $event->project_id }}";
-        window.selectedPhase = "{{ $event->phase_id }}";
-        window.selectedStage = "{{ $event->stage_id }}";
-    </script>
-
-    <script src="/assets/js/events/events.js"></script>
-    <script src="/assets/js/events/procesarSVG.js"></script>
+        <script src="/assets/js/events/procesarSVG.js"></script>
 
     {{-- Pickr --}}
     <script>

@@ -16,7 +16,7 @@ class TicketReprintController extends Controller
         $instances = TicketInstance::ticketSales()
             ->with([
                 'ticket',
-                'ticket.stage',
+                'evento',
             ])
             ->orderByDesc('purchased_at')
             ->get();

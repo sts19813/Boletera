@@ -93,9 +93,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         formData.set('polygonId', selectedPolygonId);
         formData.set('desarrollo_id', window.idDesarrollo);
-        formData.set('project_id', window.currentLot.project_id ?? '');
-        formData.set('phase_id', window.currentLot.phase_id ?? '');
-        formData.set('stage_id', window.currentLot.stage_id ?? '');
         formData.set('lot_id', lotSelect.value);
 
         formData.set('redirect', redirectCheckbox.checked ? 1 : 0);
@@ -138,8 +135,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const tbody = $('#mappedEventsTable');
         tbody.empty();
-
-        debugger
 
         const eventsById = Object.fromEntries(
             window.preloadedLots.map(e => [e.id, e.name])

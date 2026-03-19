@@ -51,6 +51,10 @@ class TicketService
             $ticket = Ticket::findOrFail($item['id']);
             $qty = max(1, (int) ($item['qty'] ?? 1));
 
+            if ((string) $ticket->event_id !== (string) $evento->id) {
+                abort(409, 'El boleto no pertenece al evento seleccionado');
+            }
+
             if ($ticket->stock == 1) {
 
                 $existingInstance = TicketInstance::ticketSales()
@@ -183,6 +187,10 @@ class TicketService
 
         $ticket = Ticket::lockForUpdate()->findOrFail($item['id']);
         $qty = max(1, (int) ($item['qty'] ?? 1));
+
+        if ((string) $ticket->event_id !== (string) $evento->id) {
+            abort(409, 'El boleto no pertenece al evento seleccionado');
+        }
 
         if ($ticket->stock < $qty) {
             abort(409, 'Stock insuficiente');

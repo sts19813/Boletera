@@ -13,9 +13,6 @@ class TicketSvgMapping extends Model
 
     protected $fillable = [
         'evento_id',
-        'project_id',
-        'phase_id',
-        'stage_id',
         'ticket_id',
         'svg_selector',
         'redirect',
@@ -42,21 +39,6 @@ class TicketSvgMapping extends Model
     public function ticket()
     {
         return $this->belongsTo(Ticket::class, 'ticket_id');
-    }
-
-    public function project()
-    {
-        return $this->belongsTo(Project::class, 'project_id');
-    }
-
-    public function phase()
-    {
-        return $this->belongsTo(Phase::class, 'phase_id');
-    }
-
-    public function stage()
-    {
-        return $this->belongsTo(Stage::class, 'stage_id');
     }
 
     /*

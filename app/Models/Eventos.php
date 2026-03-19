@@ -28,9 +28,6 @@ class Eventos extends Model
         'price',
         'template', // Para determinar plantilla formulario de registro usar visual utilizar al futuro
         'max_capacity',
-        'project_id',
-        'phase_id',
-        'stage_id',
         'modal_color',
         'modal_selector',
         'color_primario',
@@ -60,5 +57,10 @@ class Eventos extends Model
             'event_id',
             'user_id'
         );
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class, 'event_id');
     }
 }
