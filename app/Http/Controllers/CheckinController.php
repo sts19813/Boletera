@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TicketCheckin;
 use App\Models\TicketInstance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CheckinController extends Controller
 {
@@ -28,83 +29,96 @@ class CheckinController extends Controller
         ]);
 
         $instanceId = $request->ticket_instance_id ?? $request->registration_instance_id;
+        $scanHash = (string) $request->hash;
 
-        $ticket = TicketInstance::with('ticket')
-            ->where('id', $instanceId)
-            ->where('qr_hash', $request->hash)
-            ->first();
+        $result = DB::transaction(function () use ($instanceId, $scanHash, $request) {
+            $ticket = TicketInstance::with(['ticket', 'evento'])
+                ->where('id', $instanceId)
+                ->lockForUpdate()
+                ->first();
 
-        if (!$ticket) {
-            TicketCheckin::create([
-                'ticket_instance_id' => $instanceId,
-                'hash' => $request->hash,
-                'result' => 'invalid',
-                'message' => 'Boleto invalido',
-                'scanned_at' => now(),
-                'scanner_ip' => $request->ip(),
-            ]);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Boleto invalido',
-            ], 404);
-        }
-
-        // Registros (sin ticket asociado) usan 1 check-in por defecto.
-        $maxCheckins = $ticket->ticket?->max_checkins ?? 1;
-
-        $usedCount = TicketCheckin::where('ticket_instance_id', $ticket->id)
-            ->where('result', 'success')
-            ->count();
-
-        if ($usedCount >= $maxCheckins) {
-            TicketCheckin::create([
-                'ticket_instance_id' => $ticket->id,
-                'hash' => $request->hash,
-                'result' => 'used',
-                'message' => 'Cupo agotado',
-                'scanned_at' => now(),
-                'scanner_ip' => $request->ip(),
-            ]);
-
-            $history = TicketCheckin::where('ticket_instance_id', $ticket->id)
-                ->where('result', 'success')
-                ->orderBy('scanned_at')
-                ->get()
-                ->map(fn($h, $i) => [
-                    'numero' => ($i + 1) . '/' . $maxCheckins,
-                    'hora' => $h->scanned_at->format('d/m/Y H:i:s'),
+            if (!$ticket || !hash_equals((string) $ticket->qr_hash, $scanHash)) {
+                TicketCheckin::create([
+                    'ticket_instance_id' => $instanceId,
+                    'hash' => $scanHash,
+                    'result' => 'invalid',
+                    'message' => 'Boleto invalido',
+                    'scanned_at' => now(),
+                    'scanner_ip' => $request->ip(),
                 ]);
 
-            return response()->json([
-                'status' => 'used',
-                'message' => 'Este boleto ya alcanzo su limite',
-                'history' => $history,
+                return [
+                    'statusCode' => 404,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => 'Boleto invalido',
+                    ],
+                ];
+            }
+
+            $maxCheckins = $this->resolveMaxCheckins($ticket);
+
+            $usedCount = TicketCheckin::where('ticket_instance_id', $ticket->id)
+                ->where('result', 'success')
+                ->count();
+
+            if ($usedCount >= $maxCheckins) {
+                TicketCheckin::create([
+                    'ticket_instance_id' => $ticket->id,
+                    'hash' => $scanHash,
+                    'result' => 'used',
+                    'message' => 'Cupo agotado',
+                    'scanned_at' => now(),
+                    'scanner_ip' => $request->ip(),
+                ]);
+
+                $history = TicketCheckin::where('ticket_instance_id', $ticket->id)
+                    ->where('result', 'success')
+                    ->orderBy('scanned_at')
+                    ->get()
+                    ->map(fn($h, $i) => [
+                        'numero' => ($i + 1) . '/' . $maxCheckins,
+                        'hora' => $h->scanned_at->format('d/m/Y H:i:s'),
+                    ]);
+
+                return [
+                    'statusCode' => 200,
+                    'payload' => [
+                        'status' => 'used',
+                        'message' => 'Este boleto ya alcanzo su limite',
+                        'history' => $history,
+                    ],
+                ];
+            }
+
+            if (!$ticket->used_at) {
+                $ticket->update([
+                    'used_at' => now(),
+                ]);
+            }
+
+            TicketCheckin::create([
+                'ticket_instance_id' => $ticket->id,
+                'hash' => $scanHash,
+                'result' => 'success',
+                'message' => 'Acceso permitido',
+                'scanned_at' => now(),
+                'scanner_ip' => $request->ip(),
             ]);
-        }
 
-        if (!$ticket->used_at) {
-            $ticket->update([
-                'used_at' => now(),
-            ]);
-        }
+            return [
+                'statusCode' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'message' => 'Acceso permitido',
+                    'email' => $ticket->email,
+                    'progress' => ($usedCount + 1) . '/' . $maxCheckins,
+                    'used_at' => $ticket->used_at->format('d/m/Y H:i:s'),
+                ],
+            ];
+        });
 
-        TicketCheckin::create([
-            'ticket_instance_id' => $ticket->id,
-            'hash' => $request->hash,
-            'result' => 'success',
-            'message' => 'Acceso permitido',
-            'scanned_at' => now(),
-            'scanner_ip' => $request->ip(),
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Acceso permitido',
-            'email' => $ticket->email,
-            'progress' => ($usedCount + 1) . '/' . $maxCheckins,
-            'used_at' => $ticket->used_at->format('d/m/Y H:i:s'),
-        ]);
+        return response()->json($result['payload'], $result['statusCode']);
     }
 
     public function stats()
@@ -129,5 +143,65 @@ class CheckinController extends Controller
             'courtesyScanned',
             'pending'
         ));
+    }
+
+    private function resolveMaxCheckins(TicketInstance $instance): int
+    {
+        if ($instance->ticket_id) {
+            return $this->parsePositiveInteger($instance->ticket?->max_checkins) ?? 1;
+        }
+
+        $instanceOverride = $this->extractRegistrationCheckinOverride($instance->form_data);
+        if ($instanceOverride !== null) {
+            return $instanceOverride;
+        }
+
+        return $this->parsePositiveInteger($instance->evento?->registration_max_checkins) ?? 1;
+    }
+
+    private function extractRegistrationCheckinOverride(mixed $formData): ?int
+    {
+        if (!is_array($formData)) {
+            return null;
+        }
+
+        $supportedKeys = [
+            'max_checkins',
+            'maxCheckins',
+            'checkin_max',
+            'checkinMax',
+            'checkin_limit',
+            'checkinLimit',
+        ];
+
+        foreach ($supportedKeys as $key) {
+            if (!array_key_exists($key, $formData)) {
+                continue;
+            }
+
+            $parsed = $this->parsePositiveInteger($formData[$key]);
+            if ($parsed !== null) {
+                return $parsed;
+            }
+        }
+
+        return null;
+    }
+
+    private function parsePositiveInteger(mixed $value): ?int
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+
+        return $parsed === false ? null : (int) $parsed;
     }
 }

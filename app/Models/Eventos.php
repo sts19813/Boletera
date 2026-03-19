@@ -24,6 +24,7 @@ class Eventos extends Model
         'is_registration',
         'template_form', // Para determinar blade archivo formulario de registro usar contiene logica js
         'allows_multiple_registrations',
+        'registration_max_checkins',
         'price',
         'template', // Para determinar plantilla formulario de registro usar visual utilizar al futuro
         'max_capacity',
@@ -47,6 +48,7 @@ class Eventos extends Model
         'is_registration' => 'boolean',
         'price' => 'decimal:2',
         'allows_multiple_registrations' => 'boolean',
+        'registration_max_checkins' => 'integer',
     ];
 
 
