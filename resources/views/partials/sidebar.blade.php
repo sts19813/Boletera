@@ -190,6 +190,15 @@
                                         <span class="menu-title">Permisos</span>
                                     </a>
                                 </div>
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('admin/checkin-management*') ? 'active' : '' }}"
+                                        href="{{ route('admin.checkin_management.index') }}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Modulo checkin</span>
+                                    </a>
+                                </div>
                             @endcan
                         </div>
                     </div>

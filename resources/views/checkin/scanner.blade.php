@@ -29,10 +29,15 @@
 	<div class="container py-5 text-center">
 
 		<h2 class="fw-bold mb-3">Escanear boletos</h2>
-		<div class="d-flex justify-content-end mb-3">
+		<div class="d-flex justify-content-end gap-2 mb-3">
 			<a href="{{ route('checkin.stats') }}" class="btn btn-sm btn-primary">
 				📊 Ver estadísticas
 			</a>
+			@role('admin')
+				<a href="{{ route('admin.checkin_management.index') }}" class="btn btn-sm btn-light-primary">
+					Modulo admin checkin
+				</a>
+			@endrole
 		</div>
 
 		<p class="text-muted mb-4">Apunta la cámara al QR del boleto</p>

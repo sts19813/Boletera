@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\CheckinManagementController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventosController;
@@ -102,6 +103,15 @@ Route::middleware(['auth'])->group(function () {
             '/permissions/{permission}',
             [PermissionController::class, 'destroy']
         )->name('permissions.destroy');
+
+        Route::get('/admin/checkin-management', [CheckinManagementController::class, 'index'])
+            ->name('admin.checkin_management.index');
+        Route::get('/admin/checkin-management/items/{instance}', [CheckinManagementController::class, 'show'])
+            ->name('admin.checkin_management.show');
+        Route::put('/admin/checkin-management/tickets/{ticket}/max-checkins', [CheckinManagementController::class, 'updateTicketMaxCheckins'])
+            ->name('admin.checkin_management.tickets.update');
+        Route::put('/admin/checkin-management/events/{event}/registration-max-checkins', [CheckinManagementController::class, 'updateRegistrationMaxCheckins'])
+            ->name('admin.checkin_management.events.update');
 
     });
 

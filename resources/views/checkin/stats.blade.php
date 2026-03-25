@@ -7,10 +7,16 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold">📊 Estadísticas de Check-in</h2>
-
-        <a href="/checkin" class="btn btn-light-primary">
-            ← Volver al escáner
-        </a>
+        <div class="d-flex gap-2">
+            <a href="/checkin" class="btn btn-light-primary">
+                ← Volver al escáner
+            </a>
+            @role('admin')
+                <a href="{{ route('admin.checkin_management.index') }}" class="btn btn-primary">
+                    Modulo admin checkin
+                </a>
+            @endrole
+        </div>
     </div>
 
     <div class="row g-4">
