@@ -65,14 +65,36 @@
             margin-bottom: 24px;
         }
 
-        .error-text a {
+        .error-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .error-btn {
             display: inline-block;
             padding: 10px 18px;
-            background: #000;
-            color: #fff;
             text-decoration: none;
             border-radius: 20px;
             font-size: 14px;
+            border: 1px solid #d9dce3;
+            transition: 0.2s ease;
+        }
+
+        .error-btn-primary {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .error-btn-secondary {
+            background: #fff;
+            color: #1e1e2d;
+        }
+
+        .error-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
         }
 
         .error-image img {
@@ -87,6 +109,10 @@
 
             .error-code {
                 font-size: 120px;
+            }
+
+            .error-actions {
+                justify-content: center;
             }
         }
     </style>
