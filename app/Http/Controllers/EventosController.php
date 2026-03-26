@@ -78,6 +78,7 @@ class EventosController extends Controller
             'redirect_return' => 'nullable|string|max:255',
             'redirect_next' => 'nullable|string|max:255',
             'redirect_previous' => 'nullable|string|max:255',
+            'stop_online_sales' => 'nullable|boolean',
             'svg_image' => 'nullable|mimes:svg,xml',
             'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
         ]);
@@ -106,6 +107,7 @@ class EventosController extends Controller
                 'redirect_return',
                 'redirect_next',
                 'redirect_previous',
+                'stop_online_sales',
                 'template_form',
             ]);
 
@@ -133,6 +135,7 @@ class EventosController extends Controller
 
             $data['has_seat_mapping'] = $request->boolean('has_seat_mapping');
             $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
+            $data['stop_online_sales'] = $request->boolean('stop_online_sales');
 
             Eventos::create($data);
 
@@ -270,6 +273,7 @@ class EventosController extends Controller
             'redirect_return' => 'nullable|string|max:255',
             'redirect_next' => 'nullable|string|max:255',
             'redirect_previous' => 'nullable|string|max:255',
+            'stop_online_sales' => 'nullable|boolean',
             'svg_image' => 'nullable|mimes:svg,xml',
             'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
         ]);
@@ -299,11 +303,13 @@ class EventosController extends Controller
                 'redirect_return',
                 'redirect_next',
                 'redirect_previous',
+                'stop_online_sales',
             ]);
 
             $data['has_seat_mapping'] = $request->boolean('has_seat_mapping');
             $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
             $data['is_registration'] = $request->boolean('is_registration');
+            $data['stop_online_sales'] = $request->boolean('stop_online_sales');
 
             if ($data['is_registration']) {
                 $data['total_asientos'] = 0;

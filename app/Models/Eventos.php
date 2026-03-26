@@ -35,6 +35,7 @@ class Eventos extends Model
         'redirect_return',
         'redirect_next',
         'redirect_previous',
+        'stop_online_sales',
         'svg_image',
         'png_image'
     ];
@@ -46,6 +47,7 @@ class Eventos extends Model
         'price' => 'decimal:2',
         'allows_multiple_registrations' => 'boolean',
         'registration_max_checkins' => 'integer',
+        'stop_online_sales' => 'boolean',
     ];
 
 

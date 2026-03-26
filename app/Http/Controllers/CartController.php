@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Eventos;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -13,6 +14,20 @@ class CartController extends Controller
 
     public function add(Request $request)
     {
+        $eventId = $request->input('event_id')
+            ?? data_get($request->input('cart', []), '0.event_id')
+            ?? session('event_id');
+
+        if ($eventId) {
+            $evento = Eventos::find($eventId);
+
+            if ($evento && $evento->stop_online_sales && !$this->canBypassOnlineStop()) {
+                return response()->json([
+                    'error' => 'La venta en línea está detenida para este evento.',
+                ], 403);
+            }
+        }
+
         /**
          * =========================
          * EVENTO
@@ -89,6 +104,19 @@ class CartController extends Controller
         return response()->json(['error' => 'Nada que agregar'], 400);
     }
 
+    private function canBypassOnlineStop(): bool
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole('admin')
+            || $user->hasRole('taquillero')
+            || $user->can('vender boletos')
+            || $user->can('genera cortesias');
+    }
 
 
 }

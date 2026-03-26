@@ -46,6 +46,7 @@ class PaymentController extends Controller
 
         $registration = session('registration_form');
         $evento = Eventos::findOrFail($eventId);
+        $this->abortIfOnlineSalesStopped($evento);
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
         $comision = round($subtotal * 0.05, 2);
@@ -76,6 +77,15 @@ class PaymentController extends Controller
 
         if (empty($carrito)) {
             return response()->json(['error' => 'Carrito vacio'], 400);
+        }
+
+        $eventId = session('event_id');
+        $evento = $eventId ? Eventos::find($eventId) : null;
+
+        if ($evento && $evento->stop_online_sales && !$this->canBypassOnlineStop()) {
+            return response()->json([
+                'error' => 'La venta en línea está detenida para este evento.',
+            ], 403);
         }
 
         foreach ($carrito as $item) {
@@ -280,5 +290,26 @@ class PaymentController extends Controller
     public function cancel()
     {
         return view('pago.cancel');
+    }
+
+    private function abortIfOnlineSalesStopped(Eventos $evento): void
+    {
+        if ($evento->stop_online_sales && !$this->canBypassOnlineStop()) {
+            abort(403, 'La venta en línea está detenida para este evento.');
+        }
+    }
+
+    private function canBypassOnlineStop(): bool
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole('admin')
+            || $user->hasRole('taquillero')
+            || $user->can('vender boletos')
+            || $user->can('genera cortesias');
     }
 }
