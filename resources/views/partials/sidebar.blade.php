@@ -119,8 +119,6 @@
                 </div>
                 @endrole
 
-
-
                 {{-- ================= ESCANER ================= --}}
                 @can('escanear boletos')
                     <div class="menu-item">
@@ -132,9 +130,6 @@
                         </a>
                     </div>
                 @endcan
-
-
-
 
 
                 {{-- ================= REPORTES ================= --}}
@@ -204,8 +199,20 @@
                     </div>
                 @endcan
 
+                @canany(['ver reportes', 'exportar reportes'])
+                    <div class="menu-item">
+                        <a class="menu-link {{ request()->is('corte*') ? 'active' : '' }}" href="/corte">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-chart-line fs-2"></i>
+                            </span>
+                            <span class="menu-title">Corte</span>
+                        </a>
+                    </div>
+                @endcanany
+
+
                 {{-- ================= INSCRIPCIONES ================= --}}
-                @canany(['ver registros cumbres', 'ver inscripciones'])
+                @canany(['ver inscripciones'])
                 <div class="menu-item menu-accordion {{ request()->is('registrations*') ? 'show' : '' }}"
                     data-kt-menu-trigger="click">
 
