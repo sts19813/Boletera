@@ -113,6 +113,15 @@
         window.dbLotes = @json($dbLotes);
         window.idDesarrollo = @json($lot->id);
         window.EVENT_ID = @json($lot->id);
+        window.stopOnlineSales = @json((bool) $lot->stop_online_sales);
+        window.canBypassOnlineStop = @json(
+            auth()->check() && (
+                auth()->user()->hasRole('admin')
+                || auth()->user()->hasRole('taquillero')
+                || auth()->user()->can('vender boletos')
+                || auth()->user()->can('genera cortesias')
+            )
+        );
         let redireccion = true;
 
         window.registrationConfig = {

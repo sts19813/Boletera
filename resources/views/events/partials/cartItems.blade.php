@@ -18,6 +18,7 @@
             <span id="cartTotal" class="text-primary">$0</span>
         </div>
 
+        <div id="alertaVentaOnline"></div>
 
         @unlessrole('taquillero')
         <button id="btnCheckout" class="btn btn-primary w-100 fw-semibold" disabled>

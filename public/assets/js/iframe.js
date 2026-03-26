@@ -143,6 +143,10 @@ document.addEventListener('DOMContentLoaded', function () {
      * =========================
      */
     document.getElementById('btnCheckout')?.addEventListener('click', () => {
+        if (window.stopOnlineSales && !window.canBypassOnlineStop) {
+            alert('La venta en línea está detenida para este evento.');
+            return;
+        }
 
         if (!window.cartState.items.length) {
             alert('Carrito vacío');
@@ -213,6 +217,7 @@ function updateCartUI() {
     const list = document.getElementById('cartItems');
     const totalEl = document.getElementById('cartTotal');
     const btn = document.getElementById('btnCheckout');
+    const alertaVentaOnline = document.getElementById('alertaVentaOnline');
 
     list.innerHTML = '';
     let total = 0;
@@ -290,7 +295,35 @@ function updateCartUI() {
     if (panel) {
         panel.style.display = window.cartState.items.length ? 'block' : 'none';
     }
-    btn.disabled = window.cartState.items.length === 0;
+
+    if (btn) {
+        const isStoppedForUser = window.stopOnlineSales && !window.canBypassOnlineStop;
+        btn.disabled = window.cartState.items.length === 0 || isStoppedForUser;
+
+        if (isStoppedForUser) {
+            btn.classList.add('disabled');
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.6';
+            btn.innerText = 'Venta en línea detenida';
+        } else {
+            btn.classList.remove('disabled');
+            btn.style.pointerEvents = '';
+            btn.style.opacity = '';
+            btn.innerText = 'Continuar pago';
+        }
+    }
+
+    if (alertaVentaOnline) {
+        if (window.stopOnlineSales && !window.canBypassOnlineStop) {
+            alertaVentaOnline.innerHTML = `
+                <div class="alert alert-warning fw-semibold">
+                    ⚠️ La venta en línea está detenida para este evento. Solo taquilla/admin pueden vender.
+                </div>
+            `;
+        } else {
+            alertaVentaOnline.innerHTML = '';
+        }
+    }
 }
 
 function validateRegistrationForm() {

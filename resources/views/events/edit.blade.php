@@ -102,6 +102,17 @@
                                 </select>
                             </div>
 
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold d-block">Venta en línea</label>
+                                <label class="form-check form-check-custom form-check-solid">
+                                    <input class="form-check-input" type="checkbox" name="stop_online_sales" value="1"
+                                        {{ old('stop_online_sales', $event->stop_online_sales) ? 'checked' : '' }}>
+                                    <span class="form-check-label ms-2">
+                                        Detener venta en línea (solo taquilla/admin podrán vender)
+                                    </span>
+                                </label>
+                            </div>
+
                         </div>
                     </div>
                 </div>
