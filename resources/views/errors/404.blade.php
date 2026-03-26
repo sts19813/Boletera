@@ -16,9 +16,12 @@
             <p>
                 Parece que no logramos encontrar el sitio que buscas.
                 Lamentamos el inconveniente, estamos trabajando para resolverlo.
+                @auth
+                    Te mostramos accesos rápidos según tu rol y permisos.
+                @endauth
             </p>
 
-            <a href="https://www.stomtickets.com/">Regresar al inicio</a>
+            @include('errors.partials.module-links')
         </div>
 
     </div>
