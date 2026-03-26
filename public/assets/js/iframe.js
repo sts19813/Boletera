@@ -317,7 +317,7 @@ function updateCartUI() {
         if (window.stopOnlineSales && !window.canBypassOnlineStop) {
             alertaVentaOnline.innerHTML = `
                 <div class="alert alert-warning fw-semibold">
-                    ⚠️ La venta en línea está detenida para este evento. Solo taquilla/admin pueden vender.
+                    ⚠️ La venta en línea está detenida para este evento.
                 </div>
             `;
         } else {
