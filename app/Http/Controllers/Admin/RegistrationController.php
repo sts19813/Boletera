@@ -66,7 +66,9 @@ class RegistrationController extends Controller
         $registrations = TicketInstance::registrationSales()
             ->with(['evento'])
             ->where('event_id', $eventId)
-            ->get();
+            ->get()
+            ->unique('payment_intent_id')
+            ->values();
 
         $tickets = TicketInstance::ticketSales()
             ->with(['evento', 'ticket'])
