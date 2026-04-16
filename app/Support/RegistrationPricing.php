@@ -32,7 +32,7 @@ class RegistrationPricing
         return [
             'applied' => true,
             'type' => 'registration_qty_discount',
-            'label' => 'Promocion aplicada: 2 o mas registros a $1,500 c/u.',
+            'label' => 'Promoción aplicada: 2 o más registros a $1,500 c/u.',
             'original_price' => $basePrice,
             'discounted_price' => self::PROMO_PRICE,
             'min_qty' => self::PROMO_MIN_QTY,

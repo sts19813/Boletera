@@ -82,7 +82,7 @@
     window.REGISTRATION_PROMOTIONS[window.PROMO_EVENT_ID] = {
         minQty: 2,
         promoPrice: 1500,
-        label: 'Promocion aplicada: 2 o mas registros a $1,500 c/u.'
+        label: 'Promoción aplicada: 2 o más registros a $1,500 c/u.'
     };
 
     document.addEventListener('DOMContentLoaded', function () {
