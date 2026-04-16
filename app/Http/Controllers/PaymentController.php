@@ -10,6 +10,7 @@ use App\Services\RegistrationBuilderService;
 use App\Services\RegistrationStripeService;
 use App\Services\TicketBuilderService;
 use App\Services\TicketService;
+use App\Support\RegistrationPricing;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -47,6 +48,8 @@ class PaymentController extends Controller
         $registration = session('registration_form');
         $evento = Eventos::findOrFail($eventId);
         $this->abortIfOnlineSalesStopped($evento);
+        $carrito = $this->applyRegistrationPricingRules($carrito);
+        session(['svg_cart' => $carrito]);
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
         $comision = round($subtotal * 0.05, 2);
@@ -148,6 +151,9 @@ class PaymentController extends Controller
                 }
             }
         }
+
+        $carrito = $this->applyRegistrationPricingRules($carrito);
+        session(['svg_cart' => $carrito]);
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
         $total = $subtotal;
@@ -297,6 +303,35 @@ class PaymentController extends Controller
         if ($evento->stop_online_sales && !$this->canBypassOnlineStop()) {
             abort(403, 'La venta en línea está detenida para este evento.');
         }
+    }
+
+    private function applyRegistrationPricingRules(array $carrito): array
+    {
+        return collect($carrito)->map(function (array $item) {
+            if (($item['type'] ?? 'ticket') !== 'registration') {
+                unset($item['promotion']);
+                return $item;
+            }
+
+            $evento = Eventos::find($item['event_id'] ?? null);
+
+            if (!$evento) {
+                unset($item['promotion']);
+                return $item;
+            }
+
+            $qty = max(1, (int) ($item['qty'] ?? 1));
+            $item['price'] = RegistrationPricing::resolveUnitPrice($evento, $qty);
+            $promotion = RegistrationPricing::resolvePromotionMeta($evento, $qty);
+
+            if ($promotion) {
+                $item['promotion'] = $promotion;
+            } else {
+                unset($item['promotion']);
+            }
+
+            return $item;
+        })->values()->toArray();
     }
 
     private function canBypassOnlineStop(): bool

@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const form = document.getElementById('registrationForm');
                 registrationData = formDataToObject(form);
             }
-            debugger
 
             fetch('/taquilla/sell', {
                 method: 'POST',
@@ -60,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: t.id,
                         event_id: t.event_id,
                         name: t.name,
-                        price: t.total_price,
+                        price: Number(t.total_price),
                         qty: t.qty,
                         type: t.id === 'registration' ? 'registration' : 'ticket'
                     })),

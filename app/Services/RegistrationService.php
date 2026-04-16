@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Eventos;
 use App\Models\TicketInstance;
+use App\Support\RegistrationPricing;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -21,7 +22,7 @@ class RegistrationService
         $reference = $data['reference'] ?? null;
         $saleChannel = $data['sale_channel'] ?? 'taquilla';
         $paymentMethod = $data['payment_method'] ?? 'cash';
-        $price = $data['price'] ?? $evento->price ?? 0;
+        $price = RegistrationPricing::resolveUnitPrice($evento, $qty);
 
         // Validar cupo se omite en taquilla,
         // se asume que el taquillero es consciente de la capacidad del evento y no permitirá ventas que excedan el cupo disponible.

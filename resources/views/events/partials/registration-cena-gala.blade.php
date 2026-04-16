@@ -77,6 +77,14 @@
 
 
 <script>
+    window.PROMO_EVENT_ID = '019c91a4-9f3b-7039-93cc-83f50c44c835';
+    window.REGISTRATION_PROMOTIONS = window.REGISTRATION_PROMOTIONS || {};
+    window.REGISTRATION_PROMOTIONS[window.PROMO_EVENT_ID] = {
+        minQty: 2,
+        promoPrice: 1500,
+        label: 'Promocion aplicada: 2 o mas registros a $1,500 c/u.'
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
 
 
@@ -143,6 +151,7 @@
                     event_id: window.EVENT_ID,
                     name: window.registrationTicket.name,
                     total_price: Number(window.registrationTicket.total_price),
+                    base_price: Number(window.registrationTicket.total_price),
                     stock: window.registrationConfig?.maxCapacity ?? 9999,
                     qty: 1,
                     svg_selector: null

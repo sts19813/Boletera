@@ -8,6 +8,58 @@ document.addEventListener('DOMContentLoaded', function () {
         items: []
     };
 
+    window.getRegistrationPromotionConfig = function (eventId) {
+        if (!window.REGISTRATION_PROMOTIONS) {
+            return null;
+        }
+
+        return window.REGISTRATION_PROMOTIONS[String(eventId)] ?? null;
+    };
+
+    window.applyRegistrationPricingToItem = function (item) {
+        if (!item || item.id !== 'registration') {
+            if (item) {
+                delete item.promotion;
+            }
+            return item;
+        }
+
+        const config = window.getRegistrationPromotionConfig(item.event_id);
+        const fallbackBase = Number(window.registrationTicket?.total_price ?? 0);
+        const basePrice = Number(
+            item.base_price ?? item.total_price ?? fallbackBase
+        );
+
+        item.base_price = Number.isFinite(basePrice) ? basePrice : 0;
+
+        if (!config) {
+            item.total_price = item.base_price;
+            delete item.promotion;
+            return item;
+        }
+
+        const qty = Math.max(1, Number(item.qty) || 1);
+        const minQty = Math.max(1, Number(config.minQty) || 1);
+        const promoPrice = Number(config.promoPrice);
+
+        if (qty >= minQty && Number.isFinite(promoPrice)) {
+            item.total_price = promoPrice;
+            item.promotion = {
+                applied: true,
+                type: 'registration_qty_discount',
+                label: config.label ?? 'Promocion aplicada',
+                original_price: item.base_price,
+                discounted_price: promoPrice,
+                min_qty: minQty
+            };
+        } else {
+            item.total_price = item.base_price;
+            delete item.promotion;
+        }
+
+        return item;
+    };
+
 
     if (window.isRegistration && window.registrationTicket) {
 
@@ -40,11 +92,13 @@ document.addEventListener('DOMContentLoaded', function () {
             event_id: window.EVENT_ID,
             name: window.registrationTicket.name,
             total_price: Number(window.registrationTicket.total_price),
+            base_price: Number(window.registrationTicket.total_price),
             stock: stock,
             qty: 1,
             svg_selector: window.registrationTicket.svg_selector ?? null
         });
 
+        window.applyRegistrationPricingToItem(window.cartState.items[0]);
         updateCartUI();
     }
 
@@ -62,19 +116,24 @@ document.addEventListener('DOMContentLoaded', function () {
             if (ticket.stock > 1 && item.qty < ticket.stock) {
                 item.qty++;
             }
+            window.applyRegistrationPricingToItem(item);
             updateCartUI();
             return;
         }
 
-        window.cartState.items.push({
+        const newItem = {
             id: ticket.id,
             event_id: window.EVENT_ID,
             name: ticket.name,
             total_price: Number(ticket.total_price),
+            base_price: Number(ticket.total_price),
             stock: ticket.stock ?? 1,
             qty: 1,
             svg_selector: ticket.svg_selector ?? null
-        });
+        };
+
+        window.cartState.items.push(newItem);
+        window.applyRegistrationPricingToItem(newItem);
 
         updateCartUI();
     }
@@ -95,6 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
             item.qty = item.stock;
         }
 
+        window.applyRegistrationPricingToItem(item);
         updateCartUI();
     };
 
@@ -186,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     id: t.id,
                     event_id: t.event_id,
                     name: t.name,
-                    price: t.total_price,
+                    price: Number(t.total_price),
                     qty: t.qty,
                     selectorSVG: t.svg_selector,
                     type: window.isRegistration ? 'registration' : 'ticket'
@@ -223,6 +283,7 @@ function updateCartUI() {
     let total = 0;
 
     window.cartState.items.forEach(ticket => {
+        window.applyRegistrationPricingToItem?.(ticket);
 
         const li = document.createElement('li');
         li.style.display = 'flex';
@@ -247,12 +308,17 @@ function updateCartUI() {
             controls = `<strong>1</strong>`;
         }
 
+        const promotionHtml = ticket.promotion?.applied
+            ? `<div class="text-success fs-8 fw-semibold">${ticket.promotion.label}</div>`
+            : '';
+
         li.innerHTML = `
             <div style="flex:1;">
                 <div>${ticket.name}</div>
                 <div class="cart-item-price">
                     $${ticket.total_price.toLocaleString('es-MX')} c/u
                 </div>
+                ${promotionHtml}
             </div>
 
             ${controls}
@@ -288,7 +354,7 @@ function updateCartUI() {
         });
 
 
-        total += ticket.total_price * ticket.qty;
+        total += Number(ticket.total_price) * Number(ticket.qty);
     });
 
     totalEl.textContent = `$${total.toLocaleString('es-MX')}`;

@@ -123,6 +123,12 @@
                                                     x{{ $item['qty'] }}
                                                 </div>
                                             @endif
+
+                                            @if(data_get($item, 'promotion.applied'))
+                                                <div class="text-success fs-8 fw-semibold">
+                                                    {{ data_get($item, 'promotion.label') }}
+                                                </div>
+                                            @endif
                                         </div>
 
                                         <div class="fw-semibold">

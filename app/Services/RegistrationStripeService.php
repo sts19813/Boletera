@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Eventos;
 use App\Models\TicketInstance;
+use App\Support\RegistrationPricing;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Stripe\PaymentIntent;
@@ -47,6 +48,7 @@ class RegistrationStripeService
 
             $evento = Eventos::findOrFail($item['event_id']);
             $qty = max(1, (int) ($item['qty'] ?? 1));
+            $unitPrice = RegistrationPricing::resolveUnitPrice($evento, $qty);
 
             $existingInstances = TicketInstance::registrationSales()
                 ->where('payment_intent_id', $paymentIntentId)
@@ -71,9 +73,19 @@ class RegistrationStripeService
                 abort(409, 'Cupo agotado');
             }
 
-            $subtotal = collect($cart)->sum(
-                fn($i) => ((float) ($i['price'] ?? 0)) * (int) ($i['qty'] ?? 1)
-            );
+            $subtotal = collect($cart)->sum(function ($cartItem) {
+                $qtyItem = max(1, (int) ($cartItem['qty'] ?? 1));
+
+                if (($cartItem['type'] ?? null) === 'registration') {
+                    $eventItem = Eventos::find($cartItem['event_id'] ?? null);
+
+                    if ($eventItem) {
+                        return RegistrationPricing::resolveUnitPrice($eventItem, $qtyItem) * $qtyItem;
+                    }
+                }
+
+                return ((float) ($cartItem['price'] ?? 0)) * $qtyItem;
+            });
             $commission = round($subtotal * 0.05, 2);
             $total = $subtotal;
 
@@ -92,7 +104,7 @@ class RegistrationStripeService
                     'qr_hash' => (string) Str::uuid(),
                     'registered_at' => $purchaseAt,
                     'purchased_at' => $purchaseAt,
-                    'price' => $evento->price ?? 0,
+                    'price' => $unitPrice,
                     'subtotal' => $subtotal,
                     'commission' => $commission,
                     'total' => $total,
