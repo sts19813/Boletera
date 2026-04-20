@@ -72,7 +72,14 @@
     background: #ffffff !important;
 }
 
-.btn-check:active+.btn.btn-primary, .btn-check:checked+.btn.btn-primary, .btn.btn-primary.active, .btn.btn-primary.show, .btn.btn-primary:active:not(.btn-active), .btn.btn-primary:focus:not(.btn-active), .btn.btn-primary:hover:not(.btn-active), .show>.btn.btn-primary {
+.btn-check:active+.btn.btn-primary,
+.btn-check:checked+.btn.btn-primary,
+.btn.btn-primary.active,
+.btn.btn-primary.show,
+.btn.btn-primary:active:not(.btn-active),
+.btn.btn-primary:focus:not(.btn-active),
+.btn.btn-primary:hover:not(.btn-active),
+.show>.btn.btn-primary {
     background-color: #ffffff !important;
     border-color: #ffffff !important;
     color: #000000 !important;
@@ -95,6 +102,16 @@
 
 .cart-item-price {
     font-size: 14px !important;
+}
+
+.swal2-popup .swal2-title {
+    font-weight: 500;
+    font-size: 1.3rem;
+    color: #ffffff !important;
+}
+
+.swal2-styled.swal2-confirm {
+    background-color: #7723FF !important
 }
 
 
@@ -148,7 +165,8 @@
         line-height: 1;
     }
 
-    .event-date .month, .event-date .day {
+    .event-date .month,
+    .event-date .day {
         font-size: 14px;
     }
 }

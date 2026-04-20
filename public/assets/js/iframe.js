@@ -482,49 +482,43 @@ function submitDirectRegistration() {
 
             let message = description;
             if (whatsappLink) {
-                message += `<br><br><a href="${whatsappLink}" target="_blank" class="fw-bold">Unirse al grupo de WhatsApp</a>`;
+                message += `<br><br><span class="fw-bold">¿Deseas unirte al grupo de WhatsApp?</span>`;
             }
 
             if (window.Swal?.fire) {
                 Swal.fire({
-                    toast: true,
-                    position: 'top-end',
                     icon: 'success',
                     title: title,
                     html: message,
-                    showConfirmButton: false,
-                    timer: 5000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer);
-                        toast.addEventListener('mouseleave', Swal.resumeTimer);
-                    }
-                }).then(() => {
-                    if (whatsappLink) {
-                        window.location.href = whatsappLink;
-                        return;
-                    }
-                    window.location.reload();
+                    confirmButtonText: 'Abrir grupo',
+                    showCancelButton: !!whatsappLink,
+                    reverseButtons: true,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+
+                    // Redirigir siempre a stomtickets
+                    window.location.href = 'https://stomtickets.com';
                 });
             } else {
-                // fallback simple
                 alert(`${title}\n\n${description}`);
+
                 if (whatsappLink) {
-                    window.location.href = whatsappLink;
-                    return;
+                    window.open(whatsappLink, '_blank');
                 }
-                window.location.reload();
+
+                window.location.href = 'https://stomtickets.com';
             }
         })
         .catch((payload) => {
             toastr.error(extractErrorMessage(payload));
         })
         .finally(() => {
-            if (btn) {
-                btn.disabled = false;
-                updateCartUI();
-            }
-        });
+        if (btn) {
+            btn.disabled = false;
+            updateCartUI();
+        }
+    });
 }
 
 function validateRegistrationForm() {
