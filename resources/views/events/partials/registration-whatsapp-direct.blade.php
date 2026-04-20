@@ -79,7 +79,7 @@
 
             <div class="col-md-6">
                 <label class="form-label required">
-                    Sube tu recibo de Super Willys (imagen o PDF, consumo minimo de $100)
+                    Sube tu recibo de Super Willys (consumo minimo $100)
                 </label>
                 <input type="file" name="purchase_receipt" class="form-control form-control-solid"
                     accept=".jpg,.jpeg,.png,.pdf,application/pdf,image/*" required>
