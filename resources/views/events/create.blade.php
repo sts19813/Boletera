@@ -152,7 +152,8 @@
                                 <label class="form-label fw-bold">Tipo de formulario</label>
                                 <select name="template_form" class="form-select">
                                     <option value="golf_team">Equipo de Golf (3 jugadores)</option>
-                                    <option value="cena_gala">Cena Gala (múltiples personas)</option>
+                                    <option value="cena_gala">Cena Gala (multiples personas)</option>
+                                    <option value="whatsapp_direct">Registro WhatsApp Directo (EAFC 26)</option>
                                 </select>
                             </div>
 
@@ -368,3 +369,4 @@
         });
     </script>
 @endpush
+

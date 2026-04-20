@@ -60,6 +60,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return item;
     };
 
+    window.isWhatsappDirectRegistration = function () {
+        return Boolean(
+            window.isRegistration
+            && window.registrationConfig
+            && window.registrationConfig.templateForm === 'whatsapp_direct'
+        );
+    };
+
 
     if (window.isRegistration && window.registrationTicket) {
 
@@ -82,7 +90,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // 🎯 Golf team siempre es 1
-            if (window.registrationConfig.templateForm === 'golf_team') {
+            if (
+                window.registrationConfig.templateForm === 'golf_team'
+                || window.registrationConfig.templateForm === 'whatsapp_direct'
+            ) {
                 stock = 1;
             }
         }
@@ -204,12 +215,13 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     document.getElementById('btnCheckout')?.addEventListener('click', () => {
         if (window.stopOnlineSales && !window.canBypassOnlineStop) {
-            alert('La venta en línea está detenida para este evento.');
+            toastr.error('La venta en línea está detenida para este evento.');
+
             return;
         }
 
         if (!window.cartState.items.length) {
-            alert('Carrito vacío');
+            toastr.error('El carrito está vacío');
             return;
         }
 
@@ -220,17 +232,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        if (window.isWhatsappDirectRegistration()) {
+            submitDirectRegistration();
+            return;
+        }
+
         let registrationData = null;
 
         if (window.isRegistration) {
             const form = document.getElementById('registrationForm');
             if (!form) {
-                alert('Formulario de inscripción no encontrado');
+                toastr.error('Formulario de inscripcion no encontrado');
                 return;
             }
 
             registrationData = formDataToObject(form);
-
         }
 
         fetch('/cart/add', {
@@ -261,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(err => {
                 console.error(err);
-                alert('Error al preparar el pago');
+                toastr.error('Error al preparar el pago');
             });
     });
 });
@@ -375,7 +391,9 @@ function updateCartUI() {
             btn.classList.remove('disabled');
             btn.style.pointerEvents = '';
             btn.style.opacity = '';
-            btn.innerText = 'Continuar pago';
+            btn.innerText = window.isWhatsappDirectRegistration?.()
+                ? 'Enviar registro'
+                : 'Continuar pago';
         }
     }
 
@@ -390,6 +408,123 @@ function updateCartUI() {
             alertaVentaOnline.innerHTML = '';
         }
     }
+}
+
+function extractErrorMessage(payload) {
+    if (!payload) {
+        return 'No se pudo completar el registro.';
+    }
+
+    if (typeof payload.message === 'string' && payload.message.trim() !== '') {
+        return payload.message;
+    }
+
+    if (payload.errors && typeof payload.errors === 'object') {
+        const firstKey = Object.keys(payload.errors)[0];
+        const firstError = payload.errors[firstKey];
+
+        if (Array.isArray(firstError) && firstError.length > 0) {
+            return firstError[0];
+        }
+    }
+
+    return 'No se pudo completar el registro.';
+}
+
+function submitDirectRegistration() {
+    const form = document.getElementById('registrationForm');
+    const btn = document.getElementById('btnCheckout');
+    const endpoint = window.Laravel?.routes?.directRegistration;
+
+    if (!endpoint) {
+        toastr.error('No se encontro la ruta de registro directo.');
+        return;
+    }
+
+    if (!form) {
+        toastr.error('Formulario de registro no encontrado.');
+        return;
+    }
+
+    if (!validateRegistrationForm()) {
+        return;
+    }
+
+    const body = new FormData(form);
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Enviando...';
+    }
+
+    fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRF-TOKEN': window.Laravel.csrfToken,
+            'Accept': 'application/json'
+        },
+        body
+    })
+        .then(async (res) => {
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw data;
+            }
+
+            return data;
+        })
+        .then((data) => {
+            const title = data?.title ?? 'Gracias por tu registro';
+            const description = data?.description ?? 'Tu registro fue guardado correctamente.';
+            const whatsappLink = data?.whatsapp_link ?? '';
+
+            let message = description;
+            if (whatsappLink) {
+                message += `<br><br><a href="${whatsappLink}" target="_blank" class="fw-bold">Unirse al grupo de WhatsApp</a>`;
+            }
+
+            if (window.Swal?.fire) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: title,
+                    html: message,
+                    showConfirmButton: false,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    }
+                }).then(() => {
+                    if (whatsappLink) {
+                        window.location.href = whatsappLink;
+                        return;
+                    }
+                    window.location.reload();
+                });
+            } else {
+                // fallback simple
+                alert(`${title}\n\n${description}`);
+                if (whatsappLink) {
+                    window.location.href = whatsappLink;
+                    return;
+                }
+                window.location.reload();
+            }
+        })
+        .catch((payload) => {
+            toastr.error(extractErrorMessage(payload));
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                updateCartUI();
+            }
+        });
 }
 
 function validateRegistrationForm() {
@@ -407,7 +542,7 @@ function validateRegistrationForm() {
     const phones = form.querySelectorAll('input[type="tel"]');
     for (const phone of phones) {
         if (phone.value.length < 10) {
-            alert('El número de celular debe tener 10 dígitos');
+            toastr.error('El número de celular debe tener 10 dígitos');
             phone.focus();
             return false;
         }
@@ -480,3 +615,4 @@ function formDataToObject(form) {
 
     return data;
 }
+

@@ -189,7 +189,11 @@
                                     </option>
                                     <option value="cena_gala"
                                         {{ old('template_form', $event->template_form) === 'cena_gala' ? 'selected' : '' }}>
-                                        Cena Gala (múltiples personas)
+                                        Cena Gala (multiples personas)
+                                    </option>
+                                    <option value="whatsapp_direct"
+                                        {{ old('template_form', $event->template_form) === 'whatsapp_direct' ? 'selected' : '' }}>
+                                        Registro WhatsApp Directo (EAFC 26)
                                     </option>
                                 </select>
                             </div>
@@ -415,3 +419,4 @@
         });
     </script>
 @endpush
+

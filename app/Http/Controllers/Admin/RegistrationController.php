@@ -96,7 +96,17 @@ class RegistrationController extends Controller
             'Content-Disposition' => 'attachment; filename=inscripciones.csv',
         ];
 
-        $callback = function () use ($instances, $eventId) {
+        $isMesaEvent = $eventId === '019c8c31-f771-709d-817f-500abcb8c03a';
+        $isCenaGalaEvent = $eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835';
+        $hasWhatsappDirectRegistrations = $registrations->contains(function ($registration) {
+            $data = is_array($registration->form_data) ? $registration->form_data : [];
+
+            return ($data['template_form'] ?? null) === 'whatsapp_direct'
+                || isset($data['full_name'])
+                || isset($data['game_id']);
+        });
+
+        $callback = function () use ($instances, $isMesaEvent, $isCenaGalaEvent, $hasWhatsappDirectRegistrations) {
             $clean = function ($value) {
                 if (is_array($value)) {
                     return implode(', ', array_map(fn($v) => strip_tags((string) $v), $value));
@@ -107,7 +117,7 @@ class RegistrationController extends Controller
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-            if ($eventId === '019c8c31-f771-709d-817f-500abcb8c03a') {
+            if ($isMesaEvent) {
                 fputcsv($file, [
                     'Tipo',
                     'Evento',
@@ -119,7 +129,7 @@ class RegistrationController extends Controller
                     'Subtotal',
                     'Total',
                 ]);
-            } elseif ($eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835') {
+            } elseif ($isCenaGalaEvent) {
                 fputcsv($file, [
                     'Tipo',
                     'Evento',
@@ -130,6 +140,28 @@ class RegistrationController extends Controller
                     'Celular',
                     'Tipo Invitado',
                     'Generacion',
+                    'Subtotal',
+                    'Total',
+                ]);
+            } elseif ($hasWhatsappDirectRegistrations) {
+                fputcsv($file, [
+                    'Tipo',
+                    'Evento',
+                    'Fecha Registro',
+                    'Nombre completo',
+                    'Edad',
+                    'Ciudad',
+                    'Estado',
+                    'Telefono',
+                    'Correo electronico',
+                    'ID del juego',
+                    'Consola',
+                    'Participacion previa',
+                    'Cuantas veces',
+                    'Como nos conocio',
+                    'Usuario Twitch/YouTube',
+                    'Recibo',
+                    'Referencia',
                     'Subtotal',
                     'Total',
                 ]);
@@ -158,7 +190,7 @@ class RegistrationController extends Controller
             foreach ($instances as $row) {
                 $instance = $row['model'];
 
-                if ($eventId === '019c8c31-f771-709d-817f-500abcb8c03a') {
+                if ($isMesaEvent) {
                     $evento = $clean($instance->evento?->name ?? '-');
                     $mesa = $clean($instance->ticket?->name ?? '-');
                     $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
@@ -186,7 +218,7 @@ class RegistrationController extends Controller
                 $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
                 $data = is_array($instance->form_data) ? $instance->form_data : [];
 
-                if ($eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835') {
+                if ($isCenaGalaEvent) {
                     if (!isset($data['participants']) || !is_array($data['participants'])) {
                         continue;
                     }
@@ -222,6 +254,34 @@ class RegistrationController extends Controller
                     }
 
                     fputcsv($file, []);
+                    continue;
+                }
+
+                if ($hasWhatsappDirectRegistrations) {
+                    $receipt = $data['receipt_file_url'] ?? $data['receipt_file_path'] ?? '-';
+
+                    fputcsv($file, [
+                        'INSCRIPCION',
+                        $evento,
+                        $fecha,
+                        $clean($data['full_name'] ?? $instance->nombre ?? '-'),
+                        $clean($data['age'] ?? '-'),
+                        $clean($data['city'] ?? '-'),
+                        $clean($data['state'] ?? '-'),
+                        $clean($data['phone'] ?? $instance->celular ?? '-'),
+                        $clean($data['email'] ?? $instance->email ?? '-'),
+                        $clean($data['game_id'] ?? '-'),
+                        $clean($data['console'] ?? '-'),
+                        $clean($data['participated_before'] ?? '-'),
+                        $clean($data['participation_count'] ?? '-'),
+                        $clean($data['how_known_label'] ?? $data['how_known'] ?? '-'),
+                        $clean($data['stream_user'] ?? '-'),
+                        $clean($receipt),
+                        $clean($instance->reference ?? '-'),
+                        $instance->subtotal,
+                        $instance->total,
+                    ]);
+
                     continue;
                 }
 

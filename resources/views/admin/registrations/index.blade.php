@@ -141,6 +141,9 @@
 
                 const data = instance.form_data ?? null;
                 teamName = data?.team_name ?? instance.team_name ?? teamName;
+                if (data?.full_name) {
+                    teamName = data.full_name;
+                }
 
                 if (!data) return;
 
@@ -212,6 +215,67 @@
                     });
 
                     teamName = 'Invitados';
+                }
+
+                else {
+                    headers = `
+                        <tr>
+                            <th>Campo</th>
+                            <th>Valor</th>
+                        </tr>
+                    `;
+
+                    const labels = {
+                        full_name: 'Nombre completo',
+                        age: 'Edad',
+                        city: 'Ciudad',
+                        state: 'Estado',
+                        phone: 'Telefono',
+                        email: 'Correo electronico',
+                        game_id: 'ID del juego',
+                        console: 'Consola',
+                        participated_before: 'Participo antes',
+                        participation_count: 'Cuantas veces',
+                        how_known_label: 'Como nos conocio',
+                        how_known: 'Como nos conocio',
+                        stream_user: 'Usuario Twitch/YouTube',
+                        receipt_file_url: 'Recibo',
+                        reference: 'Referencia',
+                    };
+
+                    const ignoredKeys = ['template_form', 'receipt_file_path'];
+
+                    Object.entries(data).forEach(([key, value]) => {
+                        if (ignoredKeys.includes(key) || value === null || value === '') {
+                            return;
+                        }
+
+                        const label = labels[key] ?? key;
+                        let displayValue = value;
+
+                        if (Array.isArray(value)) {
+                            displayValue = value.join(', ');
+                        } else if (typeof value === 'object') {
+                            displayValue = JSON.stringify(value);
+                        }
+
+                        if (key === 'receipt_file_url' && typeof displayValue === 'string') {
+                            rows += `
+                                <tr>
+                                    <td>${label}</td>
+                                    <td><a href="${displayValue}" target="_blank" rel="noopener">Ver archivo</a></td>
+                                </tr>
+                            `;
+                            return;
+                        }
+
+                        rows += `
+                            <tr>
+                                <td>${label}</td>
+                                <td>${displayValue}</td>
+                            </tr>
+                        `;
+                    });
                 }
 
                 $('#modalTeam').text(teamName);

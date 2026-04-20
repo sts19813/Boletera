@@ -30,6 +30,8 @@
                             @include('events.partials.registration-cena-gala')
                         @elseif($lot->is_registration && $lot->template_form === 'golf_team')
                             @include('events.partials.registration-golf-team')
+                        @elseif($lot->is_registration && $lot->template_form === 'whatsapp_direct')
+                            @include('events.partials.registration-whatsapp-direct')
                         @endif
                     </form>
                 @elseif($lot->has_seat_mapping)
@@ -106,7 +108,9 @@
 
         window.Laravel = {
             csrfToken: "{{ csrf_token() }}",
-            routes: {}
+            routes: {
+                directRegistration: @json(route('registration.direct.store', $lot->id))
+            }
         };
         window.preloadedLots = @json($lots);
         window.currentLot = @json($lot);

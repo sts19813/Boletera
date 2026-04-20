@@ -13,6 +13,7 @@ use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventosController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DirectRegistrationController;
 use App\Http\Controllers\TicketResendController;
 use App\Http\Controllers\TaquillaController;
 use App\Http\Controllers\WalletTestController;
@@ -193,6 +194,8 @@ Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form')
 Route::post('/pago/intent', [PaymentController::class, 'crearIntent'])->name('pago.intent');
 Route::get('/pago/success', [PaymentController::class, 'success'])->name('pago.success');
 Route::get('/pago/cancel', [PaymentController::class, 'cancel'])->name('pago.cancel');
+Route::post('/event/{event}/registration/direct', [DirectRegistrationController::class, 'store'])
+    ->name('registration.direct.store');
 
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'get'])->name('cart.get');
 Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->name('cart.add');
