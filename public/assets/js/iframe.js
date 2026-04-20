@@ -477,7 +477,7 @@ function submitDirectRegistration() {
         })
         .then((data) => {
             const title = data?.title ?? 'Gracias por tu registro';
-            const description = data?.description ?? 'Tu registro fue guardado correctamente.';
+            const description = data?.description ?? 'Tu registro fue guardado correctamente.<br> unete a nuestro grupo de WhatsApp para más información y actualizaciones.';
             const whatsappLink = data?.whatsapp_link ?? '';
 
             let message = description;
