@@ -1,6 +1,6 @@
 <div class="card shadow-sm mb-8">
     <div class="card-header bg-light">
-        <h4 class="card-title fw-bold mb-0">Registro EAFC 26 - Super Willys</h4>
+        <h4 class="card-title fw-bold mb-0">Registro Clash Royal - Super Willys</h4>
     </div>
 
     <div class="card-body">

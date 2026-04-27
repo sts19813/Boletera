@@ -89,6 +89,10 @@ class TicketService
                     'price' => $ticket->total_price,
                     'sale_channel' => 'stripe',
                     'payment_method' => 'card',
+                    'subtotal' => $ticket->total_price,
+                    'commission' => 0,
+                    'total' => $ticket->total_price,
+                    'registered_at' => $purchaseAt,
                 ]);
 
                 $ticket->update([
