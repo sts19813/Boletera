@@ -153,7 +153,7 @@ class DirectRegistrationController extends Controller
         return response()->json([
             'message' => 'Registro completado correctamente.',
             'title' => 'Gracias por tu registro',
-            'description' => 'Ya estas inscrito al torneo de EAFC 26 patrocinado por Super Willys.',
+            'description' => 'Ya estas inscrito al torneo',
             'whatsapp_link' => self::WHATSAPP_GROUP_LINK,
             'reference' => $instance->reference,
         ]);
