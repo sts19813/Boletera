@@ -54,7 +54,6 @@ class DirectRegistrationController extends Controller
             'participation_count' => 'required|integer|min:0|max:999',
             'how_known' => 'required|in:facebook,instagram,youtube,referido',
             'stream_user' => 'nullable|string|max:120',
-            'purchase_receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
         $normalizedEmail = Str::lower(trim((string) $validated['email']));
@@ -89,13 +88,8 @@ class DirectRegistrationController extends Controller
         }
 
         $receiptFolder = 'eventos-registros-recibos';
-        File::ensureDirectoryExists(public_path($receiptFolder));
-        $receiptPath = $this->fileUploadService->upload(
-            $validated['purchase_receipt'],
-            $receiptFolder
-        );
 
-        $receiptUrl = asset($receiptPath);
+
         $reference = 'DIRECT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
         $price = (float) ($event->price ?? 0);
 
@@ -120,8 +114,8 @@ class DirectRegistrationController extends Controller
             'how_known' => $validated['how_known'],
             'how_known_label' => $howKnownLabel,
             'stream_user' => $validated['stream_user'] ?? null,
-            'receipt_file_path' => $receiptPath,
-            'receipt_file_url' => $receiptUrl,
+            'receipt_file_path' => '',
+            'receipt_file_url' => '',
             'template_form' => 'whatsapp_direct',
         ];
 

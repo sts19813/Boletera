@@ -76,15 +76,6 @@
                 <label class="form-label">Usuario de Twitch o YouTube (opcional)</label>
                 <input type="text" name="stream_user" class="form-control form-control-solid">
             </div>
-
-            <div class="col-md-6">
-                <label class="form-label required">
-                    Sube tu recibo de Super Willys (consumo minimo $100)
-                </label>
-                <input type="file" name="purchase_receipt" class="form-control form-control-solid"
-                    accept=".jpg,.jpeg,.png,.pdf,application/pdf,image/*" required>
-            </div>
-        </div>
     </div>
 </div>
 
