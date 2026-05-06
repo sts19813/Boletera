@@ -76,6 +76,8 @@
                 <label class="form-label">Usuario de Twitch o YouTube (opcional)</label>
                 <input type="text" name="stream_user" class="form-control form-control-solid">
             </div>
+
+        </div>
     </div>
 </div>
 
