@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class DirectRegistrationController extends Controller
 {
-    private const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/ExypBBvEppnErpfFdXGoR1?mode=gi_t';
+    private const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/FaPvvNc1XyV9QxLKk6xb5w?mode=gi_t';
 
     public function __construct(
         private FileUploadService $fileUploadService

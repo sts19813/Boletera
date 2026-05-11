@@ -21,7 +21,7 @@ class DirectRegistrationMail extends Mailable
             ->with([
                 'evento' => $this->event,
                 'registration' => $this->registrationData,
-                'whatsappLink' => 'https://chat.whatsapp.com/ExypBBvEppnErpfFdXGoR1?mode=gi_t',
+                'whatsappLink' => 'https://chat.whatsapp.com/FaPvvNc1XyV9QxLKk6xb5w?mode=gi_t',
             ]);
     }
 }
