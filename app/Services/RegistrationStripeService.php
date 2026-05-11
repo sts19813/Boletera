@@ -48,7 +48,16 @@ class RegistrationStripeService
 
             $evento = Eventos::findOrFail($item['event_id']);
             $qty = max(1, (int) ($item['qty'] ?? 1));
-            $unitPrice = RegistrationPricing::resolveUnitPrice($evento, $qty);
+            $basePrice = RegistrationPricing::resolveUnitPrice($evento, $qty);
+            $unitPrice = array_key_exists('price', $item)
+                ? round((float) $item['price'], 2)
+                : $basePrice;
+            $discountPercent = array_key_exists('discount_percent', $item)
+                ? (float) $item['discount_percent']
+                : null;
+            $discountAmount = array_key_exists('discount_amount', $item)
+                ? round((float) $item['discount_amount'], 2)
+                : round(max(0, $basePrice - $unitPrice), 2);
 
             $existingInstances = TicketInstance::registrationSales()
                 ->where('payment_intent_id', $paymentIntentId)
@@ -87,7 +96,6 @@ class RegistrationStripeService
                 return ((float) ($cartItem['price'] ?? 0)) * $qtyItem;
             });
             $commission = round($subtotal * 0.05, 2);
-            $total = $subtotal;
 
             for ($i = 0; $i < $toCreate; $i++) {
                 $instance = TicketInstance::create([
@@ -105,12 +113,16 @@ class RegistrationStripeService
                     'registered_at' => $purchaseAt,
                     'purchased_at' => $purchaseAt,
                     'price' => $unitPrice,
-                    'subtotal' => $subtotal,
+                    'subtotal' => $basePrice,
                     'commission' => $commission,
-                    'total' => $total,
+                    'total' => $unitPrice,
                     'form_data' => $registrationForm,
                     'sale_channel' => 'stripe',
                     'payment_method' => 'card',
+                    'coupon_id' => $item['coupon_id'] ?? null,
+                    'coupon_code' => $item['coupon_code'] ?? null,
+                    'coupon_discount_percent' => $discountPercent,
+                    'coupon_discount_amount' => $discountAmount,
                 ]);
 
                 $boletos[] = $this->registrationBuilder->build(

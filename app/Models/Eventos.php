@@ -50,6 +50,11 @@ class Eventos extends Model
         'stop_online_sales' => 'boolean',
     ];
 
+    public function coupons()
+    {
+        return $this->hasMany(EventCoupon::class, 'event_id');
+    }
+
 
     public function users()
     {

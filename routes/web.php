@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\CheckinManagementController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventosController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DirectRegistrationController;
 use App\Http\Controllers\TicketResendController;
@@ -199,6 +200,7 @@ Route::post('/event/{event}/registration/direct', [DirectRegistrationController:
 
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'get'])->name('cart.get');
 Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->name('cart.add');
+Route::post('/events/{event}/coupons/validate', [CouponController::class, 'validateForEvent'])->name('events.coupons.validate');
 
 Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])->name('eventPublic.index');

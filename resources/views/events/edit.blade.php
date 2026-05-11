@@ -213,6 +213,75 @@
                     </div>
                 </div>
 
+                @php
+                    $couponRows = old('coupons', ($eventCoupons ?? collect())->map(function ($coupon) {
+                        return [
+                            'id' => $coupon->id,
+                            'code' => $coupon->code,
+                            'discount_type' => $coupon->discount_type,
+                            'discount_value' => $coupon->discount_value,
+                            'max_tickets' => $coupon->max_tickets,
+                            'starts_at' => optional($coupon->starts_at)->format('Y-m-d\\TH:i'),
+                            'ends_at' => optional($coupon->ends_at)->format('Y-m-d\\TH:i'),
+                            'is_active' => $coupon->is_active ? 1 : 0,
+                        ];
+                    })->toArray());
+
+                    if (empty($couponRows)) {
+                        $couponRows = [[]];
+                    }
+                @endphp
+
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title fw-bold">Cupones</h4>
+                        <button type="button" id="addCouponRowBtn" class="btn btn-light-primary btn-sm">Agregar cupón</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                        <th>Máx boletos</th>
+                                        <th>Inicio</th>
+                                        <th>Fin</th>
+                                        <th>Activo</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="couponRows">
+                                    @foreach($couponRows as $i => $couponRow)
+                                        <tr>
+                                            <td>
+                                                <input type="hidden" name="coupons[{{ $i }}][id]" value="{{ $couponRow['id'] ?? '' }}">
+                                                <input type="text" name="coupons[{{ $i }}][code]" class="form-control" value="{{ $couponRow['code'] ?? '' }}">
+                                            </td>
+                                            <td>
+                                                <select name="coupons[{{ $i }}][discount_type]" class="form-select">
+                                                    <option value="">Selecciona</option>
+                                                    <option value="percentage" {{ ($couponRow['discount_type'] ?? '') === 'percentage' ? 'selected' : '' }}>Porcentaje</option>
+                                                    <option value="fixed" {{ ($couponRow['discount_type'] ?? '') === 'fixed' ? 'selected' : '' }}>Monto fijo</option>
+                                                </select>
+                                            </td>
+                                            <td><input type="number" step="0.01" min="0.01" name="coupons[{{ $i }}][discount_value]" class="form-control" value="{{ $couponRow['discount_value'] ?? '' }}"></td>
+                                            <td><input type="number" min="1" name="coupons[{{ $i }}][max_tickets]" class="form-control" value="{{ $couponRow['max_tickets'] ?? '' }}"></td>
+                                            <td><input type="datetime-local" name="coupons[{{ $i }}][starts_at]" class="form-control" value="{{ $couponRow['starts_at'] ?? '' }}"></td>
+                                            <td><input type="datetime-local" name="coupons[{{ $i }}][ends_at]" class="form-control" value="{{ $couponRow['ends_at'] ?? '' }}"></td>
+                                            <td class="text-center">
+                                                <input type="checkbox" name="coupons[{{ $i }}][is_active]" value="1" {{ !empty($couponRow['is_active']) ? 'checked' : '' }}>
+                                            </td>
+                                            <td><button type="button" class="btn btn-light-danger btn-sm remove-coupon-row">Quitar</button></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
 
                 <!-- ===============================
                                 IMÁGENES
@@ -416,6 +485,64 @@
             isRegistration.addEventListener('change', toggleRegistrationMode);
 
             toggleRegistrationMode(); // inicial
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rowsContainer = document.getElementById('couponRows');
+            const addBtn = document.getElementById('addCouponRowBtn');
+
+            if (!rowsContainer || !addBtn) {
+                return;
+            }
+
+            const rowTemplate = (index) => `
+                <tr>
+                    <td>
+                        <input type="hidden" name="coupons[${index}][id]" value="">
+                        <input type="text" name="coupons[${index}][code]" class="form-control">
+                    </td>
+                    <td>
+                        <select name="coupons[${index}][discount_type]" class="form-select">
+                            <option value="">Selecciona</option>
+                            <option value="percentage">Porcentaje</option>
+                            <option value="fixed">Monto fijo</option>
+                        </select>
+                    </td>
+                    <td><input type="number" step="0.01" min="0.01" name="coupons[${index}][discount_value]" class="form-control"></td>
+                    <td><input type="number" min="1" name="coupons[${index}][max_tickets]" class="form-control"></td>
+                    <td><input type="datetime-local" name="coupons[${index}][starts_at]" class="form-control"></td>
+                    <td><input type="datetime-local" name="coupons[${index}][ends_at]" class="form-control"></td>
+                    <td class="text-center"><input type="checkbox" name="coupons[${index}][is_active]" value="1"></td>
+                    <td><button type="button" class="btn btn-light-danger btn-sm remove-coupon-row">Quitar</button></td>
+                </tr>
+            `;
+
+            const refreshIndices = () => {
+                [...rowsContainer.querySelectorAll('tr')].forEach((row, index) => {
+                    row.querySelectorAll('input, select').forEach((input) => {
+                        const name = input.getAttribute('name');
+                        if (!name) {
+                            return;
+                        }
+                        input.setAttribute('name', name.replace(/coupons\[\d+\]/, `coupons[${index}]`));
+                    });
+                });
+            };
+
+            addBtn.addEventListener('click', function () {
+                rowsContainer.insertAdjacentHTML('beforeend', rowTemplate(rowsContainer.querySelectorAll('tr').length));
+            });
+
+            rowsContainer.addEventListener('click', function (event) {
+                const button = event.target.closest('.remove-coupon-row');
+                if (!button) {
+                    return;
+                }
+                button.closest('tr')?.remove();
+                refreshIndices();
+            });
         });
     </script>
 @endpush

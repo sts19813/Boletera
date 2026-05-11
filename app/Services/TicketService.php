@@ -50,6 +50,16 @@ class TicketService
             $evento = Eventos::findOrFail($item['event_id']);
             $ticket = Ticket::findOrFail($item['id']);
             $qty = max(1, (int) ($item['qty'] ?? 1));
+            $baseUnitPrice = round((float) ($ticket->total_price ?? 0), 2);
+            $finalUnitPrice = array_key_exists('price', $item)
+                ? round((float) $item['price'], 2)
+                : $baseUnitPrice;
+            $discountPercent = array_key_exists('discount_percent', $item)
+                ? (float) $item['discount_percent']
+                : null;
+            $discountAmount = array_key_exists('discount_amount', $item)
+                ? round((float) $item['discount_amount'], 2)
+                : round(max(0, $baseUnitPrice - $finalUnitPrice), 2);
 
             if ((string) $ticket->event_id !== (string) $evento->id) {
                 abort(409, 'El boleto no pertenece al evento seleccionado');
@@ -86,13 +96,17 @@ class TicketService
                     'qr_hash' => (string) Str::uuid(),
                     'payment_intent_id' => $paymentIntentId,
                     'reference' => $paymentIntentId,
-                    'price' => $ticket->total_price,
+                    'price' => $finalUnitPrice,
                     'sale_channel' => 'stripe',
                     'payment_method' => 'card',
-                    'subtotal' => $ticket->total_price,
+                    'subtotal' => $baseUnitPrice,
                     'commission' => 0,
-                    'total' => $ticket->total_price,
+                    'total' => $finalUnitPrice,
                     'registered_at' => $purchaseAt,
+                    'coupon_id' => $item['coupon_id'] ?? null,
+                    'coupon_code' => $item['coupon_code'] ?? null,
+                    'coupon_discount_percent' => $discountPercent,
+                    'coupon_discount_amount' => $discountAmount,
                 ]);
 
                 $ticket->update([
@@ -150,9 +164,16 @@ class TicketService
                     'qr_hash' => (string) Str::uuid(),
                     'payment_intent_id' => $paymentIntentId,
                     'reference' => $paymentIntentId,
-                    'price' => $ticket->total_price,
+                    'price' => $finalUnitPrice,
                     'sale_channel' => 'stripe',
                     'payment_method' => 'card',
+                    'subtotal' => $baseUnitPrice,
+                    'commission' => 0,
+                    'total' => $finalUnitPrice,
+                    'coupon_id' => $item['coupon_id'] ?? null,
+                    'coupon_code' => $item['coupon_code'] ?? null,
+                    'coupon_discount_percent' => $discountPercent,
+                    'coupon_discount_amount' => $discountAmount,
                 ]);
 
                 $boletos[] = $this->ticketBuilder->build(
@@ -186,11 +207,22 @@ class TicketService
         string $email,
         string $nombreComprador,
         string $reference,
-        string $paymentMethod
+        string $paymentMethod,
+        array $pricing = []
     ): array {
 
         $ticket = Ticket::lockForUpdate()->findOrFail($item['id']);
         $qty = max(1, (int) ($item['qty'] ?? 1));
+        $baseUnitPrice = round((float) ($pricing['base_price'] ?? $ticket->total_price ?? 0), 2);
+        $finalUnitPrice = array_key_exists('price', $pricing)
+            ? round((float) $pricing['price'], 2)
+            : $baseUnitPrice;
+        $discountPercent = array_key_exists('discount_percent', $pricing)
+            ? (float) $pricing['discount_percent']
+            : null;
+        $discountAmount = array_key_exists('discount_amount', $pricing)
+            ? round((float) $pricing['discount_amount'], 2)
+            : round(max(0, $baseUnitPrice - $finalUnitPrice), 2);
 
         if ((string) $ticket->event_id !== (string) $evento->id) {
             abort(409, 'El boleto no pertenece al evento seleccionado');
@@ -215,8 +247,15 @@ class TicketService
                 'qr_hash' => (string) Str::uuid(),
                 'reference' => $reference,
                 'sale_channel' => 'taquilla',
-                'price' => $ticket->total_price,
+                'price' => $finalUnitPrice,
                 'payment_method' => $paymentMethod,
+                'subtotal' => $baseUnitPrice,
+                'commission' => 0,
+                'total' => $finalUnitPrice,
+                'coupon_id' => $pricing['coupon_id'] ?? null,
+                'coupon_code' => $pricing['coupon_code'] ?? null,
+                'coupon_discount_percent' => $discountPercent,
+                'coupon_discount_amount' => $discountAmount,
             ]);
 
             $boletos[] = $this->ticketBuilder->build(
