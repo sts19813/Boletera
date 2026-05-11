@@ -22,7 +22,18 @@ class RegistrationService
         $reference = $data['reference'] ?? null;
         $saleChannel = $data['sale_channel'] ?? 'taquilla';
         $paymentMethod = $data['payment_method'] ?? 'cash';
-        $price = RegistrationPricing::resolveUnitPrice($evento, $qty);
+        $basePrice = array_key_exists('base_price', $data)
+            ? round((float) $data['base_price'], 2)
+            : RegistrationPricing::resolveUnitPrice($evento, $qty);
+        $price = array_key_exists('price', $data)
+            ? round((float) $data['price'], 2)
+            : $basePrice;
+        $discountPercent = array_key_exists('discount_percent', $data)
+            ? (float) $data['discount_percent']
+            : null;
+        $discountAmount = array_key_exists('discount_amount', $data)
+            ? round((float) $data['discount_amount'], 2)
+            : round(max(0, $basePrice - $price), 2);
 
         // Validar cupo se omite en taquilla,
         // se asume que el taquillero es consciente de la capacidad del evento y no permitirá ventas que excedan el cupo disponible.
@@ -49,7 +60,7 @@ class RegistrationService
                 'registered_at' => $registeredAt,
                 'purchased_at' => $registeredAt,
                 'price' => $price,
-                'subtotal' => $price,
+                'subtotal' => $basePrice,
                 'commission' => 0.00,
                 'total' => $price,
                 'form_data' => $formData,
@@ -57,6 +68,10 @@ class RegistrationService
                 'reference' => $reference,
                 'sale_channel' => $saleChannel,
                 'payment_method' => $paymentMethod,
+                'coupon_id' => $data['coupon_id'] ?? null,
+                'coupon_code' => $data['coupon_code'] ?? null,
+                'coupon_discount_percent' => $discountPercent,
+                'coupon_discount_amount' => $discountAmount,
             ]);
 
             $instances[] = $instance;

@@ -151,6 +151,7 @@
                     event_id: window.EVENT_ID,
                     name: window.registrationTicket.name,
                     total_price: Number(window.registrationTicket.total_price),
+                    unit_price: Number(window.registrationTicket.total_price),
                     base_price: Number(window.registrationTicket.total_price),
                     stock: window.registrationConfig?.maxCapacity ?? 9999,
                     qty: 1,

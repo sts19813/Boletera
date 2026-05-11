@@ -95,7 +95,7 @@
             {{-- DERECHA: CARRITO --}}
             {{-- ===================== --}}
             <div class="col-lg-4">
-                @include('events.partials.cartItems')
+                @include('events.partials.cartItems', ['showCouponField' => $hasAvailableCoupons ?? false])
             </div>
         </div>
     </div>
@@ -118,6 +118,10 @@
         window.idDesarrollo = @json($lot->id);
         window.EVENT_ID = @json($lot->id);
         window.stopOnlineSales = @json((bool) $lot->stop_online_sales);
+        window.couponConfig = {
+            enabled: @json((bool) ($hasAvailableCoupons ?? false)),
+            validateUrl: @json(route('events.coupons.validate', $lot->id))
+        };
         window.canBypassOnlineStop = @json(
             auth()->check() && (
                 auth()->user()->hasRole('admin')

@@ -9,7 +9,10 @@ class CartController extends Controller
     public function get(Request $request)
     {
         $cart = session('svg_cart', []);
-        return response()->json(['cart' => $cart]);
+        return response()->json([
+            'cart' => $cart,
+            'coupon_code' => session('coupon_code'),
+        ]);
     }
 
     public function add(Request $request)
@@ -58,6 +61,13 @@ class CartController extends Controller
                     'event_id' => $item['event_id'] ?? null,
                     'name' => $item['name'] ?? '',
                     'price' => (float) $item['price'],
+                    'base_price' => (float) ($item['base_price'] ?? $item['price'] ?? 0),
+                    'discount_percent' => array_key_exists('discount_percent', $item)
+                        ? ($item['discount_percent'] !== null ? (float) $item['discount_percent'] : null)
+                        : null,
+                    'discount_amount' => (float) ($item['discount_amount'] ?? 0),
+                    'coupon_code' => $item['coupon_code'] ?? null,
+                    'coupon_id' => $item['coupon_id'] ?? null,
                     'qty' => (int) ($item['qty'] ?? 1),
                     'selectorSVG' => $item['selectorSVG'] ?? null,
                     'type' => $item['type'] ?? 'ticket', // 👈 CLAVE
@@ -65,6 +75,13 @@ class CartController extends Controller
             })->values()->toArray();
 
             session(['svg_cart' => $cart]);
+            $couponCode = trim((string) $request->input('coupon_code', ''));
+
+            if ($couponCode !== '') {
+                session(['coupon_code' => strtoupper($couponCode)]);
+            } else {
+                session()->forget('coupon_code');
+            }
 
             return response()->json(['success' => true]);
         }
@@ -83,6 +100,13 @@ class CartController extends Controller
                 'event_id' => $request->event_id,
                 'name' => $request->name,
                 'price' => (float) $request->price,
+                'base_price' => (float) ($request->base_price ?? $request->price),
+                'discount_percent' => $request->discount_percent !== null
+                    ? (float) $request->discount_percent
+                    : null,
+                'discount_amount' => (float) ($request->discount_amount ?? 0),
+                'coupon_code' => $request->coupon_code,
+                'coupon_id' => $request->coupon_id,
                 'qty' => (int) ($request->qty ?? 1),
                 'selectorSVG' => $request->selectorSVG,
                 'type' => $request->type ?? 'ticket', 
@@ -97,6 +121,13 @@ class CartController extends Controller
             }
 
             session(['svg_cart' => $cart]);
+            $couponCode = trim((string) $request->input('coupon_code', ''));
+
+            if ($couponCode !== '') {
+                session(['coupon_code' => strtoupper($couponCode)]);
+            } else {
+                session()->forget('coupon_code');
+            }
 
             return response()->json(['success' => true]);
         }

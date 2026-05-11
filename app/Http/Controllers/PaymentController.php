@@ -9,6 +9,7 @@ use App\Models\TicketInstance;
 use App\Services\RegistrationBuilderService;
 use App\Services\RegistrationStripeService;
 use App\Services\TicketBuilderService;
+use App\Services\CouponService;
 use App\Services\TicketService;
 use App\Support\RegistrationPricing;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -24,7 +25,8 @@ class PaymentController extends Controller
         private TicketBuilderService $ticketBuilder,
         private TicketService $ticketService,
         private RegistrationStripeService $registrationStripeService,
-        private RegistrationBuilderService $registrationBuilder
+        private RegistrationBuilderService $registrationBuilder,
+        private CouponService $couponService
     ) {
     }
 
@@ -49,11 +51,22 @@ class PaymentController extends Controller
         $evento = Eventos::findOrFail($eventId);
         $this->abortIfOnlineSalesStopped($evento);
         $carrito = $this->applyRegistrationPricingRules($carrito);
+        $couponCode = session('coupon_code');
+        $couponResult = $this->couponService->applyCouponToCart($evento, $carrito, $couponCode);
+
+        if ($couponResult['success']) {
+            $carrito = $couponResult['cart'];
+        } else {
+            $carrito = $couponResult['cart'];
+            session()->forget('coupon_code');
+        }
+
         session(['svg_cart' => $carrito]);
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
         $comision = round($subtotal * 0.05, 2);
         $total = $subtotal;
+        $appliedCoupon = $couponResult['coupon'] ?? null;
 
         return view('pago.form', compact(
             'carrito',
@@ -61,7 +74,8 @@ class PaymentController extends Controller
             'subtotal',
             'comision',
             'total',
-            'registration'
+            'registration',
+            'appliedCoupon'
         ));
     }
 
@@ -153,6 +167,21 @@ class PaymentController extends Controller
         }
 
         $carrito = $this->applyRegistrationPricingRules($carrito);
+        if ($evento) {
+            $couponResult = $this->couponService->applyCouponToCart(
+                $evento,
+                $carrito,
+                session('coupon_code')
+            );
+
+            if (!$couponResult['success']) {
+                return response()->json([
+                    'error' => $couponResult['message'],
+                ], 422);
+            }
+
+            $carrito = $couponResult['cart'];
+        }
         session(['svg_cart' => $carrito]);
 
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
@@ -229,6 +258,7 @@ class PaymentController extends Controller
 
         $eventId = $cart[0]['event_id'] ?? null;
         $evento = Eventos::findOrFail($eventId);
+        session()->forget('coupon_code');
 
         return view('pago.success', compact('boletos', 'email', 'evento'));
     }
@@ -310,6 +340,7 @@ class PaymentController extends Controller
         return collect($carrito)->map(function (array $item) {
             if (($item['type'] ?? 'ticket') !== 'registration') {
                 unset($item['promotion']);
+                $item['base_price'] = round((float) ($item['base_price'] ?? $item['price'] ?? 0), 2);
                 return $item;
             }
 
@@ -322,6 +353,7 @@ class PaymentController extends Controller
 
             $qty = max(1, (int) ($item['qty'] ?? 1));
             $item['price'] = RegistrationPricing::resolveUnitPrice($evento, $qty);
+            $item['base_price'] = $item['price'];
             $promotion = RegistrationPricing::resolvePromotionMeta($evento, $qty);
 
             if ($promotion) {

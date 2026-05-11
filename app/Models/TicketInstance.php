@@ -27,6 +27,10 @@ class TicketInstance extends Model
         'reference',
         'sale_channel',
         'payment_method',
+        'coupon_id',
+        'coupon_code',
+        'coupon_discount_percent',
+        'coupon_discount_amount',
         'used_at',
         'price',
         'subtotal',
@@ -39,6 +43,8 @@ class TicketInstance extends Model
         'purchased_at' => 'datetime',
         'registered_at' => 'datetime',
         'used_at' => 'datetime',
+        'coupon_discount_percent' => 'decimal:2',
+        'coupon_discount_amount' => 'decimal:2',
         'price' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'commission' => 'decimal:2',
@@ -75,6 +81,11 @@ class TicketInstance extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(EventCoupon::class, 'coupon_id');
     }
 
     public function scopeTicketSales($query)
