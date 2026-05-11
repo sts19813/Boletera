@@ -379,4 +379,32 @@ class PaymentController extends Controller
             || $user->can('vender boletos')
             || $user->can('genera cortesias');
     }
+
+
+    //para validar el estatus del pago, y monto. Solo para uso interno, expuesto a rutas publicas.
+    public function showPaymentIntent($paymentIntentId)
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        try {
+            $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
+
+            return response()->json([
+                'id' => $paymentIntent->id,
+                'status' => $paymentIntent->status,
+                'currency' => strtoupper($paymentIntent->currency),
+                'amount' => $paymentIntent->amount / 100,
+                'amount_received' => $paymentIntent->amount_received / 100,
+                'customer' => $paymentIntent->customer,
+                'payment_method' => $paymentIntent->payment_method,
+                'created_at' => date('Y-m-d H:i:s', $paymentIntent->created),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+
+    }
 }

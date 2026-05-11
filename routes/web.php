@@ -206,6 +206,10 @@ Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
 Route::get('/event/{lot}/', [EventosController::class, 'iframe'])->name('eventPublic.index');
 Route::get('/wallet/{instance}', [WalletTestController::class, 'testWallet'])->name('wallet.add');
 
+// Endpoint para obtener detalles de un Payment Intent (útil para el validar lo que pago el usuario)
+Route::get('/stripe/payment-intent/{paymentIntentId}', [PaymentController::class, 'showPaymentIntent']);
+
+
 // =========================
 // Auth Routes
 // =========================
