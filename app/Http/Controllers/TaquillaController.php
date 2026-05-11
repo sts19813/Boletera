@@ -8,10 +8,12 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Ticket;
 use App\Models\Eventos;
 use App\Models\TicketInstance;
+use App\Services\CouponService;
 use App\Services\RegistrationBuilderService;
 use App\Services\RegistrationService;
 use App\Services\TicketBuilderService;
 use App\Services\TicketService;
+use App\Support\RegistrationPricing;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BoletosMail;
 
@@ -21,7 +23,8 @@ class TaquillaController extends Controller
         private TicketBuilderService $ticketBuilder,
         private RegistrationBuilderService $registrationBuilder,
         private RegistrationService $registrationService,
-        private TicketService $ticketService
+        private TicketService $ticketService,
+        private CouponService $couponService
     ) {
     }
 
@@ -39,6 +42,7 @@ class TaquillaController extends Controller
             'payment_method' => 'required|in:cash,card,cortesia',
             'event_id' => 'required|string',
             'registration' => 'nullable|array',
+            'coupon_code' => 'nullable|string|max:50',
         ]);
 
         return DB::transaction(function () use ($request) {
@@ -88,8 +92,40 @@ class TaquillaController extends Controller
             $boletos = [];
 
             $evento = Eventos::findOrFail($request->input('event_id'));
+            $couponResult = $this->couponService->applyCouponToCart(
+                $evento,
+                collect($request->cart)->map(function ($item) use ($evento) {
+                    $qty = max(1, (int) ($item['qty'] ?? 1));
+                    $type = $item['type'] ?? 'ticket';
+                    $basePrice = (float) ($item['price'] ?? 0);
 
-            foreach ($request->cart as $item) {
+                    if ($type === 'ticket' && !empty($item['id'])) {
+                        $ticketModel = Ticket::find($item['id']);
+                        $basePrice = (float) ($ticketModel?->total_price ?? $basePrice);
+                    }
+
+                    if ($type === 'registration') {
+                        $basePrice = RegistrationPricing::resolveUnitPrice($evento, $qty);
+                    }
+
+                    return [
+                        'id' => $item['id'] ?? null,
+                        'event_id' => $item['event_id'] ?? null,
+                        'name' => $item['name'] ?? '',
+                        'type' => $type,
+                        'qty' => $qty,
+                        'base_price' => round($basePrice, 2),
+                        'price' => round($basePrice, 2),
+                    ];
+                })->values()->toArray(),
+                $request->input('coupon_code')
+            );
+
+            if (!$couponResult['success']) {
+                abort(422, $couponResult['message']);
+            }
+
+            foreach ($couponResult['cart'] as $item) {
 
                 // =============================
                 // REGISTRATIONS
@@ -107,7 +143,12 @@ class TaquillaController extends Controller
                             'reference' => $reference,
                             'sale_channel' => 'taquilla',
                             'payment_method' => $paymentMethod,
-                            'price' => $item['price'] ?? $evento->price
+                            'price' => $item['price'] ?? $evento->price,
+                            'base_price' => $item['base_price'] ?? $evento->price,
+                            'coupon_id' => $item['coupon_id'] ?? null,
+                            'coupon_code' => $item['coupon_code'] ?? null,
+                            'discount_percent' => $item['discount_percent'] ?? null,
+                            'discount_amount' => $item['discount_amount'] ?? 0,
                         ]
                     );
 
@@ -133,7 +174,15 @@ class TaquillaController extends Controller
                         $email,
                         $nombreComprador,
                         $reference,
-                        $paymentMethod
+                        $paymentMethod,
+                        [
+                            'price' => $item['price'] ?? null,
+                            'base_price' => $item['base_price'] ?? null,
+                            'coupon_id' => $item['coupon_id'] ?? null,
+                            'coupon_code' => $item['coupon_code'] ?? null,
+                            'discount_percent' => $item['discount_percent'] ?? null,
+                            'discount_amount' => $item['discount_amount'] ?? 0,
+                        ]
                     )
                 );
 

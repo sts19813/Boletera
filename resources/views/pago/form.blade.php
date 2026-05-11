@@ -129,6 +129,12 @@
                                                     {{ data_get($item, 'promotion.label') }}
                                                 </div>
                                             @endif
+
+                                            @if(!empty($item['coupon_code']) && (float) ($item['discount_amount'] ?? 0) > 0)
+                                                <div class="text-success fs-8 fw-semibold">
+                                                    Cupón {{ $item['coupon_code'] }} aplicado
+                                                </div>
+                                            @endif
                                         </div>
 
                                         <div class="fw-semibold">
@@ -159,6 +165,13 @@
                             </div>
 
                             <div class="separator separator-dashed my-4"></div>
+
+                            @if(!empty($appliedCoupon))
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-gray-600">Cupón</span>
+                                    <span>{{ $appliedCoupon['code'] }}</span>
+                                </div>
+                            @endif
 
                             <div class="d-flex justify-content-between fs-4 fw-bold">
                                 <span>Total</span>

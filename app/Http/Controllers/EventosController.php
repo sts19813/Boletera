@@ -6,6 +6,7 @@ use App\Models\Eventos;
 use App\Models\Ticket;
 use App\Models\TicketSvgMapping;
 use App\Services\FileUploadService;
+use App\Services\CouponService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,8 @@ use Illuminate\Support\Facades\Log;
 class EventosController extends Controller
 {
     public function __construct(
-        protected FileUploadService $fileUploadService
+        protected FileUploadService $fileUploadService,
+        protected CouponService $couponService
     ) {
     }
 
@@ -49,8 +51,9 @@ class EventosController extends Controller
     public function create()
     {
         $Eventos = Eventos::select('id', 'name')->get();
+        $eventCoupons = collect();
 
-        return view('events.create', compact('Eventos'));
+        return view('events.create', compact('Eventos', 'eventCoupons'));
     }
 
     public function store(Request $request)
@@ -81,6 +84,15 @@ class EventosController extends Controller
             'stop_online_sales' => 'nullable|boolean',
             'svg_image' => 'nullable|mimes:svg,xml',
             'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
+            'coupons' => 'nullable|array',
+            'coupons.*.id' => 'nullable|uuid',
+            'coupons.*.code' => 'nullable|string|max:50',
+            'coupons.*.discount_type' => 'nullable|in:percentage,fixed',
+            'coupons.*.discount_value' => 'nullable|numeric|min:0.01',
+            'coupons.*.max_tickets' => 'nullable|integer|min:1',
+            'coupons.*.starts_at' => 'nullable|date',
+            'coupons.*.ends_at' => 'nullable|date',
+            'coupons.*.is_active' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -137,7 +149,8 @@ class EventosController extends Controller
             $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
             $data['stop_online_sales'] = $request->boolean('stop_online_sales');
 
-            Eventos::create($data);
+            $event = Eventos::create($data);
+            $this->syncCoupons($event, $this->normalizeCouponsInput($request->input('coupons', [])));
 
             DB::commit();
 
@@ -234,16 +247,18 @@ class EventosController extends Controller
             ->get();
 
         $dbLotes = TicketSvgMapping::where('evento_id', $lot->id)->get();
+        $hasAvailableCoupons = $this->couponService->hasAvailableCoupons($lot);
 
-        return view('events.iframe', compact('lot', 'lots', 'dbLotes', 'tickets'));
+        return view('events.iframe', compact('lot', 'lots', 'dbLotes', 'tickets', 'hasAvailableCoupons'));
     }
 
     public function edit(string $id)
     {
         $event = Eventos::findOrFail($id);
         $Eventos = Eventos::select('id', 'name')->get();
+        $eventCoupons = $event->coupons()->orderBy('created_at')->get();
 
-        return view('events.edit', compact('event', 'Eventos'));
+        return view('events.edit', compact('event', 'Eventos', 'eventCoupons'));
     }
 
     public function update(Request $request, string $id)
@@ -276,6 +291,15 @@ class EventosController extends Controller
             'stop_online_sales' => 'nullable|boolean',
             'svg_image' => 'nullable|mimes:svg,xml',
             'png_image' => 'nullable|image|mimes:png,jpg,jpeg,webp',
+            'coupons' => 'nullable|array',
+            'coupons.*.id' => 'nullable|uuid',
+            'coupons.*.code' => 'nullable|string|max:50',
+            'coupons.*.discount_type' => 'nullable|in:percentage,fixed',
+            'coupons.*.discount_value' => 'nullable|numeric|min:0.01',
+            'coupons.*.max_tickets' => 'nullable|integer|min:1',
+            'coupons.*.starts_at' => 'nullable|date',
+            'coupons.*.ends_at' => 'nullable|date',
+            'coupons.*.is_active' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -336,6 +360,7 @@ class EventosController extends Controller
             }
 
             $event->update($data);
+            $this->syncCoupons($event, $this->normalizeCouponsInput($request->input('coupons', [])));
 
             DB::commit();
 
@@ -377,5 +402,84 @@ class EventosController extends Controller
         return response()->json([
             'success' => true,
         ]);
+    }
+
+    private function normalizeCouponsInput(array $rows): array
+    {
+        return collect($rows)
+            ->map(function ($row) {
+                $code = strtoupper(trim((string) ($row['code'] ?? '')));
+
+                if ($code === '') {
+                    return null;
+                }
+
+                $startsAt = !empty($row['starts_at']) ? $row['starts_at'] : null;
+                $endsAt = !empty($row['ends_at']) ? $row['ends_at'] : null;
+
+                if ($startsAt && $endsAt && strtotime($endsAt) < strtotime($startsAt)) {
+                    return null;
+                }
+
+                $discountType = $row['discount_type'] ?? null;
+                $discountValue = (float) ($row['discount_value'] ?? 0);
+
+                if (!in_array($discountType, ['percentage', 'fixed'], true) || $discountValue <= 0) {
+                    return null;
+                }
+
+                return [
+                    'id' => $row['id'] ?? null,
+                    'code' => $code,
+                    'discount_type' => $discountType,
+                    'discount_value' => round($discountValue, 2),
+                    'max_tickets' => !empty($row['max_tickets']) ? (int) $row['max_tickets'] : null,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'is_active' => (bool) ($row['is_active'] ?? false),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function syncCoupons(Eventos $event, array $rows): void
+    {
+        $ids = [];
+
+        foreach ($rows as $row) {
+            $coupon = null;
+
+            if (!empty($row['id'])) {
+                $coupon = $event->coupons()->where('id', $row['id'])->first();
+            }
+
+            $payload = [
+                'code' => $row['code'],
+                'discount_type' => $row['discount_type'],
+                'discount_value' => $row['discount_value'],
+                'max_tickets' => $row['max_tickets'],
+                'starts_at' => $row['starts_at'],
+                'ends_at' => $row['ends_at'],
+                'is_active' => $row['is_active'],
+            ];
+
+            if ($coupon) {
+                $coupon->update($payload);
+                $ids[] = $coupon->id;
+                continue;
+            }
+
+            $created = $event->coupons()->create($payload);
+            $ids[] = $created->id;
+        }
+
+        if (empty($ids)) {
+            $event->coupons()->delete();
+            return;
+        }
+
+        $event->coupons()->whereNotIn('id', $ids)->delete();
     }
 }

@@ -13,6 +13,19 @@
 
         <div class="separator separator-dashed my-4"></div>
 
+        @if(!empty($showCouponField))
+            <div class="mb-4">
+                <label class="form-label fw-bold mb-2">Cupón</label>
+                <div class="d-flex gap-2">
+                    <input type="text" id="couponCodeInput" class="form-control" placeholder="Código de cupón">
+                    <button type="button" id="applyCouponBtn" class="btn btn-light-primary">Aplicar</button>
+                    <button type="button" id="clearCouponBtn" class="btn btn-light">Quitar</button>
+                </div>
+                <div id="couponFeedback" class="fs-8 mt-2"></div>
+            </div>
+            <div class="separator separator-dashed my-4"></div>
+        @endif
+
         <div class="d-flex justify-content-between mb-4 fw-semibold">
             <span>Total</span>
             <span id="cartTotal" class="text-primary">$0</span>

@@ -60,16 +60,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         event_id: t.event_id,
                         name: t.name,
                         price: Number(t.total_price),
+                        base_price: Number(t.unit_price ?? t.base_price ?? t.total_price),
+                        discount_percent: t.discount_percent,
+                        discount_amount: Number(t.discount_amount ?? 0),
+                        coupon_code: t.coupon_code,
+                        coupon_id: t.coupon_id,
                         qty: t.qty,
                         type: t.id === 'registration' ? 'registration' : 'ticket'
                     })),
                     email: nombreInput,
                     event_id: window.EVENT_ID,
                     payment_method: metodoPago,
+                    coupon_code: window.currentCouponCode || null,
                     registration: registrationData,
                 })
             })
-                .then(res => res.text())
+                .then(async res => {
+                    if (!res.ok) {
+                        const message = await res.text();
+                        throw new Error(message || 'Error en venta de taquilla');
+                    }
+
+                    return res.text();
+                })
                 .then(html => {
                     document.open();
                     document.write(html);
