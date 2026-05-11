@@ -97,7 +97,10 @@ class RegistrationController extends Controller
         ];
 
         $isMesaEvent = $eventId === '019c8c31-f771-709d-817f-500abcb8c03a';
-        $isCenaGalaEvent = $eventId === '019c91a4-9f3b-7039-93cc-83f50c44c835';
+        $isCenaGalaEvent = in_array($eventId, [
+            '019c91a4-9f3b-7039-93cc-83f50c44c835',
+            'bc1161fa-11ad-485e-b9e4-46cec41b4e82',
+        ]);
         $hasWhatsappDirectRegistrations = $registrations->contains(function ($registration) {
             $data = is_array($registration->form_data) ? $registration->form_data : [];
 
