@@ -6,6 +6,16 @@ use App\Models\Eventos;
 use App\Services\CouponService;
 use Illuminate\Http\Request;
 
+
+/**
+ * Aqui se controla toda la lógica de los cupones, este controlador consume CuponService que tiene la lógica de negocios para hacer
+ * funcionar todo el sistema.
+ * Un evento, puede tener multiples cupones, un cupon puede ser de un monto especifico, o puede ser un porcentaje del valor total.
+ * Un cupon puede ser valido solo por un rango de fechas y horas, al igual que se puede limitar la cantidad de usos totales,
+ * o por usuario, o incluso puede ser un cupon de uso único.
+ * el cupon se puede desactivar en cada momento.
+ */
+
 class CouponController extends Controller
 {
     public function __construct(

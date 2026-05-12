@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\CheckinManagementController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventosController;
@@ -19,11 +20,10 @@ use App\Http\Controllers\TicketResendController;
 use App\Http\Controllers\TaquillaController;
 use App\Http\Controllers\WalletTestController;
 use App\Http\Controllers\CheckinController;
-use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UnauthorizedController;
 use App\Http\Controllers\LocaleController;
-
+use App\Http\Controllers\CartController;
 // =========================
 // Autenticación con Google
 // =========================
@@ -55,10 +55,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/events/{event}', [EventosController::class, 'update'])->name('events.update');
         Route::delete('/events/{event}', [EventosController::class, 'destroy'])->name('events.destroy');
         Route::delete('/events/{event}/configurator', [EventosController::class, 'destroyMapping'])->name('events.configurator.destroy');
-
         Route::post('/SaveSettiingTickets', [EventosController::class, 'storeSettings'])->name('eventsSettings.store');
-
-
 
         // Catálogo
         Route::get('/tickets', [TicketViewController::class, 'index'])->name('tickets.index');
@@ -101,10 +98,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/permissions', [PermissionController::class, 'store'])
             ->name('permissions.store');
 
-        Route::delete(
-            '/permissions/{permission}',
-            [PermissionController::class, 'destroy']
-        )->name('permissions.destroy');
+        Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])
+            ->name('permissions.destroy');
 
         Route::get('/admin/checkin-management', [CheckinManagementController::class, 'index'])
             ->name('admin.checkin_management.index');
@@ -181,8 +176,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/registrations/{event?}', [RegistrationController::class, 'index'])->name('admin.registrations.index');
     });
 
-
-
     //perfil
     Route::get('/perfil', [ProfileController::class, 'index'])->name('profile.index');
     Route::post('/perfil/actualizar', [ProfileController::class, 'update'])->name('profile.update');
@@ -198,8 +191,8 @@ Route::get('/pago/cancel', [PaymentController::class, 'cancel'])->name('pago.can
 Route::post('/event/{event}/registration/direct', [DirectRegistrationController::class, 'store'])
     ->name('registration.direct.store');
 
-Route::get('/cart', [App\Http\Controllers\CartController::class, 'get'])->name('cart.get');
-Route::post('/cart/add', [App\Http\Controllers\CartController::class, 'add'])->name('cart.add');
+Route::get('/cart', [CartController::class, 'get'])->name('cart.get');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/events/{event}/coupons/validate', [CouponController::class, 'validateForEvent'])->name('events.coupons.validate');
 
 Route::post('/tickets/resend', [TicketResendController::class, 'resend']);
