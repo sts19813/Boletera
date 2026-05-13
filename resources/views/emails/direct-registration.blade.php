@@ -28,7 +28,7 @@
                             <h1 style="margin:0 0 18px 0; font-size:26px; color:#111;">Gracias por tu registro</h1>
 
                             <p style="font-size:15px; color:#555; margin:0 0 10px 0;">
-                                Ya estas inscrito al torneo de EAFC 26 patrocinado por Super Willys.
+                                Ya estas inscrito al torneo de Brawl stars.
                             </p>
 
                             <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
