@@ -7,9 +7,11 @@ use App\Models\Ticket;
 use App\Models\TicketSvgMapping;
 use App\Services\FileUploadService;
 use App\Services\CouponService;
+use App\Support\EventReportColumns;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Permission;
 
 class EventosController extends Controller
 {
@@ -52,8 +54,12 @@ class EventosController extends Controller
     {
         $Eventos = Eventos::select('id', 'name')->get();
         $eventCoupons = collect();
+        $reportColumns = EventReportColumns::definitions();
+        $reportColumnConfig = EventReportColumns::enabledMap(null);
+        $reportColumnOrder = EventReportColumns::orderMap(null);
+        $canEditReports = $this->canEditReports(auth()->user());
 
-        return view('events.create', compact('Eventos', 'eventCoupons'));
+        return view('events.create', compact('Eventos', 'eventCoupons', 'reportColumns', 'reportColumnConfig', 'reportColumnOrder', 'canEditReports'));
     }
 
     public function store(Request $request)
@@ -93,6 +99,9 @@ class EventosController extends Controller
             'coupons.*.starts_at' => 'nullable|date',
             'coupons.*.ends_at' => 'nullable|date',
             'coupons.*.is_active' => 'nullable|boolean',
+            'report_columns' => 'nullable|array',
+            'report_columns.*.enabled' => 'nullable|boolean',
+            'report_columns.*.order' => 'nullable|integer|min:1|max:999',
         ]);
 
         DB::beginTransaction();
@@ -148,6 +157,7 @@ class EventosController extends Controller
             $data['has_seat_mapping'] = $request->boolean('has_seat_mapping');
             $data['allows_multiple_registrations'] = $request->has('allows_multiple_registrations');
             $data['stop_online_sales'] = $request->boolean('stop_online_sales');
+            $data['report_settings'] = $this->resolveReportSettingsFromRequest($request);
 
             $event = Eventos::create($data);
             $this->syncCoupons($event, $this->normalizeCouponsInput($request->input('coupons', [])));
@@ -257,8 +267,12 @@ class EventosController extends Controller
         $event = Eventos::findOrFail($id);
         $Eventos = Eventos::select('id', 'name')->get();
         $eventCoupons = $event->coupons()->orderBy('created_at')->get();
+        $reportColumns = EventReportColumns::definitions();
+        $reportColumnConfig = EventReportColumns::enabledMap($event->report_settings);
+        $reportColumnOrder = EventReportColumns::orderMap($event->report_settings);
+        $canEditReports = $this->canEditReports(auth()->user());
 
-        return view('events.edit', compact('event', 'Eventos', 'eventCoupons'));
+        return view('events.edit', compact('event', 'Eventos', 'eventCoupons', 'reportColumns', 'reportColumnConfig', 'reportColumnOrder', 'canEditReports'));
     }
 
     public function update(Request $request, string $id)
@@ -300,6 +314,9 @@ class EventosController extends Controller
             'coupons.*.starts_at' => 'nullable|date',
             'coupons.*.ends_at' => 'nullable|date',
             'coupons.*.is_active' => 'nullable|boolean',
+            'report_columns' => 'nullable|array',
+            'report_columns.*.enabled' => 'nullable|boolean',
+            'report_columns.*.order' => 'nullable|integer|min:1|max:999',
         ]);
 
         DB::beginTransaction();
@@ -357,6 +374,10 @@ class EventosController extends Controller
             if ($request->hasFile('png_image')) {
                 $data['png_image'] = $this->fileUploadService
                     ->upload($request->file('png_image'), 'eventos-assets');
+            }
+
+            if ($this->canEditReports($request->user())) {
+                $data['report_settings'] = $this->resolveReportSettingsFromRequest($request);
             }
 
             $event->update($data);
@@ -481,5 +502,32 @@ class EventosController extends Controller
         }
 
         $event->coupons()->whereNotIn('id', $ids)->delete();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveReportSettingsFromRequest(Request $request): array
+    {
+        $input = $request->input('report_columns');
+
+        if (is_array($input)) {
+            return EventReportColumns::fromInput($input);
+        }
+
+        return ['columns' => EventReportColumns::defaultKeys()];
+    }
+
+    private function canEditReports($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $permissionExists = Permission::query()
+            ->where('name', 'editar reportes')
+            ->exists();
+
+        return $permissionExists && $user->can('editar reportes');
     }
 }
