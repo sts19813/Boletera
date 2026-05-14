@@ -12,7 +12,7 @@ use Spatie\Permission\Models\Permission;
 
 class RegistrationController extends Controller
 {
-    public function index(Request $request, ?string $event = null, EventReportService $reportService)
+    public function index(Request $request, EventReportService $reportService, ?string $event = null)
     {
         $user = $request->user();
         $events = $this->resolveAccessibleEvents($request)->sortBy('name')->values();
