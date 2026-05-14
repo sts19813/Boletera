@@ -4,351 +4,118 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Eventos;
-use App\Models\TicketInstance;
+use App\Services\EventReportService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 
 class RegistrationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index($event = null)
+    public function index(Request $request, ?string $event = null, EventReportService $reportService)
     {
-        $user = auth()->user();
+        $user = $request->user();
+        $events = $this->resolveAccessibleEvents($request)->sortBy('name')->values();
 
-        $registrations = TicketInstance::registrationSales()->with(['evento']);
-        $tickets = TicketInstance::ticketSales()->with(['ticket', 'evento']);
-
-        if (!$user->hasRole('admin')) {
-            $allowedEventIds = $user->events()->pluck('eventos.id');
-            $registrations->whereIn('event_id', $allowedEventIds);
-            $tickets->whereIn('event_id', $allowedEventIds);
+        if (!$event) {
+            return view('admin.registrations.index', [
+                'events' => $events,
+                'selectedEvent' => null,
+                'columns' => [],
+                'rows' => [],
+            ]);
         }
 
-        if ($event) {
-            $registrations->where('event_id', $event);
-            $tickets->where('event_id', $event);
+        $selectedEvent = $events->firstWhere('id', $event);
+
+        if (!$selectedEvent) {
+            abort(403, 'No tienes acceso a este evento.');
         }
 
-        $registrations = $registrations->get();
-        $tickets = $tickets->get();
+        $report = $reportService->build($selectedEvent);
 
-        $sales = collect()
-            ->merge($registrations->map(function ($r) {
-                return [
-                    'type' => 'registration',
-                    'email' => $r->email,
-                    'event' => $r->evento?->name,
-                    'date' => $r->purchased_at,
-                    'model' => $r,
-                ];
-            }))
-            ->merge($tickets->map(function ($t) {
-                return [
-                    'type' => 'ticket',
-                    'email' => $t->email,
-                    'event' => $t->evento?->name ?? '-',
-                    'date' => $t->purchased_at,
-                    'model' => $t,
-                ];
-            }))
-            ->sortByDesc('date')
-            ->values();
-
-        $events = $user->hasRole('admin')
-            ? Eventos::all()
-            : $user->events;
-
-        return view('admin.registrations.index', compact('sales', 'events'));
+        return view('admin.registrations.index', [
+            'events' => $events,
+            'selectedEvent' => $selectedEvent,
+            'columns' => $report['columns'],
+            'rows' => $report['rows'],
+            'canExportReports' => $this->userCan($user, 'exportar reportes'),
+            'canEditReport' => $this->userCan($user, 'editar reportes'),
+        ]);
     }
 
-    public function export($eventId)
+    public function export(Request $request, string $event, EventReportService $reportService)
     {
-        $registrations = TicketInstance::registrationSales()
-            ->with(['evento'])
-            ->where('event_id', $eventId)
-            ->get()
-            ->unique('payment_intent_id')
-            ->values();
-
-        $tickets = TicketInstance::ticketSales()
-            ->with(['evento', 'ticket'])
-            ->where('event_id', $eventId)
-            ->get();
-
-        $instances = collect();
-
-        foreach ($registrations as $r) {
-            $instances->push([
-                'type' => 'registration',
-                'model' => $r,
-            ]);
+        if (!$this->userCan($request->user(), 'exportar reportes')) {
+            abort(403, 'No tienes permiso para exportar reportes.');
         }
 
-        foreach ($tickets as $t) {
-            $instances->push([
-                'type' => 'ticket',
-                'model' => $t,
-            ]);
+        $selectedEvent = $this->resolveAccessibleEvents($request)->firstWhere('id', $event);
+
+        if (!$selectedEvent) {
+            abort(403, 'No tienes acceso a este evento.');
         }
 
-        $headers = [
+        $report = $reportService->build($selectedEvent);
+        $headers = array_map(fn(array $column) => $column['label'], $report['columns']);
+        $keys = array_map(fn(array $column) => $column['key'], $report['columns']);
+
+        $filename = 'reporte_' . Str::slug($selectedEvent->name) . '_' . now()->format('Ymd_His') . '.csv';
+        $responseHeaders = [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename=inscripciones.csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
         ];
 
-        $isMesaEvent = $eventId === '019c8c31-f771-709d-817f-500abcb8c03a';
-        $isCenaGalaEvent = in_array($eventId, [
-            '019c91a4-9f3b-7039-93cc-83f50c44c835',
-            'bc1161fa-11ad-485e-b9e4-46cec41b4e82',
-        ]);
-        $hasWhatsappDirectRegistrations = $registrations->contains(function ($registration) {
-            $data = is_array($registration->form_data) ? $registration->form_data : [];
-
-            return ($data['template_form'] ?? null) === 'whatsapp_direct'
-                || isset($data['full_name'])
-                || isset($data['game_id']);
-        });
-
-        $callback = function () use ($instances, $isMesaEvent, $isCenaGalaEvent, $hasWhatsappDirectRegistrations) {
-            $clean = function ($value) {
-                if (is_array($value)) {
-                    return implode(', ', array_map(fn($v) => strip_tags((string) $v), $value));
-                }
-                return is_string($value) ? strip_tags($value) : $value;
-            };
-
+        $callback = function () use ($headers, $keys, $report) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-            if ($isMesaEvent) {
-                fputcsv($file, [
-                    'Tipo',
-                    'Evento',
-                    'Mesa',
-                    'Nombre',
-                    'Email',
-                    'Celular',
-                    'Fecha Compra',
-                    'Subtotal',
-                    'Total',
-                ]);
-            } elseif ($isCenaGalaEvent) {
-                fputcsv($file, [
-                    'Tipo',
-                    'Evento',
-                    'Email Registro',
-                    'Fecha Registro',
-                    'Nombre',
-                    'Email',
-                    'Celular',
-                    'Tipo Invitado',
-                    'Generacion',
-                    'Subtotal',
-                    'Total',
-                ]);
-            } elseif ($hasWhatsappDirectRegistrations) {
-                fputcsv($file, [
-                    'Tipo',
-                    'Evento',
-                    'Fecha Registro',
-                    'Nombre completo',
-                    'Edad',
-                    'Ciudad',
-                    'Estado',
-                    'Telefono',
-                    'Correo electronico',
-                    'ID del juego',
-                    'Consola',
-                    'Participacion previa',
-                    'Cuantas veces',
-                    'Como nos conocio',
-                    'Usuario Twitch/YouTube',
-                    'Recibo',
-                    'Referencia',
-                    'Subtotal',
-                    'Total',
-                ]);
-            } else {
-                fputcsv($file, [
-                    'Tipo',
-                    'Evento',
-                    'Equipo',
-                    'Email Registro',
-                    'Fecha Registro',
-                    'Jugador',
-                    'Email Jugador',
-                    'Celular',
-                    'Campo',
-                    'Handicap',
-                    'GHIN',
-                    'Talla',
-                    'Capitan',
-                    'Relacion Cumbres',
-                    'Metodo Pago',
-                    'Subtotal',
-                    'Total',
-                ]);
-            }
+            fputcsv($file, $headers);
 
-            foreach ($instances as $row) {
-                $instance = $row['model'];
-
-                if ($isMesaEvent) {
-                    $evento = $clean($instance->evento?->name ?? '-');
-                    $mesa = $clean($instance->ticket?->name ?? '-');
-                    $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
-
-                    fputcsv($file, [
-                        'TICKET',
-                        $evento,
-                        $mesa,
-                        $clean($instance->nombre),
-                        $clean($instance->email),
-                        $clean($instance->celular),
-                        $fecha,
-                        $instance->subtotal ?? $instance->price,
-                        $instance->total ?? $instance->price,
-                    ]);
-
-                    continue;
+            foreach ($report['rows'] as $row) {
+                $csvRow = [];
+                foreach ($keys as $key) {
+                    $value = $row[$key] ?? '-';
+                    $csvRow[] = is_scalar($value) ? (string) $value : json_encode($value, JSON_UNESCAPED_UNICODE);
                 }
 
-                if ($row['type'] !== 'registration') {
-                    continue;
-                }
-
-                $evento = $clean($instance->evento?->name ?? '-');
-                $fecha = optional($instance->purchased_at)->format('d/m/Y H:i');
-                $data = is_array($instance->form_data) ? $instance->form_data : [];
-
-                if ($isCenaGalaEvent) {
-                    if (!isset($data['participants']) || !is_array($data['participants'])) {
-                        continue;
-                    }
-
-                    fputcsv($file, [
-                        'INSCRIPCION',
-                        $evento,
-                        $clean($instance->email),
-                        $fecha,
-                        '',
-                        '',
-                        '',
-                        '',
-                        '',
-                        $instance->subtotal,
-                        $instance->total,
-                    ]);
-
-                    foreach ($data['participants'] as $participant) {
-                        fputcsv($file, [
-                            'PARTICIPANTE',
-                            '',
-                            '',
-                            '',
-                            $clean($participant['nombre'] ?? '-'),
-                            $clean($participant['email'] ?? '-'),
-                            $clean($participant['celular'] ?? '-'),
-                            $clean($participant['tipo'] ?? '-'),
-                            $clean($participant['generacion'] ?? '-'),
-                            '',
-                            '',
-                        ]);
-                    }
-
-                    fputcsv($file, []);
-                    continue;
-                }
-
-                if ($hasWhatsappDirectRegistrations) {
-                    $receipt = $data['receipt_file_url'] ?? $data['receipt_file_path'] ?? '-';
-
-                    fputcsv($file, [
-                        'INSCRIPCION',
-                        $evento,
-                        $fecha,
-                        $clean($data['full_name'] ?? $instance->nombre ?? '-'),
-                        $clean($data['age'] ?? '-'),
-                        $clean($data['city'] ?? '-'),
-                        $clean($data['state'] ?? '-'),
-                        $clean($data['phone'] ?? $instance->celular ?? '-'),
-                        $clean($data['email'] ?? $instance->email ?? '-'),
-                        $clean($data['game_id'] ?? '-'),
-                        $clean($data['console'] ?? '-'),
-                        $clean($data['participated_before'] ?? '-'),
-                        $clean($data['participation_count'] ?? '-'),
-                        $clean($data['how_known_label'] ?? $data['how_known'] ?? '-'),
-                        $clean($data['stream_user'] ?? '-'),
-                        $clean($receipt),
-                        $clean($instance->reference ?? '-'),
-                        $instance->subtotal,
-                        $instance->total,
-                    ]);
-
-                    continue;
-                }
-
-                if (!isset($data['players']) || !is_array($data['players']) || count($data['players']) === 0) {
-                    continue;
-                }
-
-                $paymentMethod = match ($instance->payment_method) {
-                    'cash' => 'Cash',
-                    'card' => 'Card',
-                    default => 'Card',
-                };
-
-                fputcsv($file, [
-                    'INSCRIPCION',
-                    $evento,
-                    $clean($data['team_name'] ?? $instance->team_name ?? 'Equipo'),
-                    $clean($instance->email),
-                    $fecha,
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    $paymentMethod,
-                    $instance->subtotal,
-                    $instance->total,
-                ]);
-
-                foreach ($data['players'] as $index => $player) {
-                    $captain = array_key_exists('is_captain', $player)
-                        ? (bool) $player['is_captain']
-                        : $index === 0;
-
-                    fputcsv($file, [
-                        'JUGADOR',
-                        '',
-                        '',
-                        '',
-                        '',
-                        $clean($player['name'] ?? '-'),
-                        $clean($player['email'] ?? '-'),
-                        $clean($player['phone'] ?? '-'),
-                        $clean($player['campo'] ?? '-'),
-                        $clean($player['handicap'] ?? '-'),
-                        $clean($player['ghin'] ?? '-'),
-                        $clean($player['shirt'] ?? '-'),
-                        $captain ? 'Si' : 'No',
-                        $clean($player['cumbres'] ?? '-'),
-                        '',
-                        '',
-                    ]);
-                }
-
-                fputcsv($file, []);
+                fputcsv($file, $csvRow);
             }
 
             fclose($file);
         };
 
-        return response()->stream($callback, 200, $headers);
+        return response()->stream($callback, 200, $responseHeaders);
+    }
+
+    /**
+     * @return Collection<int, Eventos>
+     */
+    private function resolveAccessibleEvents(Request $request): Collection
+    {
+        $user = $request->user();
+
+        if ($user?->hasRole('admin')) {
+            return Eventos::query()->get();
+        }
+
+        $allowedEventIds = $user?->events()->pluck('eventos.id') ?? collect();
+
+        return Eventos::query()
+            ->whereIn('id', $allowedEventIds)
+            ->get();
+    }
+
+    private function userCan($user, string $permission): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $permissionExists = Permission::query()
+            ->where('name', $permission)
+            ->exists();
+
+        return $permissionExists && $user->can($permission);
     }
 }

@@ -24,6 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'escanear boletos',
             'ver reportes',
             'exportar reportes',
+            'editar reportes',
             'ver inscripciones',
         ];
 
@@ -46,7 +47,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'crear eventos',
             'editar eventos',
             'configurar eventos',
-            'ver reportes'
+            'ver reportes',
+            'editar reportes',
         ]);
 
         $taquillero->givePermissionTo([

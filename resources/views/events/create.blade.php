@@ -168,6 +168,51 @@
                     </div>
                 </div>
 
+                @if($canEditReports ?? false)
+                    <div class="card shadow-sm mb-5" id="report-config">
+                        <div class="card-header">
+                            <h4 class="card-title fw-bold">Configuración de reporte</h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-4">
+                                Define columnas visibles y orden para reportes y exportaciones de este evento.
+                            </p>
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Columna</th>
+                                            <th class="text-center">Mostrar</th>
+                                            <th style="width: 140px;">Orden</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($reportColumns as $key => $label)
+                                            <tr>
+                                                <td>{{ $label }}</td>
+                                                <td class="text-center">
+                                                    <input type="checkbox"
+                                                        name="report_columns[{{ $key }}][enabled]"
+                                                        value="1"
+                                                        {{ old("report_columns.$key.enabled", ($reportColumnConfig[$key] ?? false) ? 1 : 0) ? 'checked' : '' }}>
+                                                </td>
+                                                <td>
+                                                    <input type="number"
+                                                        min="1"
+                                                        max="999"
+                                                        name="report_columns[{{ $key }}][order]"
+                                                        class="form-control"
+                                                        value="{{ old("report_columns.$key.order", $reportColumnOrder[$key] ?? $loop->iteration) }}">
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 @php
                     $couponRows = old('coupons', ($eventCoupons ?? collect())->map(function ($coupon) {
                         return [
@@ -496,4 +541,3 @@
         });
     </script>
 @endpush
-
