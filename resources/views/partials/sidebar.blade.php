@@ -133,7 +133,7 @@
 
 
                 {{-- ================= REPORTES ================= --}}
-                @canany(['ver reportes', 'exportar reportes'])
+                @canany(['ver reportes'])
                     <div class="menu-item">
                         <a class="menu-link {{ request()->is('dashboard*') ? 'active' : '' }}" href="/dashboard">
                             <span class="menu-icon">
@@ -199,7 +199,7 @@
                     </div>
                 @endcan
 
-                @canany(['ver reportes', 'exportar reportes'])
+                @canany(['ver reportes'])
                     <div class="menu-item">
                         <a class="menu-link {{ request()->is('corte*') ? 'active' : '' }}" href="/corte">
                             <span class="menu-icon">
