@@ -10,7 +10,8 @@
             </div>
 
             <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
-                <form method="GET" action="{{ route('admin.registrations.index') }}" class="d-flex align-items-center gap-2">
+                <form method="GET" action="{{ route('admin.registrations.index') }}"
+                    class="d-flex align-items-center gap-2">
                     <select name="event_id" class="form-select form-select-sm w-auto"
                         onchange="if(this.value){ window.location='{{ url('/registrations') }}/'+this.value; } else { window.location='{{ route('admin.registrations.index') }}'; }">
                         <option value="">Selecciona evento</option>
@@ -53,6 +54,7 @@
                                 @foreach($columns as $column)
                                     <th>{{ $column['label'] }}</th>
                                 @endforeach
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -61,6 +63,27 @@
                                     @foreach($columns as $column)
                                         <td>{{ $row[$column['key']] ?? '-' }}</td>
                                     @endforeach
+                                    <td class="text-end">
+
+                                        @if($row['raw_sale_type'] === 'registration')
+
+                                         
+
+                                            <a target="_blank" href="{{ route('admin.registrations.reprint', $row['instance_id']) }}"
+                                                class="btn btn-sm btn-light-primary">
+                                                Reimprimir
+                                            </a>
+
+                                        @else
+
+                                            <a target="_blank" href="{{ route('admin.ticket_instances.reprint', $row['instance_id']) }}"
+                                                class="btn btn-sm btn-light-primary">
+                                                Reimprimir
+                                            </a>
+
+                                        @endif
+
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

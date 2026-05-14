@@ -122,6 +122,9 @@ class EventReportService
 
         foreach ($detailRows as $detail) {
             $row = [
+                'instance_id' => $primary->id,
+                'reference' => $primary->reference,
+                'raw_sale_type' => $primary->sale_type,
                 '_sort_date' => $sortDate,
                 'purchase_reference' => $transactionRef,
                 'event_name' => $event->name,
@@ -139,7 +142,16 @@ class EventReportService
                 'items_count' => $itemsCount,
             ];
 
-            $rows[] = array_intersect_key($row, array_flip(array_merge(['_sort_date'], $columnKeys)));
+            $visibleData = array_intersect_key(
+                $row,
+                array_flip(array_merge(['_sort_date'], $columnKeys))
+            );
+
+            $rows[] = array_merge($visibleData, [
+                'instance_id' => $row['instance_id'],
+                'reference' => $row['reference'],
+                'raw_sale_type' => $row['raw_sale_type'],
+            ]);
         }
 
         return $rows;
@@ -204,64 +216,83 @@ class EventReportService
      */
     private function extractRegistrationRows(TicketInstance $instance, array $formData): array
     {
-        $rows = [];
+        $lines = [];
 
-        $players = $formData['players'] ?? null;
-        if (is_array($players) && !empty($players)) {
-            foreach ($players as $player) {
-                if (!is_array($player)) {
-                    continue;
+        foreach ($formData as $key => $value) {
+
+            // PARTICIPANTES
+            if ($key === 'participants' && is_array($value)) {
+
+                foreach ($value as $index => $participant) {
+
+                    if (!is_array($participant)) {
+                        continue;
+                    }
+
+                    $lines[] = '=== PARTICIPANTE ' . ($index + 1) . ' ===';
+
+                    foreach ($participant as $field => $fieldValue) {
+
+                        if (is_array($fieldValue)) {
+                            $fieldValue = implode(', ', $fieldValue);
+                        }
+
+                        $label = ucfirst(str_replace('_', ' ', $field));
+
+                        $lines[] = $label . ': ' . $fieldValue;
+                    }
+
+                    $lines[] = '';
                 }
 
-                $rows[] = [
-                    'sale_type' => 'Registro',
-                    'seat' => '-',
-                    'ticket_type' => 'Inscripcion',
-                    'record_data' => trim(implode(' | ', array_filter([
-                        isset($player['name']) ? 'Jugador: ' . $player['name'] : null,
-                        isset($player['email']) ? 'Email: ' . $player['email'] : null,
-                        isset($player['phone']) ? 'Cel: ' . $player['phone'] : null,
-                    ]))) ?: '-',
-                ];
+                continue;
             }
 
-            return $rows;
-        }
+            // PLAYERS
+            if ($key === 'players' && is_array($value)) {
 
-        $participants = $formData['participants'] ?? null;
-        if (is_array($participants) && !empty($participants)) {
-            foreach ($participants as $participant) {
-                if (!is_array($participant)) {
-                    continue;
+                foreach ($value as $index => $player) {
+
+                    if (!is_array($player)) {
+                        continue;
+                    }
+
+                    $lines[] = '=== JUGADOR ' . ($index + 1) . ' ===';
+
+                    foreach ($player as $field => $fieldValue) {
+
+                        if (is_array($fieldValue)) {
+                            $fieldValue = implode(', ', $fieldValue);
+                        }
+
+                        $label = ucfirst(str_replace('_', ' ', $field));
+
+                        $lines[] = $label . ': ' . $fieldValue;
+                    }
+
+                    $lines[] = '';
                 }
 
-                $rows[] = [
-                    'sale_type' => 'Registro',
-                    'seat' => '-',
-                    'ticket_type' => 'Inscripcion',
-                    'record_data' => trim(implode(' | ', array_filter([
-                        isset($participant['nombre']) ? 'Nombre: ' . $participant['nombre'] : null,
-                        isset($participant['email']) ? 'Email: ' . $participant['email'] : null,
-                        isset($participant['celular']) ? 'Cel: ' . $participant['celular'] : null,
-                    ]))) ?: '-',
-                ];
+                continue;
             }
 
-            return $rows;
+            // CAMPOS NORMALES
+            if (!is_array($value)) {
+
+                $label = ucfirst(str_replace('_', ' ', $key));
+
+                $lines[] = $label . ': ' . $value;
+            }
         }
 
-        $rows[] = [
-            'sale_type' => 'Registro',
-            'seat' => '-',
-            'ticket_type' => 'Inscripcion',
-            'record_data' => trim(implode(' | ', array_filter([
-                isset($formData['full_name']) ? 'Nombre: ' . $formData['full_name'] : ($instance->nombre ? 'Nombre: ' . $instance->nombre : null),
-                isset($formData['email']) ? 'Email: ' . $formData['email'] : ($instance->email ? 'Email: ' . $instance->email : null),
-                isset($formData['phone']) ? 'Cel: ' . $formData['phone'] : ($instance->celular ? 'Cel: ' . $instance->celular : null),
-            ]))) ?: '-',
+        return [
+            [
+                'sale_type' => 'Registro',
+                'seat' => '-',
+                'ticket_type' => 'Inscripcion',
+                'record_data' => implode("\n", $lines),
+            ]
         ];
-
-        return $rows;
     }
 
     private function transactionReference(TicketInstance $instance): string
@@ -301,5 +332,51 @@ class EventReportService
         ]);
 
         return empty($parts) ? '-' : implode(' | ', $parts);
+    }
+
+    private function stringifyFormData(array $data, string $prefix = ''): array
+    {
+        $result = [];
+
+        foreach ($data as $key => $value) {
+
+            $label = $prefix !== ''
+                ? $prefix . '.' . $key
+                : $key;
+
+            if (is_array($value)) {
+
+                if ($this->isAssoc($value)) {
+                    $result = array_merge(
+                        $result,
+                        $this->stringifyFormData($value, $label)
+                    );
+                } else {
+
+                    foreach ($value as $index => $item) {
+
+                        if (is_array($item)) {
+                            $result = array_merge(
+                                $result,
+                                $this->stringifyFormData($item, $label . '[' . $index . ']')
+                            );
+                        } else {
+                            $result[] = $label . '[' . $index . ']: ' . $item;
+                        }
+                    }
+                }
+
+            } else {
+
+                $result[] = $label . ': ' . $value;
+            }
+        }
+
+        return $result;
+    }
+
+    private function isAssoc(array $array): bool
+    {
+        return array_keys($array) !== range(0, count($array) - 1);
     }
 }
