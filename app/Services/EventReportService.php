@@ -229,7 +229,7 @@ class EventReportService
                         continue;
                     }
 
-                    $lines[] = '=== PARTICIPANTE ' . ($index + 1) . ' ===';
+                    $lines[] = '---PARTICIPANTE ' . ($index + 1) . ' ---';
 
                     foreach ($participant as $field => $fieldValue) {
 
