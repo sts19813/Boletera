@@ -58,6 +58,7 @@
                                 @foreach($webColumns as $column)
                                     <th>{{ $column['label'] }}</th>
                                     @endforeach
+                                <th class="d-none">Busqueda</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -67,6 +68,7 @@
                                     @foreach($webColumns as $column)
                                         <td>{{ $row[$column['key']] ?? '-' }}</td>
                                     @endforeach
+                                    <td class="d-none">{{ $row['search_blob'] ?? ($row['record_data'] ?? '') }}</td>
                                     <td class="text-end">
 
                                         @if($row['raw_sale_type'] === 'registration')
@@ -131,6 +133,8 @@
                 pageLength: 25,
                 ordering: true,
                 order: [],
+                searching: true,
+                dom: 'frtip',
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json'
                 }

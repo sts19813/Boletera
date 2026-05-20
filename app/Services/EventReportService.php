@@ -132,8 +132,20 @@ class EventReportService
         $rows = [];
 
         foreach ($detailRows as $detail) {
+            $rowInstanceId = (string) ($detail['instance_id'] ?? $primary->id);
+            $searchBlob = implode(' | ', array_filter([
+                $event->name,
+                $transactionRef,
+                (string) ($primary->reference ?? ''),
+                $buyerData,
+                (string) ($detail['sale_type'] ?? ''),
+                (string) ($detail['ticket_type'] ?? ''),
+                (string) ($detail['seat'] ?? ''),
+                (string) ($detail['record_data'] ?? ''),
+            ]));
+
             $row = [
-                'instance_id' => $primary->id,
+                'instance_id' => $rowInstanceId,
                 'reference' => $primary->reference,
                 'raw_sale_type' => $primary->sale_type,
                 '_sort_date' => $sortDate,
@@ -150,6 +162,7 @@ class EventReportService
                 'payment_status' => $paymentStatus,
                 'buyer_data' => $buyerData,
                 'record_data' => $detail['record_data'] ?? '-',
+                'search_blob' => $searchBlob,
                 'registrations_count' => ($event->allows_multiple_registrations ?? false) && $registrationsCount > 0
                     ? $registrationsCount
                     : '-',
@@ -166,6 +179,7 @@ class EventReportService
                 'reference' => $row['reference'],
                 'raw_sale_type' => $row['raw_sale_type'],
                 'registration_entries' => $registrationEntries,
+                'search_blob' => $row['search_blob'],
             ]);
         }
 
@@ -175,7 +189,7 @@ class EventReportService
     /**
      * @param  Collection<int, TicketInstance>  $instances
      * @param  array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>  $registrationEntries
-     * @return array<int, array{sale_type: string, seat: string, ticket_type: string, record_data: string}>
+     * @return array<int, array{sale_type: string, seat: string, ticket_type: string, record_data: string, instance_id?: string}>
      */
     private function buildDetailRows(Collection $instances, array $registrationEntries): array
     {
@@ -184,6 +198,7 @@ class EventReportService
         $ticketInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type !== 'registration');
         foreach ($ticketInstances as $instance) {
             $rows[] = [
+                'instance_id' => $instance->id,
                 'sale_type' => 'Boleto',
                 'seat' => $instance->ticket?->name ?? '-',
                 'ticket_type' => $instance->ticket?->type ?? ($instance->ticket?->name ?? '-'),
