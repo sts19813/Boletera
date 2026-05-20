@@ -88,10 +88,18 @@
 
                                         @else
 
-                                            <a target="_blank" href="{{ route('admin.ticket_instances.reprint', $row['instance_id']) }}"
-                                                class="btn btn-sm btn-light-primary">
-                                                Reimprimir
-                                            </a>
+                                            @if((int) ($row['items_count'] ?? 1) > 1)
+                                                <button type="button"
+                                                    class="btn btn-sm btn-light-info btn-view-ticket-details"
+                                                    data-entries='@json($row['ticket_entries'] ?? [])'>
+                                                    Ver boletos
+                                                </button>
+                                            @else
+                                                <a target="_blank" href="{{ route('admin.ticket_instances.reprint', $row['instance_id']) }}"
+                                                    class="btn btn-sm btn-light-primary">
+                                                    Reimprimir
+                                                </a>
+                                            @endif
 
                                         @endif
 
@@ -113,6 +121,21 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body" id="registrationEntriesBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ticketEntriesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Boletos de la compra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="ticketEntriesBody"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                 </div>
@@ -144,6 +167,10 @@
             const registrationModalBody = document.getElementById('registrationEntriesBody');
             const registrationModal = registrationModalElement ? new bootstrap.Modal(registrationModalElement) : null;
             const reprintUrlTemplate = @json(route('admin.registrations.reprint', ['instance' => '__INSTANCE__']));
+            const ticketModalElement = document.getElementById('ticketEntriesModal');
+            const ticketModalBody = document.getElementById('ticketEntriesBody');
+            const ticketModal = ticketModalElement ? new bootstrap.Modal(ticketModalElement) : null;
+            const ticketReprintUrlTemplate = @json(route('admin.ticket_instances.reprint', ['instance' => '__INSTANCE__']));
 
             const escapeHtml = (value) => {
                 return String(value ?? '')
@@ -210,6 +237,64 @@
 
                 registrationModalBody.innerHTML = html;
                 registrationModal.show();
+            });
+
+            $(document).on('click', '.btn-view-ticket-details', function () {
+                if (!ticketModal || !ticketModalBody) {
+                    return;
+                }
+
+                let entries = $(this).attr('data-entries') ?? '[]';
+                try {
+                    entries = JSON.parse(entries);
+                } catch (e) {
+                    entries = [];
+                }
+
+                if (!Array.isArray(entries) || entries.length === 0) {
+                    ticketModalBody.innerHTML = '<div class="alert alert-warning mb-0">No hay boletos disponibles para esta compra.</div>';
+                    ticketModal.show();
+                    return;
+                }
+
+                let html = '';
+
+                entries.forEach((entry, index) => {
+                    const title = escapeHtml(entry?.title ?? `Boleto ${index + 1}`);
+                    const instanceId = entry?.instance_id ?? '';
+                    const fields = Array.isArray(entry?.fields) ? entry.fields : [];
+                    const reprintUrl = ticketReprintUrlTemplate.replace('__INSTANCE__', encodeURIComponent(instanceId));
+
+                    let rowsHtml = '';
+                    fields.forEach((field) => {
+                        const label = escapeHtml(field?.label ?? 'Campo');
+                        const value = escapeHtml(field?.value ?? '-');
+                        rowsHtml += `<tr><th style="width: 220px;">${label}</th><td>${value}</td></tr>`;
+                    });
+
+                    if (rowsHtml === '') {
+                        rowsHtml = '<tr><td colspan="2" class="text-muted">Sin datos del boleto</td></tr>';
+                    }
+
+                    html += `
+                        <div class="card card-bordered mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold">${title}</h6>
+                                <a target="_blank" href="${reprintUrl}" class="btn btn-sm btn-light-primary">Reimprimir</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-row-dashed mb-0">
+                                        <tbody>${rowsHtml}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                ticketModalBody.innerHTML = html;
+                ticketModal.show();
             });
         });
     </script>

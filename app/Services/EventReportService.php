@@ -82,6 +82,8 @@ class EventReportService
         /** @var TicketInstance $primary */
         $primary = $instances->first();
         $transactionRef = $this->transactionReference($primary);
+        $ticketInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type !== 'registration')->values();
+        $ticketEntries = $this->buildTicketEntries($ticketInstances);
         $registrationInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type === 'registration')->values();
         $registrationEntries = $this->buildRegistrationEntries($registrationInstances);
 
@@ -178,6 +180,7 @@ class EventReportService
                 'instance_id' => $row['instance_id'],
                 'reference' => $row['reference'],
                 'raw_sale_type' => $row['raw_sale_type'],
+                'ticket_entries' => $ticketEntries,
                 'registration_entries' => $registrationEntries,
                 'search_blob' => $row['search_blob'],
             ]);
@@ -470,6 +473,44 @@ class EventReportService
         ]);
 
         return empty($parts) ? '-' : implode(' | ', $parts);
+    }
+
+    /**
+     * @param  Collection<int, TicketInstance>  $ticketInstances
+     * @return array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>
+     */
+    private function buildTicketEntries(Collection $ticketInstances): array
+    {
+        $entries = [];
+
+        foreach ($ticketInstances->values() as $index => $instance) {
+            $fields = [];
+
+            $fields[] = ['label' => 'Boleto', 'value' => (string) ($instance->ticket?->name ?? '-')];
+            $fields[] = ['label' => 'Tipo', 'value' => (string) ($instance->ticket?->type ?? $instance->ticket?->name ?? '-')];
+            $fields[] = ['label' => 'Precio', 'value' => '$' . number_format((float) ($instance->total ?? $instance->price ?? 0), 2)];
+
+            if ($instance->nombre) {
+                $fields[] = ['label' => 'Nombre', 'value' => $instance->nombre];
+            }
+            if ($instance->email) {
+                $fields[] = ['label' => 'Email', 'value' => $instance->email];
+            }
+            if ($instance->celular) {
+                $fields[] = ['label' => 'Celular', 'value' => $instance->celular];
+            }
+            if ($instance->purchased_at) {
+                $fields[] = ['label' => 'Fecha', 'value' => $instance->purchased_at->format('d/m/Y H:i')];
+            }
+
+            $entries[] = [
+                'instance_id' => $instance->id,
+                'title' => 'Boleto ' . ($index + 1),
+                'fields' => $fields,
+            ];
+        }
+
+        return $entries;
     }
 
     private function stringifyValue(mixed $value): string
