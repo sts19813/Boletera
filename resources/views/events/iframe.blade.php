@@ -26,7 +26,9 @@
                 @if($lot->is_registration)
 
                     <form id="registrationForm">
-                        @if($lot->is_registration && $lot->template_form === 'cena_gala')
+                        @if($lot->registration_form_mode === 'builder' && $lot->registrationForm)
+                            @include('events.partials.registration-builder')
+                        @elseif($lot->is_registration && $lot->template_form === 'cena_gala')
                             @include('events.partials.registration-cena-gala')
                         @elseif($lot->is_registration && $lot->template_form === 'golf_team')
                             @include('events.partials.registration-golf-team')
@@ -146,8 +148,11 @@
         <script src="/assets/js/ticket-selects.js"></script>
     @endif
     <script src="/assets/js/seat-map.js?v={{ time() }}"></script>
+    <script src="/assets/js/registration/builder-runtime.js?v={{ filemtime(public_path('assets/js/registration/builder-runtime.js')) }}"></script>
     <script>
         window.isRegistration = @json($lot->is_registration);
+        window.registrationFormMode = @json($lot->registration_form_mode);
+        window.registrationFormId = @json($lot->registration_form_id);
         window.registrationTicket = {
             id: 'registration',
             name: 'Inscripción - {{ $lot->name }}',
@@ -160,6 +165,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            if (window.isRegistration && window.registrationFormMode === 'builder') {
+                window.renderRegistrationBuilderForm?.();
+            }
 
             if (window.isRegistration && window.currentLot?.max_capacity === 0) {
 

@@ -13,7 +13,8 @@ use Stripe\Stripe;
 class RegistrationStripeService
 {
     public function __construct(
-        private RegistrationBuilderService $registrationBuilder
+        private RegistrationBuilderService $registrationBuilder,
+        private RegistrationFormSchemaService $schemaService
     ) {
     }
 
@@ -47,6 +48,7 @@ class RegistrationStripeService
             }
 
             $evento = Eventos::findOrFail($item['event_id']);
+            $registrationForm = $this->schemaService->validateSubmissionForEvent($evento->loadMissing('registrationForm'), $registrationForm);
             $qty = max(1, (int) ($item['qty'] ?? 1));
             $basePrice = RegistrationPricing::resolveUnitPrice($evento, $qty);
             $unitPrice = array_key_exists('price', $item)

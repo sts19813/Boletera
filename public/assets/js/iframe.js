@@ -81,6 +81,20 @@ document.addEventListener('DOMContentLoaded', function () {
         );
     };
 
+    window.isZeroPriceRegistration = function () {
+        return Boolean(
+            window.isRegistration
+            && Number(window.registrationTicket?.total_price ?? 0) <= 0
+        );
+    };
+
+    window.useDirectRegistrationFlow = function () {
+        return Boolean(
+            window.isWhatsappDirectRegistration()
+            || window.isZeroPriceRegistration()
+        );
+    };
+
     function getCouponInput() {
         return document.getElementById('couponCodeInput');
     }
@@ -409,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        if (window.isWhatsappDirectRegistration()) {
+        if (window.useDirectRegistrationFlow()) {
             submitDirectRegistration();
             return;
         }
@@ -562,7 +576,7 @@ function updateCartUI() {
             btn.classList.remove('disabled');
             btn.style.pointerEvents = '';
             btn.style.opacity = '';
-            btn.innerText = window.isWhatsappDirectRegistration?.()
+            btn.innerText = window.useDirectRegistrationFlow?.()
                 ? 'Enviar registro'
                 : 'Continuar pago';
         }
@@ -622,6 +636,8 @@ function submitDirectRegistration() {
     }
 
     const body = new FormData(form);
+    const directQty = Number(window.cartState?.items?.find(t => t.id === 'registration')?.qty ?? 1);
+    body.append('qty', String(Math.max(1, directQty)));
 
     if (btn) {
         btn.disabled = true;
@@ -661,7 +677,7 @@ function submitDirectRegistration() {
                     icon: 'success',
                     title: title,
                     html: message,
-                    confirmButtonText: 'Abrir grupo',
+                    confirmButtonText: whatsappLink ? 'Abrir grupo' : 'Aceptar',
                     showCancelButton: !!whatsappLink,
                     reverseButtons: true,
                     allowOutsideClick: false,
@@ -721,6 +737,11 @@ function validateRegistrationForm() {
         }
     }
 
+    if (window.registrationFormMode === 'builder' && !window.validateRegistrationBuilderForm?.(form)) {
+        toastr.error('Debes completar los campos obligatorios.');
+        return false;
+    }
+
     return true;
 }
 
@@ -729,6 +750,10 @@ function formDataToObject(form) {
     const formData = new FormData(form);
 
     for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+            value = value.name || '';
+        }
+
         const keys = key
             .replace(/\]/g, '')
             .split('[');

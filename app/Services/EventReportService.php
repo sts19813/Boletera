@@ -9,6 +9,11 @@ use Illuminate\Support\Collection;
 
 class EventReportService
 {
+    public function __construct(
+        private RegistrationFormSchemaService $schemaService
+    ) {
+    }
+
     /**
      * @return array{
      *   columns: array<int, array{key: string, label: string}>,
@@ -28,7 +33,7 @@ class EventReportService
         }, $columnKeys));
 
         $instances = TicketInstance::query()
-            ->with(['ticket:id,name,type', 'evento:id,name'])
+            ->with(['ticket:id,name,type', 'evento:id,name,registration_form_id', 'evento.registrationForm:id,schema'])
             ->where('event_id', $event->id)
             ->orderByDesc('purchased_at')
             ->orderByDesc('created_at')
@@ -216,6 +221,11 @@ class EventReportService
      */
     private function extractRegistrationRows(TicketInstance $instance, array $formData): array
     {
+        $labelMap = [];
+        if ($instance->evento?->registrationForm) {
+            $labelMap = $this->schemaService->labelMap($instance->evento->registrationForm);
+        }
+
         $lines = [];
 
         foreach ($formData as $key => $value) {
@@ -237,7 +247,7 @@ class EventReportService
                             $fieldValue = implode(', ', $fieldValue);
                         }
 
-                        $label = ucfirst(str_replace('_', ' ', $field));
+                        $label = $labelMap['participants.*.' . $field] ?? ucfirst(str_replace('_', ' ', $field));
 
                         $lines[] = $label . ': ' . $fieldValue;
                     }
@@ -265,7 +275,7 @@ class EventReportService
                             $fieldValue = implode(', ', $fieldValue);
                         }
 
-                        $label = ucfirst(str_replace('_', ' ', $field));
+                        $label = $labelMap['players.*.' . $field] ?? ucfirst(str_replace('_', ' ', $field));
 
                         $lines[] = $label . ': ' . $fieldValue;
                     }
@@ -279,9 +289,17 @@ class EventReportService
             // CAMPOS NORMALES
             if (!is_array($value)) {
 
-                $label = ucfirst(str_replace('_', ' ', $key));
-
+                $label = $labelMap[$key] ?? ucfirst(str_replace('_', ' ', $key));
                 $lines[] = $label . ': ' . $value;
+                continue;
+            }
+
+            $flat = $this->stringifyFormData([$key => $value]);
+            foreach ($flat as $line) {
+                $parts = explode(': ', $line, 2);
+                $rawPath = str_replace(['[', ']'], ['.*.', ''], $parts[0]);
+                $label = $labelMap[$rawPath] ?? ucfirst(str_replace(['_', '.'], [' ', ' '], $parts[0]));
+                $lines[] = $label . ': ' . ($parts[1] ?? '');
             }
         }
 

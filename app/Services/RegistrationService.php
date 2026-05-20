@@ -10,6 +10,11 @@ use Illuminate\Support\Str;
 
 class RegistrationService
 {
+    public function __construct(
+        private RegistrationFormSchemaService $schemaService
+    ) {
+    }
+
     public function create(
         Eventos $evento,
         array $data
@@ -18,7 +23,7 @@ class RegistrationService
         $email = $data['email'] ?? 'taquilla@local';
         $nombre = $data['nombre'] ?? null;
         $celular = $data['celular'] ?? null;
-        $formData = $data['form_data'] ?? null;
+        $formData = $this->schemaService->validateSubmissionForEvent($evento->loadMissing('registrationForm'), $data['form_data'] ?? null);
         $reference = $data['reference'] ?? null;
         $saleChannel = $data['sale_channel'] ?? 'taquilla';
         $paymentMethod = $data['payment_method'] ?? 'cash';

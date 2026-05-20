@@ -5,10 +5,9 @@ namespace App\Http\Controllers;
 use App\Mail\DirectRegistrationMail;
 use App\Models\Eventos;
 use App\Models\TicketInstance;
-use App\Services\FileUploadService;
+use App\Services\RegistrationFormSchemaService;
+use App\Services\RegistrationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -17,28 +16,73 @@ class DirectRegistrationController extends Controller
     private const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/FaPvvNc1XyV9QxLKk6xb5w?mode=gi_t';
 
     public function __construct(
-        private FileUploadService $fileUploadService
+        private RegistrationService $registrationService,
+        private RegistrationFormSchemaService $schemaService
     ) {
     }
 
     public function store(Request $request, Eventos $event)
     {
         if (!$event->is_registration) {
-            return response()->json([
-                'message' => 'El evento seleccionado no permite inscripciones.',
-            ], 422);
+            return response()->json(['message' => 'El evento seleccionado no permite inscripciones.'], 422);
         }
 
         if ($event->stop_online_sales && !$this->canBypassOnlineStop()) {
-            return response()->json([
-                'message' => 'La venta en linea esta detenida para este evento.',
-            ], 403);
+            return response()->json(['message' => 'La venta en linea esta detenida para este evento.'], 403);
         }
 
+        if ($event->template_form === 'whatsapp_direct') {
+            return $this->storeWhatsappDirect($request, $event);
+        }
+
+        $rawData = collect($request->except(['_token', 'qty']))
+            ->filter(fn($v) => $v !== null && $v !== '')
+            ->toArray();
+
+        $formData = $this->schemaService->validateSubmissionForEvent($event->loadMissing('registrationForm'), $rawData);
+
+        $qtyFromPayload = isset($formData['registrations']) && is_array($formData['registrations'])
+            ? count($formData['registrations'])
+            : null;
+
+        $qty = $qtyFromPayload ?? max(1, (int) $request->input('qty', 1));
+        if (!$event->allows_multiple_registrations) {
+            $qty = 1;
+        }
+
+        if (!is_null($event->max_capacity) && (int) $event->max_capacity < $qty) {
+            return response()->json(['message' => 'No hay cupo suficiente para completar el registro.'], 409);
+        }
+
+        $baseData = $this->extractBaseRegistrant($formData);
+        $email = $this->normalizeEmail($baseData['email'] ?? null);
+
+        $instances = $this->registrationService->create($event, [
+            'qty' => $qty,
+            'email' => $email,
+            'nombre' => $baseData['name'] ?? 'Registro directo',
+            'celular' => $this->normalizePhone((string) ($baseData['phone'] ?? '')),
+            'form_data' => $formData,
+            'reference' => 'DIRECT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+            'sale_channel' => 'taquilla',
+            'payment_method' => 'cash',
+            'price' => (float) ($event->price ?? 0),
+            'base_price' => (float) ($event->price ?? 0),
+        ]);
+
+        return response()->json([
+            'message' => 'Registro completado correctamente.',
+            'title' => 'Registro completado',
+            'description' => 'Tu información fue guardada correctamente.',
+            'whatsapp_link' => '',
+            'reference' => $instances[0]->reference ?? null,
+        ]);
+    }
+
+    private function storeWhatsappDirect(Request $request, Eventos $event)
+    {
         if (!is_null($event->max_capacity) && (int) $event->max_capacity <= 0) {
-            return response()->json([
-                'message' => 'El evento ya no cuenta con cupo disponible.',
-            ], 409);
+            return response()->json(['message' => 'El evento ya no cuenta con cupo disponible.'], 409);
         }
 
         $validated = $request->validate([
@@ -60,9 +104,7 @@ class DirectRegistrationController extends Controller
         $normalizedPhone = $this->normalizePhone((string) $validated['phone']);
 
         if (strlen($normalizedPhone) < 10) {
-            return response()->json([
-                'message' => 'El telefono debe tener al menos 10 digitos.',
-            ], 422);
+            return response()->json(['message' => 'El telefono debe tener al menos 10 digitos.'], 422);
         }
 
         $existsByEmail = TicketInstance::registrationSales()
@@ -71,9 +113,7 @@ class DirectRegistrationController extends Controller
             ->exists();
 
         if ($existsByEmail) {
-            return response()->json([
-                'message' => 'Ya existe un registro con ese correo para este evento.',
-            ], 409);
+            return response()->json(['message' => 'Ya existe un registro con ese correo para este evento.'], 409);
         }
 
         $existsByPhone = TicketInstance::registrationSales()
@@ -82,16 +122,8 @@ class DirectRegistrationController extends Controller
             ->exists();
 
         if ($existsByPhone) {
-            return response()->json([
-                'message' => 'Ya existe un registro con ese telefono para este evento.',
-            ], 409);
+            return response()->json(['message' => 'Ya existe un registro con ese telefono para este evento.'], 409);
         }
-
-        $receiptFolder = 'eventos-registros-recibos';
-
-
-        $reference = 'DIRECT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
-        $price = (float) ($event->price ?? 0);
 
         $howKnownLabel = match ($validated['how_known']) {
             'facebook' => 'Facebook',
@@ -119,49 +151,53 @@ class DirectRegistrationController extends Controller
             'template_form' => 'whatsapp_direct',
         ];
 
-        $instance = TicketInstance::create([
-            'ticket_id' => null,
-            'sale_type' => 'registration',
-            'event_id' => $event->id,
-            'user_id' => Auth::id(),
+        $instances = $this->registrationService->create($event, [
+            'qty' => 1,
             'email' => $normalizedEmail,
             'nombre' => $validated['full_name'],
             'celular' => $normalizedPhone,
-            'team_name' => null,
-            'payment_intent_id' => $reference,
-            'reference' => $reference,
-            'qr_hash' => (string) Str::uuid(),
-            'registered_at' => now(),
-            'purchased_at' => now(),
-            'price' => $price,
-            'subtotal' => $price,
-            'commission' => 0,
-            'total' => $price,
             'form_data' => $formData,
+            'reference' => 'DIRECT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
             'sale_channel' => 'taquilla',
             'payment_method' => 'cash',
+            'price' => (float) ($event->price ?? 0),
+            'base_price' => (float) ($event->price ?? 0),
         ]);
 
-        if ($event->max_capacity > 0) {
-            $event->decrement('max_capacity', 1);
-        }
-
-        Mail::to($normalizedEmail)->send(
-            new DirectRegistrationMail($event, $formData)
-        );
+        Mail::to($normalizedEmail)->send(new DirectRegistrationMail($event, $formData));
 
         return response()->json([
             'message' => 'Registro completado correctamente.',
             'title' => 'Gracias por tu registro',
             'description' => 'Ya estas inscrito al torneo',
             'whatsapp_link' => self::WHATSAPP_GROUP_LINK,
-            'reference' => $instance->reference,
+            'reference' => $instances[0]->reference ?? null,
         ]);
+    }
+
+    private function extractBaseRegistrant(array $formData): array
+    {
+        $source = $formData;
+        if (isset($formData['registrations'][0]) && is_array($formData['registrations'][0])) {
+            $source = $formData['registrations'][0];
+        }
+
+        return [
+            'name' => trim((string) ($source['full_name'] ?? $source['nombre'] ?? $source['name'] ?? 'Registro directo')),
+            'email' => $source['email'] ?? $source['correo'] ?? null,
+            'phone' => $source['phone'] ?? $source['celular'] ?? null,
+        ];
     }
 
     private function normalizePhone(string $phone): string
     {
         return preg_replace('/\D+/', '', $phone) ?? '';
+    }
+
+    private function normalizeEmail(?string $email): string
+    {
+        $value = Str::lower(trim((string) $email));
+        return filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : 'registro@local';
     }
 
     private function canBypassOnlineStop(): bool

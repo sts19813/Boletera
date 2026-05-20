@@ -194,6 +194,15 @@
                                         <span class="menu-title">Modulo checkin</span>
                                     </a>
                                 </div>
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('admin/registration-forms*') ? 'active' : '' }}"
+                                        href="{{ route('admin.registration-forms.index') }}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Formularios inscripción</span>
+                                    </a>
+                                </div>
                             @endcan
                         </div>
                     </div>

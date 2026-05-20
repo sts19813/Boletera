@@ -23,6 +23,8 @@ class Eventos extends Model
         'has_seat_mapping',
         'is_registration',
         'template_form', // Para determinar blade archivo formulario de registro usar contiene logica js
+        'registration_form_mode',
+        'registration_form_id',
         'allows_multiple_registrations',
         'registration_max_checkins',
         'report_settings',
@@ -46,11 +48,17 @@ class Eventos extends Model
         'has_seat_mapping' => 'boolean',
         'is_registration' => 'boolean',
         'price' => 'decimal:2',
+        'registration_form_id' => 'string',
         'allows_multiple_registrations' => 'boolean',
         'registration_max_checkins' => 'integer',
         'report_settings' => 'array',
         'stop_online_sales' => 'boolean',
     ];
+
+    public function registrationForm()
+    {
+        return $this->belongsTo(RegistrationForm::class, 'registration_form_id');
+    }
 
     public function coupons()
     {

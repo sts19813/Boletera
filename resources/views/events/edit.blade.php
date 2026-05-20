@@ -181,6 +181,26 @@
 
                             {{-- Tipo de formulario --}}
                             <div class="col-md-3 registration-field">
+                                <label class="form-label fw-bold">Modo de formulario</label>
+                                <select name="registration_form_mode" id="registration_form_mode" class="form-select">
+                                    <option value="manual" {{ old('registration_form_mode', $event->registration_form_mode ?? 'manual') === 'manual' ? 'selected' : '' }}>Manual</option>
+                                    <option value="builder" {{ old('registration_form_mode', $event->registration_form_mode) === 'builder' ? 'selected' : '' }}>Builder</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 registration-field" id="builder_form_wrapper">
+                                <label class="form-label fw-bold">Formulario builder</label>
+                                <select name="registration_form_id" class="form-select">
+                                    <option value="">Selecciona formulario</option>
+                                    @foreach(($registrationForms ?? collect()) as $registrationForm)
+                                        <option value="{{ $registrationForm->id }}" {{ old('registration_form_id', $event->registration_form_id) === $registrationForm->id ? 'selected' : '' }}>
+                                            {{ $registrationForm->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 registration-field" id="manual_form_wrapper">
                                 <label class="form-label fw-bold">Tipo de formulario</label>
                                 <select name="template_form" class="form-select">
                                     <option value="golf_team"
@@ -495,6 +515,9 @@
 
             const isRegistration = document.getElementById('is_registration');
             const registrationFields = document.querySelectorAll('.registration-field');
+            const registrationFormMode = document.getElementById('registration_form_mode');
+            const manualFormWrapper = document.getElementById('manual_form_wrapper');
+            const builderFormWrapper = document.getElementById('builder_form_wrapper');
 
             const totalAsientos = document.getElementById('total_asientos');
             const seatMapping = document.getElementById('has_seat_mapping');
@@ -507,6 +530,10 @@
                 registrationFields.forEach(field => {
                     field.classList.toggle('d-none', !isReg);
                 });
+
+                const mode = registrationFormMode?.value ?? 'manual';
+                if (manualFormWrapper) manualFormWrapper.classList.toggle('d-none', !isReg || mode !== 'manual');
+                if (builderFormWrapper) builderFormWrapper.classList.toggle('d-none', !isReg || mode !== 'builder');
 
                 if (isReg) {
 
@@ -528,6 +555,7 @@
             }
 
             isRegistration.addEventListener('change', toggleRegistrationMode);
+            registrationFormMode?.addEventListener('change', toggleRegistrationMode);
 
             toggleRegistrationMode(); // inicial
         });

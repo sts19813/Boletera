@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CorteController;
 use App\Http\Controllers\Admin\TicketReprintController;
 use App\Http\Controllers\Admin\RegistrationController;
+use App\Http\Controllers\Admin\RegistrationFormController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\RoleController;
@@ -85,6 +86,9 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
             ->name('roles.destroy');
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
+        Route::resource('/admin/registration-forms', RegistrationFormController::class)
+            ->names('admin.registration-forms')
+            ->except(['show']);
 
 
         /*
