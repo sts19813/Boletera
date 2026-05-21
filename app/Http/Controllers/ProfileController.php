@@ -11,6 +11,9 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Cpmtrpñador de perfil para manejar la visualización y actualización de la información del usuario, incluyendo nombre, correo electrónico, foto de perfil y contraseña.
+ */
 class ProfileController extends Controller
 {
    public function index()
