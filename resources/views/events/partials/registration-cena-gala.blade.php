@@ -77,14 +77,6 @@
 
 
 <script>
-    window.PROMO_EVENT_ID = '019c91a4-9f3b-7039-93cc-83f50c44c835';
-    window.REGISTRATION_PROMOTIONS = window.REGISTRATION_PROMOTIONS || {};
-    window.REGISTRATION_PROMOTIONS[window.PROMO_EVENT_ID] = {
-        minQty: 2,
-        promoPrice: 1500,
-        label: 'Promoción aplicada: 2 o más registros a $1,500 c/u.'
-    };
-
     document.addEventListener('DOMContentLoaded', function () {
 
 

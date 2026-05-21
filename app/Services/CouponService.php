@@ -23,6 +23,7 @@ use App\Models\TicketInstance;
  * - El tipo de descuento soportado es:
  *      - percentage
  *      - fixed amount
+ *      - unit_price (precio final por boleto)
  *
  * Posibles extensiones futuras:
  * - Límites de uso global.
@@ -48,13 +49,30 @@ class CouponService
      *
      * @return bool True si existe al menos un cupón disponible.
      */
-    public function hasAvailableCoupons(Eventos $event): bool
+    public function hasAvailableManualCoupons(Eventos $event): bool
     {
         return EventCoupon::query()
             ->where('event_id', $event->id)
             ->where('is_active', true)
+            ->where('auto_apply', false)
+            ->whereNotNull('code')
             ->availableAt()
             ->exists();
+    }
+
+    public function hasAvailableAutoCoupons(Eventos $event): bool
+    {
+        return EventCoupon::query()
+            ->where('event_id', $event->id)
+            ->where('is_active', true)
+            ->where('auto_apply', true)
+            ->availableAt()
+            ->exists();
+    }
+
+    public function hasAvailableCoupons(Eventos $event): bool
+    {
+        return $this->hasAvailableManualCoupons($event) || $this->hasAvailableAutoCoupons($event);
     }
 
 
@@ -117,7 +135,7 @@ class CouponService
          */
         $qty = collect($normalizedCart)
             ->sum(fn(array $item) => max(1, (int) ($item['qty'] ?? 1)));
-        $resolved = $this->resolveCoupon($event, $couponCode, $qty);
+        $resolved = $this->resolveCoupon($event, $couponCode, $qty, $normalizedCart);
 
         /**
          * Si el cupón no es válido,
@@ -195,12 +213,13 @@ class CouponService
      *     'error' => ?string
      * ]
      */
-    public function resolveCoupon(Eventos $event, ?string $couponCode, int $qty): array
+    public function resolveCoupon(Eventos $event, ?string $couponCode, int $qty, array $cart = []): array
     {
         $code = strtoupper(trim((string) $couponCode));
 
         if ($code === '') {
-            return ['coupon' => null, 'error' => null];
+            $autoCoupon = $this->resolveBestAutoCoupon($event, $qty, $cart);
+            return ['coupon' => $autoCoupon, 'error' => null];
         }
 
         $coupon = EventCoupon::query()
@@ -222,39 +241,9 @@ class CouponService
             return ['coupon' => null, 'error' => 'El cupón ya expiró.'];
         }
 
-
-        /** ### Validación de límite máximo de tickets por evento ###
-         * Total de boletos vendidos históricamente
-         * usando este cupón.
-         */
-        $soldTicketsWithCoupon = TicketInstance::query()
-            ->where('coupon_id', $coupon->id)
-            ->ticketSales()
-            ->count();
-
-        /**
-         * Total que habría después de esta compra.
-         */
-        $totalAfterPurchase = $soldTicketsWithCoupon + $qty;
-
-        /**
-         * Validación del límite global del cupón.
-         */
-        if (
-            $coupon->max_tickets &&
-            $totalAfterPurchase > (int) $coupon->max_tickets
-        ) {
-            $remaining = max(
-                0,
-                (int) $coupon->max_tickets - $soldTicketsWithCoupon
-            );
-
-            return [
-                'coupon' => null,
-                'error' => $remaining > 0
-                    ? "Solo quedan {$remaining} boletos disponibles para este cupón."
-                    : 'Este cupón ya alcanzó su límite máximo de uso.'
-            ];
+        $error = $this->validateCouponConstraints($coupon, $qty);
+        if ($error !== null) {
+            return ['coupon' => null, 'error' => $error];
         }
 
         return ['coupon' => $coupon, 'error' => null];
@@ -277,8 +266,10 @@ class CouponService
         return [
             'id' => $coupon->id,
             'code' => $coupon->code,
+            'auto_apply' => (bool) ($coupon->auto_apply ?? false),
             'discount_type' => $coupon->discount_type,
             'discount_value' => $this->normalizeMoney((float) $coupon->discount_value),
+            'min_qty' => max(1, (int) ($coupon->min_qty ?? 1)),
             'max_tickets' => $coupon->max_tickets,
             'starts_at' => $coupon->starts_at?->toDateTimeString(),
             'ends_at' => $coupon->ends_at?->toDateTimeString(),
@@ -292,6 +283,7 @@ class CouponService
      * Tipos soportados:
      * - percentage
      * - fixed amount
+     * - unit_price
      *
      * Reglas:
      * - El precio final nunca puede ser negativo.
@@ -310,6 +302,18 @@ class CouponService
     private function calculateDiscount(float $basePrice, EventCoupon $coupon): array
     {
         $basePrice = $this->normalizeMoney($basePrice);
+
+        if ($coupon->discount_type === 'unit_price') {
+            $targetPrice = $this->normalizeMoney((float) $coupon->discount_value);
+            $finalPrice = min($basePrice, $targetPrice);
+            $discount = $this->normalizeMoney($basePrice - $finalPrice);
+
+            return [
+                'price' => $finalPrice,
+                'discount_percent' => null,
+                'discount_amount' => $discount,
+            ];
+        }
 
         if ($coupon->discount_type === 'percentage') {
             $percent = $this->normalizeMoney((float) $coupon->discount_value);
@@ -350,5 +354,77 @@ class CouponService
     private function normalizeMoney(float $amount): float
     {
         return round(max(0, $amount), 2);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $cart
+     */
+    private function resolveBestAutoCoupon(Eventos $event, int $qty, array $cart): ?EventCoupon
+    {
+        $candidates = EventCoupon::query()
+            ->where('event_id', $event->id)
+            ->where('is_active', true)
+            ->where('auto_apply', true)
+            ->availableAt()
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        $bestCoupon = null;
+        $bestTotal = null;
+        $bestMinQty = null;
+
+        foreach ($candidates as $coupon) {
+            $error = $this->validateCouponConstraints($coupon, $qty);
+            if ($error !== null) {
+                continue;
+            }
+
+            $total = collect($cart)->sum(function (array $item) use ($coupon) {
+                $basePrice = $this->normalizeMoney((float) ($item['base_price'] ?? $item['price'] ?? 0));
+                $qtyItem = max(1, (int) ($item['qty'] ?? 1));
+                $pricing = $this->calculateDiscount($basePrice, $coupon);
+
+                return $this->normalizeMoney($pricing['price']) * $qtyItem;
+            });
+
+            $minQty = max(1, (int) ($coupon->min_qty ?? 1));
+
+            if ($bestCoupon === null || $total < $bestTotal || ($total === $bestTotal && $minQty > $bestMinQty)) {
+                $bestCoupon = $coupon;
+                $bestTotal = $total;
+                $bestMinQty = $minQty;
+            }
+        }
+
+        return $bestCoupon;
+    }
+
+    private function validateCouponConstraints(EventCoupon $coupon, int $qty): ?string
+    {
+        $minQty = max(1, (int) ($coupon->min_qty ?? 1));
+        if ($qty < $minQty) {
+            return "Este cupón aplica a partir de {$minQty} boletos.";
+        }
+
+        /** @var int $soldTicketsWithCoupon */
+        $soldTicketsWithCoupon = TicketInstance::query()
+            ->where('coupon_id', $coupon->id)
+            ->ticketSales()
+            ->count();
+
+        $totalAfterPurchase = $soldTicketsWithCoupon + $qty;
+
+        if ($coupon->max_tickets && $totalAfterPurchase > (int) $coupon->max_tickets) {
+            $remaining = max(0, (int) $coupon->max_tickets - $soldTicketsWithCoupon);
+
+            return $remaining > 0
+                ? "Solo quedan {$remaining} boletos disponibles para este cupón."
+                : 'Este cupón ya alcanzó su límite máximo de uso.';
+        }
+
+        return null;
     }
 }

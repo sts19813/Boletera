@@ -124,12 +124,6 @@
                                                 </div>
                                             @endif
 
-                                            @if(data_get($item, 'promotion.applied'))
-                                                <div class="text-success fs-8 fw-semibold">
-                                                    {{ data_get($item, 'promotion.label') }}
-                                                </div>
-                                            @endif
-
                                             @if(!empty($item['coupon_code']) && (float) ($item['discount_amount'] ?? 0) > 0)
                                                 <div class="text-success fs-8 fw-semibold">
                                                     Cupón {{ $item['coupon_code'] }} aplicado

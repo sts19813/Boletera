@@ -6,69 +6,21 @@ document.addEventListener('DOMContentLoaded', function () {
     window.currentCouponCode = '';
     window.appliedCoupon = null;
 
-    window.getRegistrationPromotionConfig = function (eventId) {
-        if (!window.REGISTRATION_PROMOTIONS) {
-            return null;
-        }
-
-        return window.REGISTRATION_PROMOTIONS[String(eventId)] ?? null;
-    };
-
     window.applyRegistrationPricingToItem = function (item) {
         if (!item) {
             return item;
         }
 
-        if (item.id !== 'registration') {
-            const base = Number(item.base_price ?? item.unit_price ?? item.total_price ?? 0);
-            item.base_price = Number.isFinite(base) ? base : 0;
-            item.unit_price = item.base_price;
-            if (!window.currentCouponCode) {
-                item.total_price = item.unit_price;
-            }
-            delete item.promotion;
-            return item;
-        }
-
-        const config = window.getRegistrationPromotionConfig(item.event_id);
         const fallbackBase = Number(window.registrationTicket?.total_price ?? 0);
-        const rawBasePrice = Number(
-            item.base_price ?? item.unit_price ?? item.total_price ?? fallbackBase
-        );
+        const rawBasePrice = Number(item.base_price ?? item.unit_price ?? item.total_price ?? fallbackBase);
 
         item.base_price = Number.isFinite(rawBasePrice) ? rawBasePrice : 0;
-
-        if (!config) {
-            item.unit_price = item.base_price;
-            if (!window.currentCouponCode) {
-                item.total_price = item.unit_price;
-            }
-            delete item.promotion;
-            return item;
-        }
-
-        const qty = Math.max(1, Number(item.qty) || 1);
-        const minQty = Math.max(1, Number(config.minQty) || 1);
-        const promoPrice = Number(config.promoPrice);
-
-        if (qty >= minQty && Number.isFinite(promoPrice)) {
-            item.unit_price = promoPrice;
-            item.promotion = {
-                applied: true,
-                type: 'registration_qty_discount',
-                label: config.label ?? 'Promocion aplicada',
-                original_price: item.base_price,
-                discounted_price: promoPrice,
-                min_qty: minQty
-            };
-        } else {
-            item.unit_price = item.base_price;
-            delete item.promotion;
-        }
-
+        item.unit_price = item.base_price;
         if (!window.currentCouponCode) {
             item.total_price = item.unit_price;
         }
+
+        delete item.promotion;
 
         return item;
     };
@@ -134,15 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const code = window.currentCouponCode;
-
-        if (!code) {
-            resetCouponDataFromItems();
-            setCouponFeedback('');
-            updateCartUI();
-            return;
-        }
-
         if (!window.cartState.items.length) {
             setCouponFeedback('');
             return;
@@ -150,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const payload = {
-                code,
+                code: window.currentCouponCode || null,
                 cart: window.cartState.items.map(item => ({
                     id: item.id,
                     event_id: item.event_id,
@@ -208,7 +151,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 return localItem;
             });
 
-            setCouponFeedback(`Cupón aplicado: ${window.appliedCoupon?.code ?? code}`, 'success');
+            if (window.appliedCoupon) {
+                if (window.appliedCoupon?.code) {
+                    setCouponFeedback(`Cupón aplicado: ${window.appliedCoupon.code}`, 'success');
+                } else if (window.appliedCoupon?.auto_apply) {
+                    setCouponFeedback('Descuento automático aplicado.', 'success');
+                } else {
+                    setCouponFeedback('Descuento aplicado.', 'success');
+                }
+            } else {
+                setCouponFeedback('');
+            }
             updateCartUI();
         } catch (error) {
             if (showErrors) {
@@ -254,6 +207,10 @@ document.addEventListener('DOMContentLoaded', function () {
         window.applyRegistrationPricingToItem(window.cartState.items[0]);
         window.cartState.items[0].total_price = Number(window.cartState.items[0].unit_price ?? window.registrationTicket.total_price);
         updateCartUI();
+
+        if (window.couponConfig?.enabled) {
+            recalculateCouponPricing();
+        }
     }
 
     function getCartItem(ticketId) {
@@ -274,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             updateCartUI();
 
-            if (window.currentCouponCode) {
+            if (window.couponConfig?.enabled) {
                 recalculateCouponPricing();
             }
 
@@ -307,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         updateCartUI();
 
-        if (window.currentCouponCode) {
+        if (window.couponConfig?.enabled) {
             recalculateCouponPricing();
         }
     };
@@ -334,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         updateCartUI();
 
-        if (window.currentCouponCode) {
+        if (window.couponConfig?.enabled) {
             recalculateCouponPricing();
         }
     };
@@ -344,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
             window.cartState.items.filter(t => t.id != ticketId);
         updateCartUI();
 
-        if (window.currentCouponCode) {
+        if (window.couponConfig?.enabled) {
             recalculateCouponPricing();
         }
     };
@@ -378,9 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!code) {
             window.currentCouponCode = '';
-            resetCouponDataFromItems();
-            setCouponFeedback('');
-            updateCartUI();
+            recalculateCouponPricing();
             return;
         }
 
@@ -400,9 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         window.currentCouponCode = '';
-        resetCouponDataFromItems();
-        setCouponFeedback('');
-        updateCartUI();
+        recalculateCouponPricing();
     });
 
     document.getElementById('btnCheckout')?.addEventListener('click', () => {
@@ -509,12 +462,9 @@ function updateCartUI() {
             controls = `<strong>1</strong>`;
         }
 
-        const promotionHtml = ticket.promotion?.applied
-            ? `<div class="text-success fs-8 fw-semibold">${ticket.promotion.label}</div>`
-            : '';
-
-        const couponHtml = ticket.coupon_code && Number(ticket.discount_amount ?? 0) > 0
-            ? `<div class="text-success fs-8 fw-semibold">Cupón ${ticket.coupon_code} aplicado</div>`
+        const hasDiscount = Number(ticket.discount_amount ?? 0) > 0;
+        const couponHtml = hasDiscount
+            ? `<div class="text-success fs-8 fw-semibold">${ticket.coupon_code ? `Cupón ${ticket.coupon_code} aplicado` : 'Descuento aplicado'}</div>`
             : '';
 
         li.innerHTML = `
@@ -523,7 +473,6 @@ function updateCartUI() {
                 <div class="cart-item-price">
                     $${Number(ticket.total_price).toLocaleString('es-MX')} c/u
                 </div>
-                ${promotionHtml}
                 ${couponHtml}
             </div>
 

@@ -283,8 +283,10 @@
                         return [
                             'id' => $coupon->id,
                             'code' => $coupon->code,
+                            'auto_apply' => $coupon->auto_apply ? 1 : 0,
                             'discount_type' => $coupon->discount_type,
                             'discount_value' => $coupon->discount_value,
+                            'min_qty' => $coupon->min_qty ?? 1,
                             'max_tickets' => $coupon->max_tickets,
                             'starts_at' => optional($coupon->starts_at)->format('Y-m-d\\TH:i'),
                             'ends_at' => optional($coupon->ends_at)->format('Y-m-d\\TH:i'),
@@ -299,8 +301,8 @@
 
                 <div class="card shadow-sm mb-5">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title fw-bold">Cupones</h4>
-                        <button type="button" id="addCouponRowBtn" class="btn btn-light-primary btn-sm">Agregar cupón</button>
+                        <h4 class="card-title fw-bold">Descuentos y cupones</h4>
+                        <button type="button" id="addCouponRowBtn" class="btn btn-light-primary btn-sm">Agregar regla</button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -308,8 +310,10 @@
                                 <thead>
                                     <tr>
                                         <th>Código</th>
+                                        <th>Auto</th>
                                         <th>Tipo</th>
                                         <th>Valor</th>
+                                        <th>Mín boletos</th>
                                         <th>Máx boletos</th>
                                         <th>Inicio</th>
                                         <th>Fin</th>
@@ -324,14 +328,19 @@
                                                 <input type="hidden" name="coupons[{{ $i }}][id]" value="{{ $couponRow['id'] ?? '' }}">
                                                 <input type="text" name="coupons[{{ $i }}][code]" class="form-control" value="{{ $couponRow['code'] ?? '' }}">
                                             </td>
+                                            <td class="text-center">
+                                                <input type="checkbox" name="coupons[{{ $i }}][auto_apply]" value="1" {{ !empty($couponRow['auto_apply']) ? 'checked' : '' }}>
+                                            </td>
                                             <td>
                                                 <select name="coupons[{{ $i }}][discount_type]" class="form-select">
                                                     <option value="">Selecciona</option>
                                                     <option value="percentage" {{ ($couponRow['discount_type'] ?? '') === 'percentage' ? 'selected' : '' }}>Porcentaje</option>
                                                     <option value="fixed" {{ ($couponRow['discount_type'] ?? '') === 'fixed' ? 'selected' : '' }}>Monto fijo</option>
+                                                    <option value="unit_price" {{ ($couponRow['discount_type'] ?? '') === 'unit_price' ? 'selected' : '' }}>Precio final c/u</option>
                                                 </select>
                                             </td>
                                             <td><input type="number" step="0.01" min="0.01" name="coupons[{{ $i }}][discount_value]" class="form-control" value="{{ $couponRow['discount_value'] ?? '' }}"></td>
+                                            <td><input type="number" min="1" name="coupons[{{ $i }}][min_qty]" class="form-control" value="{{ $couponRow['min_qty'] ?? 1 }}"></td>
                                             <td><input type="number" min="1" name="coupons[{{ $i }}][max_tickets]" class="form-control" value="{{ $couponRow['max_tickets'] ?? '' }}"></td>
                                             <td><input type="datetime-local" name="coupons[{{ $i }}][starts_at]" class="form-control" value="{{ $couponRow['starts_at'] ?? '' }}"></td>
                                             <td><input type="datetime-local" name="coupons[{{ $i }}][ends_at]" class="form-control" value="{{ $couponRow['ends_at'] ?? '' }}"></td>
@@ -576,14 +585,17 @@
                         <input type="hidden" name="coupons[${index}][id]" value="">
                         <input type="text" name="coupons[${index}][code]" class="form-control">
                     </td>
+                    <td class="text-center"><input type="checkbox" name="coupons[${index}][auto_apply]" value="1"></td>
                     <td>
                         <select name="coupons[${index}][discount_type]" class="form-select">
                             <option value="">Selecciona</option>
                             <option value="percentage">Porcentaje</option>
                             <option value="fixed">Monto fijo</option>
+                            <option value="unit_price">Precio final c/u</option>
                         </select>
                     </td>
                     <td><input type="number" step="0.01" min="0.01" name="coupons[${index}][discount_value]" class="form-control"></td>
+                    <td><input type="number" min="1" name="coupons[${index}][min_qty]" class="form-control" value="1"></td>
                     <td><input type="number" min="1" name="coupons[${index}][max_tickets]" class="form-control"></td>
                     <td><input type="datetime-local" name="coupons[${index}][starts_at]" class="form-control"></td>
                     <td><input type="datetime-local" name="coupons[${index}][ends_at]" class="form-control"></td>

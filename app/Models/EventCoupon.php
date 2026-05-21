@@ -14,8 +14,10 @@ class EventCoupon extends Model
     protected $fillable = [
         'event_id',
         'code',
+        'auto_apply',
         'discount_type',
         'discount_value',
+        'min_qty',
         'max_tickets',
         'starts_at',
         'ends_at',
@@ -24,6 +26,8 @@ class EventCoupon extends Model
 
     protected $casts = [
         'discount_value' => 'decimal:2',
+        'auto_apply' => 'boolean',
+        'min_qty' => 'integer',
         'max_tickets' => 'integer',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
