@@ -97,8 +97,10 @@ class EventosController extends Controller
             'coupons' => 'nullable|array',
             'coupons.*.id' => 'nullable|uuid',
             'coupons.*.code' => 'nullable|string|max:50',
-            'coupons.*.discount_type' => 'nullable|in:percentage,fixed',
+            'coupons.*.auto_apply' => 'nullable|boolean',
+            'coupons.*.discount_type' => 'nullable|in:percentage,fixed,unit_price',
             'coupons.*.discount_value' => 'nullable|numeric|min:0.01',
+            'coupons.*.min_qty' => 'nullable|integer|min:1',
             'coupons.*.max_tickets' => 'nullable|integer|min:1',
             'coupons.*.starts_at' => 'nullable|date',
             'coupons.*.ends_at' => 'nullable|date',
@@ -272,9 +274,11 @@ class EventosController extends Controller
             ->get();
 
         $dbLotes = TicketSvgMapping::where('evento_id', $lot->id)->get();
-        $hasAvailableCoupons = $this->couponService->hasAvailableCoupons($lot);
+        $hasManualCoupons = $this->couponService->hasAvailableManualCoupons($lot);
+        $hasAutoDiscounts = $this->couponService->hasAvailableAutoCoupons($lot);
+        $hasDiscountRules = $hasManualCoupons || $hasAutoDiscounts;
 
-        return view('events.iframe', compact('lot', 'lots', 'dbLotes', 'tickets', 'hasAvailableCoupons'));
+        return view('events.iframe', compact('lot', 'lots', 'dbLotes', 'tickets', 'hasManualCoupons', 'hasDiscountRules'));
     }
 
     public function edit(string $id)
@@ -326,8 +330,10 @@ class EventosController extends Controller
             'coupons' => 'nullable|array',
             'coupons.*.id' => 'nullable|uuid',
             'coupons.*.code' => 'nullable|string|max:50',
-            'coupons.*.discount_type' => 'nullable|in:percentage,fixed',
+            'coupons.*.auto_apply' => 'nullable|boolean',
+            'coupons.*.discount_type' => 'nullable|in:percentage,fixed,unit_price',
             'coupons.*.discount_value' => 'nullable|numeric|min:0.01',
+            'coupons.*.min_qty' => 'nullable|integer|min:1',
             'coupons.*.max_tickets' => 'nullable|integer|min:1',
             'coupons.*.starts_at' => 'nullable|date',
             'coupons.*.ends_at' => 'nullable|date',
@@ -457,9 +463,10 @@ class EventosController extends Controller
     {
         return collect($rows)
             ->map(function ($row) {
+                $isAutoApply = (bool) ($row['auto_apply'] ?? false);
                 $code = strtoupper(trim((string) ($row['code'] ?? '')));
 
-                if ($code === '') {
+                if (!$isAutoApply && $code === '') {
                     return null;
                 }
 
@@ -473,15 +480,17 @@ class EventosController extends Controller
                 $discountType = $row['discount_type'] ?? null;
                 $discountValue = (float) ($row['discount_value'] ?? 0);
 
-                if (!in_array($discountType, ['percentage', 'fixed'], true) || $discountValue <= 0) {
+                if (!in_array($discountType, ['percentage', 'fixed', 'unit_price'], true) || $discountValue <= 0) {
                     return null;
                 }
 
                 return [
                     'id' => $row['id'] ?? null,
-                    'code' => $code,
+                    'code' => $isAutoApply ? null : $code,
+                    'auto_apply' => $isAutoApply,
                     'discount_type' => $discountType,
                     'discount_value' => round($discountValue, 2),
+                    'min_qty' => max(1, (int) ($row['min_qty'] ?? 1)),
                     'max_tickets' => !empty($row['max_tickets']) ? (int) $row['max_tickets'] : null,
                     'starts_at' => $startsAt,
                     'ends_at' => $endsAt,
@@ -506,8 +515,10 @@ class EventosController extends Controller
 
             $payload = [
                 'code' => $row['code'],
+                'auto_apply' => $row['auto_apply'],
                 'discount_type' => $row['discount_type'],
                 'discount_value' => $row['discount_value'],
+                'min_qty' => $row['min_qty'],
                 'max_tickets' => $row['max_tickets'],
                 'starts_at' => $row['starts_at'],
                 'ends_at' => $row['ends_at'],
