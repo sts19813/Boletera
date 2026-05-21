@@ -37,6 +37,15 @@
                                 Adjuntamos tus boletos en formato PDF.
                             </p>
 
+                            @if(!empty($whatsappGroupLink))
+                                <div style="margin:0 0 24px 0;">
+                                    <a href="{{ $whatsappGroupLink }}"
+                                        style="display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:6px; font-weight:bold;">
+                                        Unirse al grupo
+                                    </a>
+                                </div>
+                            @endif
+
                             <!-- RESUMEN EVENTO -->
                             <table width="100%" cellpadding="0" cellspacing="0"
                                 style="background:#f8f9fa; border-radius:6px; margin:25px 0;">

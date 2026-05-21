@@ -24,6 +24,7 @@ class TicketBuilderService
     ): array {
         return [
             'event' => [
+                'id' => $event->id,
                 'name' => $event->name ?? 'Evento - ',
                 'date' => optional($event->event_date)->format('d/m/Y'),
                 'time' => str_replace(

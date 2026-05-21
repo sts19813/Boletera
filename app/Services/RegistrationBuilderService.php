@@ -15,6 +15,7 @@ class RegistrationBuilderService
     ): array {
         return [
             'event' => [
+                'id' => $evento->id,
                 'name' => $evento->name,
                 'date' => optional($evento->event_date)->format('d/m/Y'),
                 'time' => str_replace(
