@@ -9,6 +9,11 @@ use Illuminate\Support\Collection;
 
 class EventReportService
 {
+    public function __construct(
+        private RegistrationFormSchemaService $schemaService
+    ) {
+    }
+
     /**
      * @return array{
      *   columns: array<int, array{key: string, label: string}>,
@@ -18,6 +23,9 @@ class EventReportService
     public function build(Eventos $event): array
     {
         $columnKeys = EventReportColumns::normalizeKeys($event->report_settings);
+        if (($event->allows_multiple_registrations ?? false) && !in_array('registrations_count', $columnKeys, true)) {
+            $columnKeys[] = 'registrations_count';
+        }
         $definitions = EventReportColumns::definitions();
 
         $columns = array_values(array_map(function (string $key) use ($definitions) {
@@ -28,7 +36,7 @@ class EventReportService
         }, $columnKeys));
 
         $instances = TicketInstance::query()
-            ->with(['ticket:id,name,type', 'evento:id,name'])
+            ->with(['ticket:id,name,type', 'evento:id,name,registration_form_id', 'evento.registrationForm:id,schema'])
             ->where('event_id', $event->id)
             ->orderByDesc('purchased_at')
             ->orderByDesc('created_at')
@@ -74,9 +82,14 @@ class EventReportService
         /** @var TicketInstance $primary */
         $primary = $instances->first();
         $transactionRef = $this->transactionReference($primary);
+        $ticketInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type !== 'registration')->values();
+        $ticketEntries = $this->buildTicketEntries($ticketInstances);
+        $registrationInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type === 'registration')->values();
+        $registrationEntries = $this->buildRegistrationEntries($registrationInstances);
 
-        $detailRows = $this->buildDetailRows($instances);
+        $detailRows = $this->buildDetailRows($instances, $registrationEntries);
         $itemsCount = count($detailRows);
+        $registrationsCount = $registrationInstances->count();
         $totalPaid = $instances->sum(function (TicketInstance $instance) {
             return (float) ($instance->total ?? $instance->price ?? 0);
         });
@@ -121,8 +134,20 @@ class EventReportService
         $rows = [];
 
         foreach ($detailRows as $detail) {
+            $rowInstanceId = (string) ($detail['instance_id'] ?? $primary->id);
+            $searchBlob = implode(' | ', array_filter([
+                $event->name,
+                $transactionRef,
+                (string) ($primary->reference ?? ''),
+                $buyerData,
+                (string) ($detail['sale_type'] ?? ''),
+                (string) ($detail['ticket_type'] ?? ''),
+                (string) ($detail['seat'] ?? ''),
+                (string) ($detail['record_data'] ?? ''),
+            ]));
+
             $row = [
-                'instance_id' => $primary->id,
+                'instance_id' => $rowInstanceId,
                 'reference' => $primary->reference,
                 'raw_sale_type' => $primary->sale_type,
                 '_sort_date' => $sortDate,
@@ -139,6 +164,10 @@ class EventReportService
                 'payment_status' => $paymentStatus,
                 'buyer_data' => $buyerData,
                 'record_data' => $detail['record_data'] ?? '-',
+                'search_blob' => $searchBlob,
+                'registrations_count' => ($event->allows_multiple_registrations ?? false) && $registrationsCount > 0
+                    ? $registrationsCount
+                    : '-',
                 'items_count' => $itemsCount,
             ];
 
@@ -151,6 +180,9 @@ class EventReportService
                 'instance_id' => $row['instance_id'],
                 'reference' => $row['reference'],
                 'raw_sale_type' => $row['raw_sale_type'],
+                'ticket_entries' => $ticketEntries,
+                'registration_entries' => $registrationEntries,
+                'search_blob' => $row['search_blob'],
             ]);
         }
 
@@ -159,15 +191,17 @@ class EventReportService
 
     /**
      * @param  Collection<int, TicketInstance>  $instances
-     * @return array<int, array{sale_type: string, seat: string, ticket_type: string, record_data: string}>
+     * @param  array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>  $registrationEntries
+     * @return array<int, array{sale_type: string, seat: string, ticket_type: string, record_data: string, instance_id?: string}>
      */
-    private function buildDetailRows(Collection $instances): array
+    private function buildDetailRows(Collection $instances, array $registrationEntries): array
     {
         $rows = [];
 
         $ticketInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type !== 'registration');
         foreach ($ticketInstances as $instance) {
             $rows[] = [
+                'instance_id' => $instance->id,
                 'sale_type' => 'Boleto',
                 'seat' => $instance->ticket?->name ?? '-',
                 'ticket_type' => $instance->ticket?->type ?? ($instance->ticket?->name ?? '-'),
@@ -179,18 +213,18 @@ class EventReportService
             ];
         }
 
-        $registrationRows = [];
         $registrationInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type === 'registration');
-
-        foreach ($registrationInstances as $instance) {
-            $formData = is_array($instance->form_data) ? $instance->form_data : [];
-            $registrationRows = array_merge($registrationRows, $this->extractRegistrationRows($instance, $formData));
-        }
-
-        if (empty($registrationRows) && $registrationInstances->isNotEmpty()) {
+        if (!empty($registrationEntries)) {
+            $rows[] = [
+                'sale_type' => 'Registro',
+                'seat' => '-',
+                'ticket_type' => 'Inscripcion',
+                'record_data' => $this->formatRegistrationEntriesAsText($registrationEntries),
+            ];
+        } elseif ($registrationInstances->isNotEmpty()) {
             /** @var TicketInstance $fallback */
             $fallback = $registrationInstances->first();
-            $registrationRows[] = [
+            $rows[] = [
                 'sale_type' => 'Registro',
                 'seat' => '-',
                 'ticket_type' => 'Inscripcion',
@@ -202,97 +236,204 @@ class EventReportService
             ];
         }
 
-        $registrationRows = collect($registrationRows)
-            ->unique(fn(array $row) => md5(json_encode($row)))
-            ->values()
-            ->all();
-
-        return array_merge($rows, $registrationRows);
+        return $rows;
     }
 
     /**
-     * @param  array<string, mixed>  $formData
-     * @return array<int, array{sale_type: string, seat: string, ticket_type: string, record_data: string}>
+     * @param  Collection<int, TicketInstance>  $registrationInstances
+     * @return array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>
      */
-    private function extractRegistrationRows(TicketInstance $instance, array $formData): array
+    private function buildRegistrationEntries(Collection $registrationInstances): array
     {
-        $lines = [];
+        if ($registrationInstances->isEmpty()) {
+            return [];
+        }
 
-        foreach ($formData as $key => $value) {
+        /** @var TicketInstance $first */
+        $first = $registrationInstances->first();
+        $labelMap = $this->resolveLabelMap($first);
+        $firstFormData = is_array($first->form_data) ? $first->form_data : [];
+        $instanceList = $registrationInstances->values();
 
-            // PARTICIPANTES
-            if ($key === 'participants' && is_array($value)) {
+        if (isset($firstFormData['registrations']) && is_array($firstFormData['registrations'])) {
+            return $this->buildIndexedEntries(
+                $firstFormData['registrations'],
+                $instanceList,
+                $labelMap,
+                'registrations',
+                'Registro'
+            );
+        }
 
-                foreach ($value as $index => $participant) {
+        if (isset($firstFormData['participants']) && is_array($firstFormData['participants'])) {
+            return $this->buildIndexedEntries(
+                $firstFormData['participants'],
+                $instanceList,
+                $labelMap,
+                'participants',
+                'Participante'
+            );
+        }
 
-                    if (!is_array($participant)) {
-                        continue;
-                    }
+        if (isset($firstFormData['players']) && is_array($firstFormData['players'])) {
+            return $this->buildIndexedEntries(
+                $firstFormData['players'],
+                $instanceList,
+                $labelMap,
+                'players',
+                'Jugador'
+            );
+        }
 
-                    $lines[] = '---PARTICIPANTE ' . ($index + 1) . ' ---';
+        $entries = [];
+        foreach ($instanceList as $index => $instance) {
+            $formData = is_array($instance->form_data) ? $instance->form_data : [];
+            $fields = $this->collectFieldsFromPayload($formData, $labelMap);
 
-                    foreach ($participant as $field => $fieldValue) {
+            if (empty($fields)) {
+                $fields = $this->fallbackInstanceFields($instance);
+            }
 
-                        if (is_array($fieldValue)) {
-                            $fieldValue = implode(', ', $fieldValue);
-                        }
+            $entries[] = [
+                'instance_id' => $instance->id,
+                'title' => 'Registro ' . ($index + 1),
+                'fields' => $fields,
+            ];
+        }
 
-                        $label = ucfirst(str_replace('_', ' ', $field));
+        return $entries;
+    }
 
-                        $lines[] = $label . ': ' . $fieldValue;
-                    }
+    /**
+     * @param  array<int, mixed>  $items
+     * @param  Collection<int, TicketInstance>  $instances
+     * @param  array<string, string>  $labelMap
+     * @return array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>
+     */
+    private function buildIndexedEntries(array $items, Collection $instances, array $labelMap, string $rootKey, string $titlePrefix): array
+    {
+        $entries = [];
 
-                    $lines[] = '';
-                }
-
+        foreach (array_values($items) as $index => $item) {
+            if (!is_array($item)) {
                 continue;
             }
 
-            // PLAYERS
-            if ($key === 'players' && is_array($value)) {
-
-                foreach ($value as $index => $player) {
-
-                    if (!is_array($player)) {
-                        continue;
-                    }
-
-                    $lines[] = '=== JUGADOR ' . ($index + 1) . ' ===';
-
-                    foreach ($player as $field => $fieldValue) {
-
-                        if (is_array($fieldValue)) {
-                            $fieldValue = implode(', ', $fieldValue);
-                        }
-
-                        $label = ucfirst(str_replace('_', ' ', $field));
-
-                        $lines[] = $label . ': ' . $fieldValue;
-                    }
-
-                    $lines[] = '';
-                }
-
+            /** @var TicketInstance|null $instance */
+            $instance = $instances->get($index) ?? $instances->first();
+            if (!$instance) {
                 continue;
             }
 
-            // CAMPOS NORMALES
+            $fields = [];
+            foreach ($item as $field => $fieldValue) {
+                $value = $this->stringifyValue($fieldValue);
+                $labelKey = $rootKey . '.*.' . (string) $field;
+                $label = $labelMap[$labelKey] ?? ucfirst(str_replace('_', ' ', (string) $field));
+                $fields[] = [
+                    'label' => $label,
+                    'value' => $value,
+                ];
+            }
+
+            if (empty($fields)) {
+                $fields = $this->fallbackInstanceFields($instance);
+            }
+
+            $entries[] = [
+                'instance_id' => $instance->id,
+                'title' => $titlePrefix . ' ' . ($index + 1),
+                'fields' => $fields,
+            ];
+        }
+
+        return $entries;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $labelMap
+     * @return array<int, array{label: string, value: string}>
+     */
+    private function collectFieldsFromPayload(array $payload, array $labelMap): array
+    {
+        $fields = [];
+
+        foreach ($payload as $key => $value) {
             if (!is_array($value)) {
+                $fields[] = [
+                    'label' => $labelMap[(string) $key] ?? ucfirst(str_replace('_', ' ', (string) $key)),
+                    'value' => $this->stringifyValue($value),
+                ];
+                continue;
+            }
 
-                $label = ucfirst(str_replace('_', ' ', $key));
-
-                $lines[] = $label . ': ' . $value;
+            foreach ($this->stringifyFormData([(string) $key => $value]) as $line) {
+                $parts = explode(': ', $line, 2);
+                $path = $parts[0] ?? '';
+                $mappedPath = str_replace(['[', ']'], ['.*.', ''], $path);
+                $fields[] = [
+                    'label' => $labelMap[$mappedPath] ?? ucfirst(str_replace(['_', '.'], [' ', ' '], $path)),
+                    'value' => $parts[1] ?? '',
+                ];
             }
         }
 
-        return [
-            [
-                'sale_type' => 'Registro',
-                'seat' => '-',
-                'ticket_type' => 'Inscripcion',
-                'record_data' => implode("\n", $lines),
-            ]
-        ];
+        return $fields;
+    }
+
+    /**
+     * @return array<int, array{label: string, value: string}>
+     */
+    private function fallbackInstanceFields(TicketInstance $instance): array
+    {
+        $fields = [];
+
+        if ($instance->nombre) {
+            $fields[] = ['label' => 'Nombre', 'value' => $instance->nombre];
+        }
+        if ($instance->email) {
+            $fields[] = ['label' => 'Email', 'value' => $instance->email];
+        }
+        if ($instance->celular) {
+            $fields[] = ['label' => 'Celular', 'value' => $instance->celular];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @param  array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>  $entries
+     */
+    private function formatRegistrationEntriesAsText(array $entries): string
+    {
+        $lines = [];
+
+        foreach ($entries as $index => $entry) {
+            $lines[] = '--- ' . strtoupper($entry['title'] ?? ('Registro ' . ($index + 1))) . ' ---';
+            foreach (($entry['fields'] ?? []) as $field) {
+                $lines[] = ($field['label'] ?? 'Campo') . ': ' . ($field['value'] ?? '');
+            }
+            $lines[] = '';
+        }
+
+        while (!empty($lines) && end($lines) === '') {
+            array_pop($lines);
+        }
+
+        return empty($lines) ? '-' : implode("\n", $lines);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function resolveLabelMap(TicketInstance $instance): array
+    {
+        if ($instance->evento?->registrationForm) {
+            return $this->schemaService->labelMap($instance->evento->registrationForm);
+        }
+
+        return [];
     }
 
     private function transactionReference(TicketInstance $instance): string
@@ -332,6 +473,69 @@ class EventReportService
         ]);
 
         return empty($parts) ? '-' : implode(' | ', $parts);
+    }
+
+    /**
+     * @param  Collection<int, TicketInstance>  $ticketInstances
+     * @return array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>
+     */
+    private function buildTicketEntries(Collection $ticketInstances): array
+    {
+        $entries = [];
+
+        foreach ($ticketInstances->values() as $index => $instance) {
+            $fields = [];
+
+            $fields[] = ['label' => 'Boleto', 'value' => (string) ($instance->ticket?->name ?? '-')];
+            $fields[] = ['label' => 'Tipo', 'value' => (string) ($instance->ticket?->type ?? $instance->ticket?->name ?? '-')];
+            $fields[] = ['label' => 'Precio', 'value' => '$' . number_format((float) ($instance->total ?? $instance->price ?? 0), 2)];
+
+            if ($instance->nombre) {
+                $fields[] = ['label' => 'Nombre', 'value' => $instance->nombre];
+            }
+            if ($instance->email) {
+                $fields[] = ['label' => 'Email', 'value' => $instance->email];
+            }
+            if ($instance->celular) {
+                $fields[] = ['label' => 'Celular', 'value' => $instance->celular];
+            }
+            if ($instance->purchased_at) {
+                $fields[] = ['label' => 'Fecha', 'value' => $instance->purchased_at->format('d/m/Y H:i')];
+            }
+
+            $entries[] = [
+                'instance_id' => $instance->id,
+                'title' => 'Boleto ' . ($index + 1),
+                'fields' => $fields,
+            ];
+        }
+
+        return $entries;
+    }
+
+    private function stringifyValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            if ($this->isAssoc($value)) {
+                return json_encode($value, JSON_UNESCAPED_UNICODE) ?: '-';
+            }
+
+            return implode(', ', array_map(function ($item) {
+                return is_scalar($item) || $item === null
+                    ? (string) $item
+                    : (json_encode($item, JSON_UNESCAPED_UNICODE) ?: '');
+            }, $value));
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Sí' : 'No';
+        }
+
+        if ($value === null) {
+            return '-';
+        }
+
+        return (string) $value;
     }
 
     private function stringifyFormData(array $data, string $prefix = ''): array

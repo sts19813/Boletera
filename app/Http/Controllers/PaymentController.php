@@ -17,10 +17,13 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Stripe\PaymentIntent;
+use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
 
 class PaymentController extends Controller
 {
+    private const STRIPE_MIN_AMOUNT_MXN = 10.00;
+
     public function __construct(
         private TicketBuilderService $ticketBuilder,
         private TicketService $ticketService,
@@ -187,23 +190,40 @@ class PaymentController extends Controller
         $subtotal = collect($carrito)->sum(fn($i) => $i['price'] * ($i['qty'] ?? 1));
         $total = $subtotal;
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+        if ($total < self::STRIPE_MIN_AMOUNT_MXN) {
+            return response()->json([
+                'error' => 'El monto mínimo para pago con tarjeta es de $' . number_format(self::STRIPE_MIN_AMOUNT_MXN, 2) . ' MXN.',
+                'detalle' => 'Ajusta la cantidad o precio para continuar con Stripe.',
+            ], 422);
+        }
 
-        $intent = PaymentIntent::create([
-            'amount' => (int) round($total * 100),
-            'currency' => 'mxn',
-            'automatic_payment_methods' => ['enabled' => true],
-            'metadata' => [
-                'event_id' => session('event_id'),
-                'nombre' => $request->nombre,
-                'celular' => $request->celular,
-                'email' => $request->email,
-            ],
-        ]);
+        try {
+            Stripe::setApiKey(config('services.stripe.secret'));
 
-        return response()->json([
-            'clientSecret' => $intent->client_secret,
-        ]);
+            $intent = PaymentIntent::create([
+                'amount' => (int) round($total * 100),
+                'currency' => 'mxn',
+                'automatic_payment_methods' => ['enabled' => true],
+                'metadata' => [
+                    'event_id' => session('event_id'),
+                    'nombre' => $request->nombre,
+                    'celular' => $request->celular,
+                    'email' => $request->email,
+                ],
+            ]);
+
+            return response()->json([
+                'clientSecret' => $intent->client_secret,
+            ]);
+        } catch (ApiErrorException $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'No se pudo iniciar el pago con Stripe.',
+            ], 500);
+        }
     }
 
     public function success(Request $request)

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 use App\Models\Eventos;
+use App\Services\RegistrationFormSchemaService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
@@ -15,7 +17,7 @@ class CartController extends Controller
         ]);
     }
 
-    public function add(Request $request)
+    public function add(Request $request, RegistrationFormSchemaService $schemaService)
     {
         $eventId = $request->input('event_id')
             ?? data_get($request->input('cart', []), '0.event_id')
@@ -46,7 +48,21 @@ class CartController extends Controller
          * =========================
          */
         if ($request->filled('registration')) {
-            session(['registration_form' => $request->registration]);
+            try {
+                $registration = $request->registration;
+                if ($eventId) {
+                    $eventForForm = Eventos::with('registrationForm')->find($eventId);
+                    if ($eventForForm) {
+                        $registration = $schemaService->validateSubmissionForEvent($eventForForm, $registration);
+                    }
+                }
+                session(['registration_form' => $registration]);
+            } catch (ValidationException $e) {
+                return response()->json([
+                    'error' => 'Formulario inválido',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
         }
         /**
          * =========================

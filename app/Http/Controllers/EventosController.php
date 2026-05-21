@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Eventos;
+use App\Models\RegistrationForm;
 use App\Models\Ticket;
 use App\Models\TicketSvgMapping;
 use App\Services\FileUploadService;
@@ -53,13 +54,14 @@ class EventosController extends Controller
     public function create()
     {
         $Eventos = Eventos::select('id', 'name')->get();
+        $registrationForms = RegistrationForm::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $eventCoupons = collect();
         $reportColumns = EventReportColumns::definitions();
         $reportColumnConfig = EventReportColumns::enabledMap(null);
         $reportColumnOrder = EventReportColumns::orderMap(null);
         $canEditReports = $this->canEditReports(auth()->user());
 
-        return view('events.create', compact('Eventos', 'eventCoupons', 'reportColumns', 'reportColumnConfig', 'reportColumnOrder', 'canEditReports'));
+        return view('events.create', compact('Eventos', 'registrationForms', 'eventCoupons', 'reportColumns', 'reportColumnConfig', 'reportColumnOrder', 'canEditReports'));
     }
 
     public function store(Request $request)
@@ -77,7 +79,9 @@ class EventosController extends Controller
             'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
             'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
             'template' => 'nullable|string|max:100',
-            'template_form' => 'nullable|required_if:is_registration,1|string|max:100',
+            'template_form' => 'nullable|required_if:registration_form_mode,manual|string|max:100',
+            'registration_form_mode' => 'nullable|required_if:is_registration,1|in:manual,builder',
+            'registration_form_id' => 'nullable|required_if:registration_form_mode,builder|uuid|exists:registration_forms,id',
             'allows_multiple_registrations' => 'nullable|boolean',
             'registration_max_checkins' => 'nullable|required_if:is_registration,1|integer|min:1',
             'modal_color' => 'nullable|string|max:50',
@@ -120,6 +124,8 @@ class EventosController extends Controller
                 'price',
                 'max_capacity',
                 'template',
+                'registration_form_mode',
+                'registration_form_id',
                 'registration_max_checkins',
                 'modal_color',
                 'modal_selector',
@@ -136,11 +142,20 @@ class EventosController extends Controller
                 $data['total_asientos'] = 0;
                 $data['has_seat_mapping'] = false;
                 $data['template'] = $data['template'] ?? 'registration';
+                $data['registration_form_mode'] = $data['registration_form_mode'] ?? 'manual';
+                if ($data['registration_form_mode'] === 'builder') {
+                    $data['template_form'] = null;
+                } else {
+                    $data['registration_form_id'] = null;
+                }
                 $data['registration_max_checkins'] = max(1, (int) ($data['registration_max_checkins'] ?? 1));
             } else {
                 $data['price'] = null;
                 $data['max_capacity'] = null;
                 $data['template'] = $data['template'] ?? 'default';
+                $data['template_form'] = null;
+                $data['registration_form_mode'] = null;
+                $data['registration_form_id'] = null;
                 $data['registration_max_checkins'] = 1;
             }
 
@@ -245,7 +260,7 @@ class EventosController extends Controller
 
     public function iframe(string $id)
     {
-        $lot = Eventos::findOrFail($id);
+        $lot = Eventos::with('registrationForm')->findOrFail($id);
 
         $lots = Ticket::where('event_id', $lot->id)
             ->orderBy('name')
@@ -266,13 +281,14 @@ class EventosController extends Controller
     {
         $event = Eventos::findOrFail($id);
         $Eventos = Eventos::select('id', 'name')->get();
+        $registrationForms = RegistrationForm::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $eventCoupons = $event->coupons()->orderBy('created_at')->get();
         $reportColumns = EventReportColumns::definitions();
         $reportColumnConfig = EventReportColumns::enabledMap($event->report_settings);
         $reportColumnOrder = EventReportColumns::orderMap($event->report_settings);
         $canEditReports = $this->canEditReports(auth()->user());
 
-        return view('events.edit', compact('event', 'Eventos', 'eventCoupons', 'reportColumns', 'reportColumnConfig', 'reportColumnOrder', 'canEditReports'));
+        return view('events.edit', compact('event', 'Eventos', 'registrationForms', 'eventCoupons', 'reportColumns', 'reportColumnConfig', 'reportColumnOrder', 'canEditReports'));
     }
 
     public function update(Request $request, string $id)
@@ -292,7 +308,9 @@ class EventosController extends Controller
             'price' => 'nullable|required_if:is_registration,1|numeric|min:0',
             'max_capacity' => 'nullable|required_if:is_registration,1|integer|min:1',
             'template' => 'nullable|string|max:100',
-            'template_form' => 'nullable|required_if:is_registration,1|string|max:100',
+            'template_form' => 'nullable|required_if:registration_form_mode,manual|string|max:100',
+            'registration_form_mode' => 'nullable|required_if:is_registration,1|in:manual,builder',
+            'registration_form_id' => 'nullable|required_if:registration_form_mode,builder|uuid|exists:registration_forms,id',
             'allows_multiple_registrations' => 'nullable|boolean',
             'registration_max_checkins' => 'nullable|required_if:is_registration,1|integer|min:1',
             'modal_color' => 'nullable|string|max:50',
@@ -336,6 +354,8 @@ class EventosController extends Controller
                 'max_capacity',
                 'template',
                 'template_form',
+                'registration_form_mode',
+                'registration_form_id',
                 'registration_max_checkins',
                 'modal_color',
                 'modal_selector',
@@ -356,11 +376,19 @@ class EventosController extends Controller
                 $data['total_asientos'] = 0;
                 $data['has_seat_mapping'] = false;
                 $data['template'] = $data['template'] ?? 'registration';
+                $data['registration_form_mode'] = $data['registration_form_mode'] ?? 'manual';
+                if ($data['registration_form_mode'] === 'builder') {
+                    $data['template_form'] = null;
+                } else {
+                    $data['registration_form_id'] = null;
+                }
                 $data['registration_max_checkins'] = max(1, (int) ($data['registration_max_checkins'] ?? 1));
             } else {
                 $data['price'] = null;
                 $data['max_capacity'] = null;
                 $data['template_form'] = null;
+                $data['registration_form_mode'] = null;
+                $data['registration_form_id'] = null;
                 $data['allows_multiple_registrations'] = false;
                 $data['template'] = $data['template'] ?? 'default';
                 $data['registration_max_checkins'] = 1;

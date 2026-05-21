@@ -23,6 +23,7 @@ class EventReportColumns
             'payment_status' => 'Estado del pago',
             'buyer_data' => 'Datos del comprador',
             'record_data' => 'Datos de registro',
+            'registrations_count' => 'Inscritos en compra',
             'items_count' => 'Elementos en compra',
         ];
     }

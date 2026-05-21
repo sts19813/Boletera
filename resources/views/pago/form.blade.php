@@ -319,13 +319,14 @@
                     });
 
                     if (!intentRes.ok) {
-
-                        const errorData = await intentRes.json();
+                        const errorData = await intentRes.json().catch(() => ({}));
+                        const errorMessage = errorData.error || errorData.message || 'No se pudo crear el intento de pago.';
+                        const detailMessage = errorData.detalle || '';
 
                         errorBox.innerHTML = `
                             <div class="alert alert-danger">
-                                <strong>${errorData.error}</strong><br>
-                                ${errorData.detalle ?? ''}
+                                <strong>${errorMessage}</strong><br>
+                                ${detailMessage}
                             </div>
                         `;
 
