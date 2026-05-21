@@ -255,8 +255,14 @@
                 </div>
 
                 <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <div style="max-width: 360px; width: 100%;">
+                            <input type="text" id="tablaBoletosSearch" class="form-control"
+                                placeholder="Buscar en listado completo de ventas...">
+                        </div>
+                    </div>
                     <div class="table-responsive">
-                        <table class="table table-striped align-middle">
+                        <table id="tablaBoletosTable" class="table table-striped align-middle">
                             <thead>
                                 <tr>
                                     <th>Evento</th>
@@ -271,13 +277,7 @@
                                     <th>Fecha compra</th>
                                 </tr>
                             </thead>
-                            <tbody id="tablaBoletos">
-                                <tr>
-                                    <td colspan="10" class="text-center text-muted">
-                                        Cargando ventas...
-                                    </td>
-                                </tr>
-                            </tbody>
+                            <tbody id="tablaBoletos"></tbody>
                         </table>
                     </div>
                 </div>
@@ -289,6 +289,7 @@
 @push('scripts')
     <script>
         const chartRoots = {};
+        let salesDataTable = null;
 
         const currencyFormatter = new Intl.NumberFormat('es-MX', {
             style: 'currency',
@@ -304,6 +305,15 @@
 
         function formatNumber(value) {
             return numberFormatter.format(Number(value || 0));
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function getSelectedEventIds() {
@@ -616,32 +626,71 @@
         }
 
         function renderSalesTable(rows) {
-            const tbody = document.getElementById('tablaBoletos');
-            if (!Array.isArray(rows) || rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">Sin ventas para los filtros seleccionados.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = rows.map((row) => {
+            const data = (Array.isArray(rows) ? rows : []).map((row) => {
                 const courtesyBadge = row.es_cortesia
                     ? '<span class="badge badge-light-warning ms-1">Cortesía</span>'
                     : '';
 
-                return `
+                return [
+                    escapeHtml(row.evento),
+                    `<span class="text-capitalize">${escapeHtml(row.tipo)}</span>`,
+                    escapeHtml(row.boleto),
+                    escapeHtml(row.email),
+                    escapeHtml(row.nombre ?? '-'),
+                    `<span class="text-capitalize">${escapeHtml(row.metodo ?? 'N/A')}</span>`,
+                    escapeHtml(row.referencia ?? '-'),
+                    escapeHtml(row.user_name ?? 'StomTickets'),
+                    `${formatCurrency(row.precio)} ${courtesyBadge}`,
+                    escapeHtml(row.fecha),
+                ];
+            });
+
+            if (!$.fn.DataTable) {
+                const tbody = document.getElementById('tablaBoletos');
+                tbody.innerHTML = data.map((row) => `
                     <tr>
-                        <td>${row.evento}</td>
-                        <td class="text-capitalize">${row.tipo}</td>
-                        <td>${row.boleto}</td>
-                        <td>${row.email}</td>
-                        <td>${row.nombre ?? '-'}</td>
-                        <td class="text-capitalize">${row.metodo ?? 'N/A'}</td>
-                        <td>${row.referencia ?? '-'}</td>
-                        <td>${row.user_name ?? 'StomTickets'}</td>
-                        <td>${formatCurrency(row.precio)} ${courtesyBadge}</td>
-                        <td>${row.fecha}</td>
+                        <td>${row[0]}</td>
+                        <td>${row[1]}</td>
+                        <td>${row[2]}</td>
+                        <td>${row[3]}</td>
+                        <td>${row[4]}</td>
+                        <td>${row[5]}</td>
+                        <td>${row[6]}</td>
+                        <td>${row[7]}</td>
+                        <td>${row[8]}</td>
+                        <td>${row[9]}</td>
                     </tr>
-                `;
-            }).join('');
+                `).join('');
+                return;
+            }
+
+            if (!$.fn.DataTable.isDataTable('#tablaBoletosTable')) {
+                salesDataTable = $('#tablaBoletosTable').DataTable({
+                    data,
+                    dom: 'lrtip',
+                    pageLength: 500,
+                    lengthMenu: [
+                        [500, 1000, 1500, 2000, -1],
+                        [500, 1000, 1500, 2000, 'Todos'],
+                    ],
+                    searching: true,
+                    ordering: true,
+                    order: [],
+                    paging: true,
+                    deferRender: true,
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-MX.json',
+                    },
+                });
+                return;
+            }
+
+            salesDataTable = $('#tablaBoletosTable').DataTable();
+            salesDataTable.clear();
+            if (data.length) {
+                salesDataTable.rows.add(data);
+            }
+            salesDataTable.draw();
         }
 
         function updateCards(cards) {
@@ -699,6 +748,17 @@
                     }
 
                     $eventIds.val(['__all__']).trigger('change.select2');
+                });
+            }
+
+            const searchInput = document.getElementById('tablaBoletosSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    if (!salesDataTable) {
+                        return;
+                    }
+
+                    salesDataTable.search(this.value).draw();
                 });
             }
 
