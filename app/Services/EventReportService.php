@@ -86,9 +86,8 @@ class EventReportService
         $ticketEntries = $this->buildTicketEntries($ticketInstances);
         $registrationInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type === 'registration')->values();
         $registrationEntries = $this->buildRegistrationEntries($registrationInstances);
-
-        $detailRows = $this->buildDetailRows($instances, $registrationEntries);
-        $itemsCount = count($detailRows);
+        $itemsCount = $instances->count();
+        $ticketCount = $ticketInstances->count();
         $registrationsCount = $registrationInstances->count();
         $totalPaid = $instances->sum(function (TicketInstance $instance) {
             return (float) ($instance->total ?? $instance->price ?? 0);
@@ -130,63 +129,102 @@ class EventReportService
         $paymentMethod = $this->mapPaymentMethod((string) $primary->payment_method);
         $paymentStatus = $this->resolvePaymentStatus($instances);
         $buyerData = $this->resolveBuyerData($primary);
+        /** @var TicketInstance|null $firstTicket */
+        $firstTicket = $ticketInstances->first();
 
-        $rows = [];
+        $saleType = '-';
+        $seat = '-';
+        $ticketType = '-';
+        $recordData = '-';
 
-        foreach ($detailRows as $detail) {
-            $rowInstanceId = (string) ($detail['instance_id'] ?? $primary->id);
-            $searchBlob = implode(' | ', array_filter([
-                $event->name,
-                $transactionRef,
-                (string) ($primary->reference ?? ''),
-                $buyerData,
-                (string) ($detail['sale_type'] ?? ''),
-                (string) ($detail['ticket_type'] ?? ''),
-                (string) ($detail['seat'] ?? ''),
-                (string) ($detail['record_data'] ?? ''),
-            ]));
+        if ($ticketCount > 0 && $registrationsCount === 0) {
+            $saleType = 'Boleto';
+            $ticketType = $ticketInstances
+                ->map(fn(TicketInstance $instance) => (string) ($instance->ticket?->type ?? $instance->ticket?->name ?? '-'))
+                ->filter(fn(string $value) => trim($value) !== '')
+                ->unique()
+                ->implode(', ');
 
-            $row = [
-                'instance_id' => $rowInstanceId,
-                'reference' => $primary->reference,
-                'raw_sale_type' => $primary->sale_type,
-                '_sort_date' => $sortDate,
-                'purchase_reference' => $transactionRef,
-                'event_name' => $event->name,
-                'sale_type' => $detail['sale_type'] ?? '-',
-                'seat' => $detail['seat'] ?? '-',
-                'ticket_type' => $detail['ticket_type'] ?? '-',
-                'coupon' => empty($couponCodes) ? '-' : implode(', ', $couponCodes),
-                'discount' => empty($discountValues) ? '-' : implode(', ', $discountValues),
-                'payment_method' => $paymentMethod,
-                'total_paid' => '$' . number_format($totalPaid, 2),
-                'purchased_at' => $purchaseDate ?? '-',
-                'payment_status' => $paymentStatus,
-                'buyer_data' => $buyerData,
-                'record_data' => $detail['record_data'] ?? '-',
-                'search_blob' => $searchBlob,
-                'registrations_count' => ($event->allows_multiple_registrations ?? false) && $registrationsCount > 0
-                    ? $registrationsCount
-                    : '-',
-                'items_count' => $itemsCount,
-            ];
+            if ($ticketType === '') {
+                $ticketType = '-';
+            }
 
-            $visibleData = array_intersect_key(
-                $row,
-                array_flip(array_merge(['_sort_date'], $columnKeys))
-            );
-
-            $rows[] = array_merge($visibleData, [
-                'instance_id' => $row['instance_id'],
-                'reference' => $row['reference'],
-                'raw_sale_type' => $row['raw_sale_type'],
-                'ticket_entries' => $ticketEntries,
-                'registration_entries' => $registrationEntries,
-                'search_blob' => $row['search_blob'],
-            ]);
+            if ($ticketCount === 1) {
+                $seat = $firstTicket?->ticket?->name ?? '-';
+                $recordData = trim(implode(' | ', array_filter([
+                    $firstTicket?->nombre ? 'Nombre: ' . $firstTicket->nombre : null,
+                    $firstTicket?->email ? 'Email: ' . $firstTicket->email : null,
+                    $firstTicket?->celular ? 'Cel: ' . $firstTicket->celular : null,
+                ]))) ?: '-';
+            } else {
+                $seat = 'Multiples (' . $ticketCount . ')';
+                $recordData = 'Compra con ' . $ticketCount . ' boletos.';
+            }
+        } elseif ($ticketCount === 0 && $registrationsCount > 0) {
+            $saleType = 'Registro';
+            $seat = '-';
+            $ticketType = 'Inscripcion';
+            $recordData = !empty($registrationEntries)
+                ? $this->formatRegistrationEntriesAsText($registrationEntries)
+                : '-';
+        } elseif ($ticketCount > 0 && $registrationsCount > 0) {
+            $saleType = 'Mixta';
+            $seat = 'Multiples (' . $ticketCount . ')';
+            $ticketType = 'Boletos + Inscripcion';
+            $recordData = !empty($registrationEntries)
+                ? $this->formatRegistrationEntriesAsText($registrationEntries)
+                : 'Compra con boletos e inscripciones.';
         }
 
-        return $rows;
+        $searchBlob = implode(' | ', array_filter([
+            $event->name,
+            $transactionRef,
+            (string) ($primary->reference ?? ''),
+            $buyerData,
+            $saleType,
+            $ticketType,
+            $seat,
+            $recordData,
+        ]));
+
+        $row = [
+            'instance_id' => (string) $primary->id,
+            'reference' => $primary->reference,
+            'raw_sale_type' => $ticketCount > 0 ? 'ticket' : 'registration',
+            '_sort_date' => $sortDate,
+            'purchase_reference' => $transactionRef,
+            'event_name' => $event->name,
+            'sale_type' => $saleType,
+            'seat' => $seat,
+            'ticket_type' => $ticketType,
+            'coupon' => empty($couponCodes) ? '-' : implode(', ', $couponCodes),
+            'discount' => empty($discountValues) ? '-' : implode(', ', $discountValues),
+            'payment_method' => $paymentMethod,
+            'total_paid' => '$' . number_format($totalPaid, 2),
+            'purchased_at' => $purchaseDate ?? '-',
+            'payment_status' => $paymentStatus,
+            'buyer_data' => $buyerData,
+            'record_data' => $recordData,
+            'search_blob' => $searchBlob,
+            'registrations_count' => ($event->allows_multiple_registrations ?? false) && $registrationsCount > 0
+                ? $registrationsCount
+                : '-',
+            'items_count' => $itemsCount,
+        ];
+
+        $visibleData = array_intersect_key(
+            $row,
+            array_flip(array_merge(['_sort_date'], $columnKeys))
+        );
+
+        return [array_merge($visibleData, [
+            'instance_id' => $row['instance_id'],
+            'reference' => $row['reference'],
+            'raw_sale_type' => $row['raw_sale_type'],
+            'ticket_entries' => $ticketEntries,
+            'registration_entries' => $registrationEntries,
+            'search_blob' => $row['search_blob'],
+        ])];
     }
 
     /**
