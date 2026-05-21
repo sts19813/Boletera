@@ -5,42 +5,54 @@
 @section('content')
 
 
-    <div class="d-flex align-items-center justify-content-between mb-6">
+    <div class="d-flex align-items-center justify-content-between mb-6 flex-wrap gap-3">
         <h3 class="fw-bold mb-0">Corte de Ventas</h3>
-
-        <div class="card card-flush mb-6">
-            <div class="card-body">
-                <form method="GET" class="row g-4 align-items-end">
-
-                    <div class="col-md-4">
-                        <label class="form-label">Desde</label>
-                        <input type="datetime-local" name="from" class="form-control" value="{{ request('from') }}">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Hasta</label>
-                        <input type="datetime-local" name="to" class="form-control" value="{{ request('to') }}">
-                    </div>
-
-                    <div class="col-md-4 d-flex gap-2">
-                        <button class="btn btn-primary">
-                            Filtrar
-                        </button>
-
-                        <a href="{{ route('admin.corte.index') }}" class="btn btn-light">
-                            Limpiar
-                        </a>
-                    </div>
-
-                </form>
-            </div>
-        </div>
-
 
         <a href="{{ route('admin.corte.export.general', request()->query()) }}" class="btn btn-primary">
             Exportar Corte
         </a>
     </div>
+
+    <div class="card card-flush mb-6">
+        <div class="card-body">
+            <form method="GET" class="row g-4 align-items-end">
+
+                <div class="col-xl-4 col-md-6">
+                    <label class="form-label">Eventos</label>
+                    <select id="event_ids" name="event_ids[]" class="form-select" multiple>
+                        <option value="__all__" @selected(empty($selectedEventIds ?? []))>Todos</option>
+                        @foreach(($events ?? collect()) as $event)
+                            <option value="{{ $event->id }}" @selected(in_array($event->id, $selectedEventIds ?? [], true))>
+                                {{ $event->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <label class="form-label">Desde</label>
+                    <input type="datetime-local" name="from" class="form-control" value="{{ request('from') }}">
+                </div>
+
+                <div class="col-xl-3 col-md-6">
+                    <label class="form-label">Hasta</label>
+                    <input type="datetime-local" name="to" class="form-control" value="{{ request('to') }}">
+                </div>
+
+                <div class="col-xl-2 col-md-6 d-flex gap-2">
+                    <button class="btn btn-primary">
+                        Filtrar
+                    </button>
+
+                    <a href="{{ route('admin.corte.index') }}" class="btn btn-light">
+                        Limpiar
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
     <div class="card card-flush">
 
         <div class="card-body pt-0">
@@ -117,3 +129,34 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const $eventIds = $('#event_ids');
+            if ($eventIds.length === 0) {
+                return;
+            }
+
+            $eventIds.select2({
+                placeholder: 'Selecciona eventos',
+                width: '100%',
+            });
+
+            $eventIds.on('change', function () {
+                const values = $eventIds.val() || [];
+                const hasAll = values.includes('__all__');
+
+                if (!hasAll) {
+                    return;
+                }
+
+                if (values.length === 1) {
+                    return;
+                }
+
+                $eventIds.val(['__all__']).trigger('change.select2');
+            });
+        });
+    </script>
+@endpush
