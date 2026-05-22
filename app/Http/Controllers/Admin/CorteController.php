@@ -114,6 +114,11 @@ class CorteController extends Controller
     {
         $fromDateTime = $this->normalizeDateTimeInput($from);
         $toDateTime = $this->normalizeDateTimeInput($to);
+        $courtesyIdentitySql = "(UPPER(COALESCE(ti.email, '')) LIKE '%CORTESIA%' OR UPPER(COALESCE(ti.nombre, '')) LIKE '%CORTESIA%')";
+        $ticketCourtesySql = $courtesyIdentitySql;
+        $ticketPaidSql = "NOT ({$ticketCourtesySql})";
+        $registrationCourtesySql = "({$courtesyIdentitySql} OR ti.price = 0)";
+        $registrationPaidSql = "NOT ({$registrationCourtesySql})";
 
         $baseQuery = DB::table('ticket_instances as ti')
             ->leftJoin('tickets', 'ti.ticket_id', '=', 'tickets.id');
@@ -137,16 +142,16 @@ class CorteController extends Controller
             })
             ->select([
                 DB::raw("COALESCE(NULLIF(tickets.type, ''), 'BOLETO') as tipo"),
-                DB::raw('AVG(CASE WHEN UPPER(COALESCE(ti.email, \'\')) NOT LIKE \'%CORTESIA%\' THEN ti.price END) as precio_unitario'),
+                DB::raw("AVG(CASE WHEN {$ticketPaidSql} THEN ti.price END) as precio_unitario"),
                 DB::raw('COUNT(ti.id) as vendidos'),
-                DB::raw("SUM(CASE WHEN UPPER(COALESCE(ti.email, '')) LIKE '%CORTESIA%' THEN 1 ELSE 0 END) as cortesias"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN 1 ELSE 0 END) as web_qty"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN ti.price ELSE 0 END) as web_total"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN 1 ELSE 0 END) as taquilla_cash_qty"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN ti.price ELSE 0 END) as taquilla_cash_total"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN 1 ELSE 0 END) as taquilla_card_qty"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN ti.price ELSE 0 END) as taquilla_card_total"),
-                DB::raw("SUM(CASE WHEN UPPER(COALESCE(ti.email, '')) NOT LIKE '%CORTESIA%' THEN ti.price ELSE 0 END) as total_generado"),
+                DB::raw("SUM(CASE WHEN {$ticketCourtesySql} THEN 1 ELSE 0 END) as cortesias"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND {$ticketPaidSql} THEN 1 ELSE 0 END) as web_qty"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND {$ticketPaidSql} THEN ti.price ELSE 0 END) as web_total"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND {$ticketPaidSql} THEN 1 ELSE 0 END) as taquilla_cash_qty"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND {$ticketPaidSql} THEN ti.price ELSE 0 END) as taquilla_cash_total"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND {$ticketPaidSql} THEN 1 ELSE 0 END) as taquilla_card_qty"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND {$ticketPaidSql} THEN ti.price ELSE 0 END) as taquilla_card_total"),
+                DB::raw("SUM(CASE WHEN {$ticketPaidSql} THEN ti.price ELSE 0 END) as total_generado"),
             ])
             ->groupBy('tipo')
             ->get();
@@ -155,16 +160,16 @@ class CorteController extends Controller
             ->where('ti.sale_type', 'registration')
             ->select([
                 DB::raw("'INSCRIPCION' as tipo"),
-                DB::raw('AVG(CASE WHEN ti.price > 0 THEN ti.price END) as precio_unitario'),
+                DB::raw("AVG(CASE WHEN {$registrationPaidSql} THEN ti.price END) as precio_unitario"),
                 DB::raw('COUNT(ti.id) as vendidos'),
-                DB::raw('SUM(CASE WHEN ti.price = 0 THEN 1 ELSE 0 END) as cortesias'),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND ti.price > 0 THEN 1 ELSE 0 END) as web_qty"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND ti.price > 0 THEN ti.price ELSE 0 END) as web_total"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND ti.price > 0 THEN 1 ELSE 0 END) as taquilla_cash_qty"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND ti.price > 0 THEN ti.price ELSE 0 END) as taquilla_cash_total"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND ti.price > 0 THEN 1 ELSE 0 END) as taquilla_card_qty"),
-                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND ti.price > 0 THEN ti.price ELSE 0 END) as taquilla_card_total"),
-                DB::raw('SUM(CASE WHEN ti.price > 0 THEN ti.price ELSE 0 END) as total_generado'),
+                DB::raw("SUM(CASE WHEN {$registrationCourtesySql} THEN 1 ELSE 0 END) as cortesias"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND {$registrationPaidSql} THEN 1 ELSE 0 END) as web_qty"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'stripe' AND {$registrationPaidSql} THEN ti.price ELSE 0 END) as web_total"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND {$registrationPaidSql} THEN 1 ELSE 0 END) as taquilla_cash_qty"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'cash' AND {$registrationPaidSql} THEN ti.price ELSE 0 END) as taquilla_cash_total"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND {$registrationPaidSql} THEN 1 ELSE 0 END) as taquilla_card_qty"),
+                DB::raw("SUM(CASE WHEN ti.sale_channel = 'taquilla' AND ti.payment_method = 'card' AND {$registrationPaidSql} THEN ti.price ELSE 0 END) as taquilla_card_total"),
+                DB::raw("SUM(CASE WHEN {$registrationPaidSql} THEN ti.price ELSE 0 END) as total_generado"),
             ])
             ->groupBy('tipo')
             ->get();

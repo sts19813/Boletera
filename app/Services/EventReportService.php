@@ -90,7 +90,7 @@ class EventReportService
         $ticketCount = $ticketInstances->count();
         $registrationsCount = $registrationInstances->count();
         $totalPaid = $instances->sum(function (TicketInstance $instance) {
-            return (float) ($instance->total ?? $instance->price ?? 0);
+            return $this->instanceAmountForReports($instance);
         });
 
         $couponCodes = $instances->pluck('coupon_code')
@@ -526,7 +526,7 @@ class EventReportService
 
             $fields[] = ['label' => 'Boleto', 'value' => (string) ($instance->ticket?->name ?? '-')];
             $fields[] = ['label' => 'Tipo', 'value' => (string) ($instance->ticket?->type ?? $instance->ticket?->name ?? '-')];
-            $fields[] = ['label' => 'Precio', 'value' => '$' . number_format((float) ($instance->total ?? $instance->price ?? 0), 2)];
+            $fields[] = ['label' => 'Precio', 'value' => '$' . number_format($this->instanceAmountForReports($instance), 2)];
 
             if ($instance->nombre) {
                 $fields[] = ['label' => 'Nombre', 'value' => $instance->nombre];
@@ -620,5 +620,23 @@ class EventReportService
     private function isAssoc(array $array): bool
     {
         return array_keys($array) !== range(0, count($array) - 1);
+    }
+
+    private function instanceAmountForReports(TicketInstance $instance): float
+    {
+        if ($this->isCourtesyByIdentity($instance->email, $instance->nombre)) {
+            return 0.0;
+        }
+
+        return (float) ($instance->total ?? $instance->price ?? 0);
+    }
+
+    private function isCourtesyByIdentity(?string $email, ?string $nombre): bool
+    {
+        $emailText = strtoupper(trim((string) $email));
+        $nameText = strtoupper(trim((string) $nombre));
+
+        return str_contains($emailText, 'CORTESIA')
+            || str_contains($nameText, 'CORTESIA');
     }
 }

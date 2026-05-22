@@ -43,8 +43,11 @@ class DashboardController extends Controller
         $this->applyCommonFilters($ticketQuery, $from, $to, $selectedEventIds);
         $this->applyCommonFilters($registrationQuery, $from, $to, $selectedEventIds);
 
-        $courtesyTicketSql = "UPPER(COALESCE(email, '')) LIKE '%CORTESIA%'";
-        $paidTicketSql = "UPPER(COALESCE(email, '')) NOT LIKE '%CORTESIA%'";
+        $courtesyIdentitySql = "(UPPER(COALESCE(email, '')) LIKE '%CORTESIA%' OR UPPER(COALESCE(nombre, '')) LIKE '%CORTESIA%')";
+        $courtesyTicketSql = $courtesyIdentitySql;
+        $paidTicketSql = "NOT ({$courtesyTicketSql})";
+        $courtesyRegistrationSql = "({$courtesyIdentitySql} OR price = 0)";
+        $paidRegistrationSql = "NOT ({$courtesyRegistrationSql})";
 
         $ticketsCount = (clone $ticketQuery)->count();
         $registrationsCount = (clone $registrationQuery)->count();
@@ -54,7 +57,9 @@ class DashboardController extends Controller
         $ingresosTickets = (clone $ticketQuery)
             ->whereRaw($paidTicketSql)
             ->sum('price');
-        $ingresosInscripciones = (clone $registrationQuery)->sum('price');
+        $ingresosInscripciones = (clone $registrationQuery)
+            ->whereRaw($paidRegistrationSql)
+            ->sum('price');
         $ingresosTotales = $ingresosTickets + $ingresosInscripciones;
 
         $ventasHoy = (
@@ -71,7 +76,7 @@ class DashboardController extends Controller
             ->whereRaw($courtesyTicketSql)
             ->count();
         $registrationCortesias = (clone $registrationQuery)
-            ->where('price', 0)
+            ->whereRaw($courtesyRegistrationSql)
             ->count();
         $boletosCortesia = $ticketCortesias + $registrationCortesias;
 
@@ -80,7 +85,7 @@ class DashboardController extends Controller
                 ->whereRaw($paidTicketSql)
                 ->count() +
             (clone $registrationQuery)
-                ->where('price', '>', 0)
+                ->whereRaw($paidRegistrationSql)
                 ->count();
 
         $ticketPromedio = $ventasPagadas > 0
@@ -113,7 +118,7 @@ class DashboardController extends Controller
                 'email' => $item->email,
                 'concepto' => $item->ticket->name ?? 'Boleto',
                 'evento' => $item->evento->name ?? 'Evento',
-                'precio' => $item->price,
+                'precio' => $this->isCourtesyByIdentity($item->email, $item->nombre) ? 0 : (float) $item->price,
                 'fecha' => $item->purchased_at,
                 'tipo' => 'ticket',
             ]);
@@ -127,7 +132,9 @@ class DashboardController extends Controller
                 'email' => $item->email,
                 'concepto' => $item->evento->name ?? 'Inscripcion',
                 'evento' => $item->evento->name ?? 'Evento',
-                'precio' => $item->price,
+                'precio' => ($this->isCourtesyByIdentity($item->email, $item->nombre) || (float) $item->price === 0.0)
+                    ? 0
+                    : (float) $item->price,
                 'fecha' => $item->purchased_at,
                 'tipo' => 'inscripcion',
             ]);
@@ -156,9 +163,9 @@ class DashboardController extends Controller
         $chartInscripciones = (clone $registrationQuery)
             ->select(
                 DB::raw('DATE(purchased_at) as date'),
-                DB::raw('SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as cortesia'),
-                DB::raw('SUM(CASE WHEN price > 0 THEN 1 ELSE 0 END) as pagados'),
-                DB::raw('SUM(price) as ingresos'),
+                DB::raw("SUM(CASE WHEN {$courtesyRegistrationSql} THEN 1 ELSE 0 END) as cortesia"),
+                DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN 1 ELSE 0 END) as pagados"),
+                DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN price ELSE 0 END) as ingresos"),
                 DB::raw('COUNT(*) as total')
             )
             ->groupBy('date')
@@ -193,9 +200,9 @@ class DashboardController extends Controller
                 (clone $registrationQuery)
                     ->select(
                         'event_id',
-                        DB::raw('SUM(price) as ingresos'),
-                        DB::raw('SUM(CASE WHEN price > 0 THEN 1 ELSE 0 END) as pagados'),
-                        DB::raw('SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as cortesia'),
+                        DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN price ELSE 0 END) as ingresos"),
+                        DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN 1 ELSE 0 END) as pagados"),
+                        DB::raw("SUM(CASE WHEN {$courtesyRegistrationSql} THEN 1 ELSE 0 END) as cortesia"),
                         DB::raw('COUNT(*) as total')
                     )
                     ->groupBy('event_id')
@@ -230,9 +237,9 @@ class DashboardController extends Controller
                 (clone $registrationQuery)
                     ->select(
                         DB::raw("COALESCE(NULLIF(payment_method, ''), 'sin_metodo') as metodo"),
-                        DB::raw('SUM(price) as ingresos'),
-                        DB::raw('SUM(CASE WHEN price > 0 THEN 1 ELSE 0 END) as pagados'),
-                        DB::raw('SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as cortesia'),
+                        DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN price ELSE 0 END) as ingresos"),
+                        DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN 1 ELSE 0 END) as pagados"),
+                        DB::raw("SUM(CASE WHEN {$courtesyRegistrationSql} THEN 1 ELSE 0 END) as cortesia"),
                         DB::raw('COUNT(*) as total')
                     )
                     ->groupBy('metodo')
@@ -267,9 +274,9 @@ class DashboardController extends Controller
                 (clone $registrationQuery)
                     ->select(
                         DB::raw("COALESCE(NULLIF(sale_channel, ''), 'sin_canal') as canal"),
-                        DB::raw('SUM(price) as ingresos'),
-                        DB::raw('SUM(CASE WHEN price > 0 THEN 1 ELSE 0 END) as pagados'),
-                        DB::raw('SUM(CASE WHEN price = 0 THEN 1 ELSE 0 END) as cortesia'),
+                        DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN price ELSE 0 END) as ingresos"),
+                        DB::raw("SUM(CASE WHEN {$paidRegistrationSql} THEN 1 ELSE 0 END) as pagados"),
+                        DB::raw("SUM(CASE WHEN {$courtesyRegistrationSql} THEN 1 ELSE 0 END) as cortesia"),
                         DB::raw('COUNT(*) as total')
                     )
                     ->groupBy('canal')
@@ -349,6 +356,8 @@ class DashboardController extends Controller
             ->with(['ticket', 'evento', 'user'])
             ->get()
             ->map(function ($item) {
+                $isCourtesy = $this->isCourtesyByIdentity($item->email, $item->nombre);
+
                 return [
                     'id' => $item->id,
                     'user_id' => $item->user_id,
@@ -360,8 +369,8 @@ class DashboardController extends Controller
                     'nombre' => $item->nombre ?? '-',
                     'metodo' => $item->payment_method,
                     'referencia' => $item->reference,
-                    'precio' => $item->price,
-                    'es_cortesia' => str_contains(strtoupper((string) $item->email), 'CORTESIA'),
+                    'precio' => $isCourtesy ? 0 : (float) $item->price,
+                    'es_cortesia' => $isCourtesy,
                     'fecha' => $item->purchased_at,
                 ];
             });
@@ -370,6 +379,8 @@ class DashboardController extends Controller
             ->with(['evento', 'user'])
             ->get()
             ->map(function ($item) {
+                $isCourtesy = $this->isCourtesyByIdentity($item->email, $item->nombre) || (float) $item->price === 0.0;
+
                 return [
                     'id' => $item->id,
                     'user_id' => $item->user_id,
@@ -381,8 +392,8 @@ class DashboardController extends Controller
                     'email' => $item->email,
                     'metodo' => $item->payment_method,
                     'referencia' => $item->payment_intent_id ?? $item->reference,
-                    'precio' => $item->price,
-                    'es_cortesia' => (float) $item->price === 0.0,
+                    'precio' => $isCourtesy ? 0 : (float) $item->price,
+                    'es_cortesia' => $isCourtesy,
                     'fecha' => $item->purchased_at,
                 ];
             });
@@ -474,5 +485,13 @@ class DashboardController extends Controller
         if (!empty($eventIds)) {
             $query->whereIn('event_id', $eventIds);
         }
+    }
+
+    private function isCourtesyByIdentity(?string $email, ?string $nombre): bool
+    {
+        $emailText = strtoupper(trim((string) $email));
+        $nombreText = strtoupper(trim((string) $nombre));
+
+        return str_contains($emailText, 'CORTESIA') || str_contains($nombreText, 'CORTESIA');
     }
 }
