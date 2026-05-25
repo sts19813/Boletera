@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PaymentController extends Controller
 {
