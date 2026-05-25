@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Eventos;
 use App\Models\TicketInstance;
+use App\Jobs\SendBoletosEmailJob;
 use App\Services\RegistrationBuilderService;
 use App\Services\TicketBuilderService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class TicketReprintController extends Controller
 {
@@ -25,6 +27,7 @@ class TicketReprintController extends Controller
     }
 
     public function reprintAdmin(
+        Request $request,
         TicketInstance $instance,
         TicketBuilderService $builder
     ) {
@@ -35,6 +38,19 @@ class TicketReprintController extends Controller
         $ticket = $instance->ticket;
         $email = $instance->email ?? 'taquilla@local';
         $evento = Eventos::findOrFail($instance->event_id);
+
+
+        if ($request->boolean('send_email')) {
+            $emailDestino = $request->input('email', $email);
+
+            if (!empty($emailDestino) && filter_var($emailDestino, FILTER_VALIDATE_EMAIL)) {
+                SendBoletosEmailJob::dispatch($emailDestino, [$instance->id], $emailDestino);
+
+                return back()->with('success', 'Reimpresión encolada y enviada por correo.');
+            }
+
+            return back()->withErrors(['email' => 'Correo inválido para reimpresión.']);
+        }
 
         $boleto = $builder->build(
             ticket: $ticket,
@@ -54,6 +70,7 @@ class TicketReprintController extends Controller
     }
 
     public function reprintInscription(
+        Request $request,
         TicketInstance $instance,
         RegistrationBuilderService $builder
     ) {
@@ -63,6 +80,19 @@ class TicketReprintController extends Controller
 
         $evento = $instance->evento;
         $email = $instance->email ?? 'taquilla@local';
+
+
+        if ($request->boolean('send_email')) {
+            $emailDestino = $request->input('email', $email);
+
+            if (!empty($emailDestino) && filter_var($emailDestino, FILTER_VALIDATE_EMAIL)) {
+                SendBoletosEmailJob::dispatch($emailDestino, [$instance->id], $emailDestino);
+
+                return back()->with('success', 'Reimpresión encolada y enviada por correo.');
+            }
+
+            return back()->withErrors(['email' => 'Correo inválido para reimpresión.']);
+        }
 
         $registro = $builder->build(
             evento: $evento,

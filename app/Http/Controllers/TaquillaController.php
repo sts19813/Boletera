@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Jobs\SendBoletosEmailJob;
 use App\Models\Ticket;
 use App\Models\Eventos;
 use App\Models\TicketInstance;
@@ -14,8 +15,6 @@ use App\Services\RegistrationService;
 use App\Services\TicketBuilderService;
 use App\Services\TicketService;
 use App\Support\RegistrationPricing;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\BoletosMail;
 
 class TaquillaController extends Controller
 {
@@ -195,11 +194,14 @@ class TaquillaController extends Controller
                 $email !== 'taquilla@local' &&
                 count($boletos) > 0
             ) {
-                $pdfContent = $this->generateBoletosPdf($boletos, $email);
+                $instanceIds = TicketInstance::query()
+                    ->where('reference', $reference)
+                    ->pluck('id')
+                    ->all();
 
-                Mail::to($email)->send(
-                    new BoletosMail($pdfContent, $boletos)
-                );
+                if (!empty($instanceIds)) {
+                    SendBoletosEmailJob::dispatch($email, $instanceIds, $email);
+                }
             }
 
             return view('pago.success', [
@@ -208,15 +210,6 @@ class TaquillaController extends Controller
                 'evento' => $evento
             ]);
         });
-    }
-
-    private function generateBoletosPdf(array $boletos, string $email)
-    {
-        return Pdf::loadView('pdf.boletos', [
-            'boletos' => $boletos,
-            'email' => $email,
-        ])->setPaper([0, 0, 400, 700])->output();
-
     }
 
     public function pdf(TicketInstance $instance)

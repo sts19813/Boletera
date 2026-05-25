@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\BoletosMail;
+use App\Jobs\SendBoletosEmailJob;
 use App\Models\Eventos;
 use App\Models\Ticket;
 use App\Models\TicketInstance;
@@ -12,10 +12,8 @@ use App\Services\TicketBuilderService;
 use App\Services\CouponService;
 use App\Services\TicketService;
 use App\Support\RegistrationPricing;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
@@ -270,25 +268,20 @@ class PaymentController extends Controller
             abort(400, 'No se generaron boletos para esta compra');
         }
 
-        $pdfContent = $this->generateBoletosPdf($boletos, $email);
+        $instanceIds = TicketInstance::query()
+            ->where('payment_intent_id', $paymentIntentId)
+            ->pluck('id')
+            ->all();
 
-        Mail::to($email)->send(
-            new BoletosMail($pdfContent, $boletos)
-        );
+        if (!empty($instanceIds) && $email) {
+            SendBoletosEmailJob::dispatch($email, $instanceIds, $email);
+        }
 
         $eventId = $cart[0]['event_id'] ?? null;
         $evento = Eventos::findOrFail($eventId);
         session()->forget('coupon_code');
 
         return view('pago.success', compact('boletos', 'email', 'evento'));
-    }
-
-    private function generateBoletosPdf(array $boletos, string $email)
-    {
-        return Pdf::loadView('pdf.boletos', [
-            'boletos' => $boletos,
-            'email' => $email,
-        ])->setPaper([0, 0, 400, 700])->output();
     }
 
     public function reprint(Request $request)
