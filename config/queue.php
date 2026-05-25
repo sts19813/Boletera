@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Dedicated Queue For Ticket PDF + Mail
+    |--------------------------------------------------------------------------
+    |
+    | This queue isolates expensive PDF generation and ticket email delivery
+    | from HTTP requests and other background jobs.
+    |
+    */
+
+    'ticket_delivery_queue' => env('QUEUE_TICKET_DELIVERY', 'ticket-delivery'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------
     |

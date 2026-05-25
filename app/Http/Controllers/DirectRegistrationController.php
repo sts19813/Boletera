@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\DirectRegistrationMail;
 use App\Models\Eventos;
 use App\Models\TicketInstance;
 use App\Services\RegistrationFormSchemaService;
+use App\Services\QueueMailTaskService;
 use App\Services\RegistrationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class DirectRegistrationController extends Controller
@@ -17,7 +16,8 @@ class DirectRegistrationController extends Controller
 
     public function __construct(
         private RegistrationService $registrationService,
-        private RegistrationFormSchemaService $schemaService
+        private RegistrationFormSchemaService $schemaService,
+        private QueueMailTaskService $queueMailTaskService
     ) {
     }
 
@@ -164,7 +164,12 @@ class DirectRegistrationController extends Controller
             'base_price' => (float) ($event->price ?? 0),
         ]);
 
-        Mail::to($normalizedEmail)->send(new DirectRegistrationMail($event, $formData));
+        $this->queueMailTaskService->queueDirectRegistration(
+            recipient: $normalizedEmail,
+            eventId: (string) $event->id,
+            registrationData: $formData,
+            reference: $instances[0]->reference ?? null
+        );
 
         return response()->json([
             'message' => 'Registro completado correctamente.',
