@@ -12,11 +12,28 @@ class QueueMailTaskService
         array $boletos,
         string $type = 'boletos_purchase',
         ?string $reference = null,
-        ?string $subject = null
+        ?string $subject = null,
+        bool $deduplicateByReference = false
     ): QueueMailTask {
+        $normalizedRecipient = strtolower(trim($recipient));
+
+        if ($deduplicateByReference && $reference) {
+            $existing = QueueMailTask::query()
+                ->where('type', $type)
+                ->where('recipient', $normalizedRecipient)
+                ->where('reference', $reference)
+                ->whereIn('status', ['pending', 'processing', 'sent'])
+                ->latest('created_at')
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+        }
+
         $task = QueueMailTask::create([
             'type' => $type,
-            'recipient' => strtolower(trim($recipient)),
+            'recipient' => $normalizedRecipient,
             'reference' => $reference,
             'queue_name' => config('queue.ticket_delivery_queue', 'ticket-delivery'),
             'status' => 'pending',
@@ -79,4 +96,3 @@ class QueueMailTaskService
         return $task;
     }
 }
-

@@ -275,7 +275,8 @@ class PaymentController extends Controller
                 recipient: $email,
                 boletos: $boletos,
                 type: 'boletos_purchase',
-                reference: $paymentIntentId
+                reference: $paymentIntentId,
+                deduplicateByReference: true
             );
         }
 
