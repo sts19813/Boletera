@@ -54,4 +54,9 @@ class AdminEventNote extends Model
     {
         return $this->hasMany(AdminEventNoteAttachment::class);
     }
+
+    public function histories()
+    {
+        return $this->hasMany(AdminEventNoteHistory::class)->latest();
+    }
 }

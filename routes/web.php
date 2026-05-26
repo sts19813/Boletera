@@ -103,6 +103,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.event-notes.index');
         Route::post('/admin/event-notes', [AdminEventNoteController::class, 'store'])
             ->name('admin.event-notes.store');
+        Route::put('/admin/event-notes/{eventNote}', [AdminEventNoteController::class, 'update'])
+            ->name('admin.event-notes.update');
         Route::get('/admin/event-notes/{eventNote}/attachments/{attachment}', [AdminEventNoteController::class, 'downloadAttachment'])
             ->name('admin.event-notes.attachments.download');
 
