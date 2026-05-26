@@ -213,6 +213,15 @@
                                         <span class="menu-title">Cola correos/PDF</span>
                                     </a>
                                 </div>
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('admin/event-notes*') ? 'active' : '' }}"
+                                        href="{{ route('admin.event-notes.index') }}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Notas admin eventos</span>
+                                    </a>
+                                </div>
                                 @endrole
                             @endcan
                         </div>
