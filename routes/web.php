@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\CheckinManagementController;
 use App\Http\Controllers\Admin\QueueMailTaskController;
+use App\Http\Controllers\Admin\AdminEventNoteController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
@@ -98,6 +99,12 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.queue-mails.run');
         Route::post('/admin/queue-mails/{task}/retry', [QueueMailTaskController::class, 'retry'])
             ->name('admin.queue-mails.retry');
+        Route::get('/admin/event-notes', [AdminEventNoteController::class, 'index'])
+            ->name('admin.event-notes.index');
+        Route::post('/admin/event-notes', [AdminEventNoteController::class, 'store'])
+            ->name('admin.event-notes.store');
+        Route::get('/admin/event-notes/{eventNote}/attachments/{attachment}', [AdminEventNoteController::class, 'downloadAttachment'])
+            ->name('admin.event-notes.attachments.download');
 
 
         /*
