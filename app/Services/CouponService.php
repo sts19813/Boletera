@@ -411,8 +411,13 @@ class CouponService
 
         /** @var int $soldTicketsWithCoupon */
         $soldTicketsWithCoupon = TicketInstance::query()
-            ->where('coupon_id', $coupon->id)
-            ->ticketSales()
+            ->where(function ($query) use ($coupon) {
+                $query->where('coupon_id', $coupon->id);
+
+                if (!empty($coupon->code)) {
+                    $query->orWhereRaw('UPPER(coupon_code) = ?', [strtoupper((string) $coupon->code)]);
+                }
+            })
             ->count();
 
         $totalAfterPurchase = $soldTicketsWithCoupon + $qty;
