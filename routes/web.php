@@ -92,6 +92,8 @@ Route::middleware(['auth'])->group(function () {
             ->except(['show']);
         Route::get('/admin/queue-mails', [QueueMailTaskController::class, 'index'])
             ->name('admin.queue-mails.index');
+        Route::post('/admin/queue-mails/mode', [QueueMailTaskController::class, 'updateDeliveryMode'])
+            ->name('admin.queue-mails.mode');
         Route::post('/admin/queue-mails/run', [QueueMailTaskController::class, 'runPending'])
             ->name('admin.queue-mails.run');
         Route::post('/admin/queue-mails/{task}/retry', [QueueMailTaskController::class, 'retry'])

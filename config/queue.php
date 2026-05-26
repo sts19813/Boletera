@@ -14,6 +14,7 @@ return [
     */
 
     'default' => env('QUEUE_CONNECTION', 'database'),
+    'default_from_env' => env('QUEUE_CONNECTION'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,6 +27,7 @@ return [
     */
 
     'ticket_delivery_queue' => env('QUEUE_TICKET_DELIVERY', 'ticket-delivery'),
+    'ticket_delivery_queue_from_env' => env('QUEUE_TICKET_DELIVERY'),
 
     /*
     |--------------------------------------------------------------------------

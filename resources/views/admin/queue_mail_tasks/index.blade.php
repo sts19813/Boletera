@@ -9,19 +9,50 @@
                 <h3 class="card-title mb-1">Cola de correos / PDFs</h3>
                 <div class="text-muted fs-7">Monitoreo de envios de boletos e inscripciones.</div>
             </div>
-            <form method="POST" action="{{ route('admin.queue-mails.run') }}" class="d-flex align-items-center gap-2">
-                @csrf
-                <label class="text-muted fs-7 mb-0">Procesar ahora</label>
-                <select name="max_jobs" class="form-select form-select-sm w-auto">
-                    <option value="1">1 tarea</option>
-                    <option value="3" selected>3 tareas</option>
-                    <option value="5">5 tareas</option>
-                    <option value="10">10 tareas</option>
-                </select>
-                <button class="btn btn-sm btn-primary">Ejecutar</button>
-            </form>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <form method="POST" action="{{ route('admin.queue-mails.mode') }}" class="d-flex align-items-center gap-2">
+                    @csrf
+                    <label class="text-muted fs-7 mb-0">Modo de envio</label>
+                    <select name="delivery_mode" class="form-select form-select-sm w-auto">
+                        <option value="queue" @selected($preferredMode === 'queue')>Queue (recomendado)</option>
+                        <option value="sync" @selected($preferredMode === 'sync')>Sync inmediato</option>
+                    </select>
+                    <button class="btn btn-sm btn-light-primary">Guardar</button>
+                </form>
+                <form method="POST" action="{{ route('admin.queue-mails.run') }}" class="d-flex align-items-center gap-2">
+                    @csrf
+                    <label class="text-muted fs-7 mb-0">Procesar ahora</label>
+                    <select name="max_jobs" class="form-select form-select-sm w-auto">
+                        <option value="1">1 tarea</option>
+                        <option value="3" selected>3 tareas</option>
+                        <option value="5">5 tareas</option>
+                        <option value="10">10 tareas</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary">Ejecutar</button>
+                </form>
+            </div>
         </div>
         <div class="card-body pt-0">
+            <div class="alert alert-light-info d-flex flex-column gap-1 mb-4">
+                <div class="fw-semibold">
+                    Modo preferido: <span class="text-uppercase">{{ $preferredMode }}</span>
+                    | Modo efectivo: <span class="text-uppercase">{{ $effectiveMode }}</span>
+                </div>
+                <div class="fs-7">
+                    QUEUE_CONNECTION actual: <code>{{ $queueConnection }}</code>
+                    | QUEUE_TICKET_DELIVERY actual: <code>{{ $queueName }}</code>
+                </div>
+                <div class="fs-7">
+                    QUEUE_CONNECTION en env: <code>{{ $queueConnectionEnv ?? '(sin definir)' }}</code>
+                    | QUEUE_TICKET_DELIVERY en env: <code>{{ $queueNameEnv ?? '(sin definir)' }}</code>
+                </div>
+                @if(!$queueConfigValid)
+                    <div class="fs-7 text-warning">
+                        La configuracion requerida para queue es: QUEUE_CONNECTION=database y QUEUE_TICKET_DELIVERY=ticket-delivery.
+                        Mientras no se cumpla, el sistema enviara en modo sync automaticamente.
+                    </div>
+                @endif
+            </div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <div class="p-3 border rounded">
@@ -140,4 +171,3 @@
         </div>
     </div>
 @endsection
-
