@@ -14,6 +14,20 @@ return [
     */
 
     'default' => env('QUEUE_CONNECTION', 'database'),
+    'default_from_env' => env('QUEUE_CONNECTION'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dedicated Queue For Ticket PDF + Mail
+    |--------------------------------------------------------------------------
+    |
+    | This queue isolates expensive PDF generation and ticket email delivery
+    | from HTTP requests and other background jobs.
+    |
+    */
+
+    'ticket_delivery_queue' => env('QUEUE_TICKET_DELIVERY', 'ticket-delivery'),
+    'ticket_delivery_queue_from_env' => env('QUEUE_TICKET_DELIVERY'),
 
     /*
     |--------------------------------------------------------------------------

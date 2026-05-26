@@ -203,6 +203,17 @@
                                         <span class="menu-title">Formularios inscripción</span>
                                     </a>
                                 </div>
+                                @role('admin')
+                                <div class="menu-item">
+                                    <a class="menu-link {{ request()->is('admin/queue-mails*') ? 'active' : '' }}"
+                                        href="{{ route('admin.queue-mails.index') }}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">Cola correos/PDF</span>
+                                    </a>
+                                </div>
+                                @endrole
                             @endcan
                         </div>
                     </div>

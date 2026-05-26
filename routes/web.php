@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\CheckinManagementController;
+use App\Http\Controllers\Admin\QueueMailTaskController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\View\TicketViewController;
 use App\Http\Controllers\ProfileController;
@@ -89,6 +90,14 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('/admin/registration-forms', RegistrationFormController::class)
             ->names('admin.registration-forms')
             ->except(['show']);
+        Route::get('/admin/queue-mails', [QueueMailTaskController::class, 'index'])
+            ->name('admin.queue-mails.index');
+        Route::post('/admin/queue-mails/mode', [QueueMailTaskController::class, 'updateDeliveryMode'])
+            ->name('admin.queue-mails.mode');
+        Route::post('/admin/queue-mails/run', [QueueMailTaskController::class, 'runPending'])
+            ->name('admin.queue-mails.run');
+        Route::post('/admin/queue-mails/{task}/retry', [QueueMailTaskController::class, 'retry'])
+            ->name('admin.queue-mails.retry');
 
 
         /*

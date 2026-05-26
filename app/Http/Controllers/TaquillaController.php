@@ -12,10 +12,9 @@ use App\Services\CouponService;
 use App\Services\RegistrationBuilderService;
 use App\Services\RegistrationService;
 use App\Services\TicketBuilderService;
+use App\Services\QueueMailTaskService;
 use App\Services\TicketService;
 use App\Support\RegistrationPricing;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\BoletosMail;
 
 class TaquillaController extends Controller
 {
@@ -24,7 +23,8 @@ class TaquillaController extends Controller
         private RegistrationBuilderService $registrationBuilder,
         private RegistrationService $registrationService,
         private TicketService $ticketService,
-        private CouponService $couponService
+        private CouponService $couponService,
+        private QueueMailTaskService $queueMailTaskService
     ) {
     }
 
@@ -195,10 +195,11 @@ class TaquillaController extends Controller
                 $email !== 'taquilla@local' &&
                 count($boletos) > 0
             ) {
-                $pdfContent = $this->generateBoletosPdf($boletos, $email);
-
-                Mail::to($email)->send(
-                    new BoletosMail($pdfContent, $boletos)
+                $this->queueMailTaskService->queueBoletos(
+                    recipient: $email,
+                    boletos: $boletos,
+                    type: 'boletos_taquilla',
+                    reference: $reference
                 );
             }
 
@@ -208,15 +209,6 @@ class TaquillaController extends Controller
                 'evento' => $evento
             ]);
         });
-    }
-
-    private function generateBoletosPdf(array $boletos, string $email)
-    {
-        return Pdf::loadView('pdf.boletos', [
-            'boletos' => $boletos,
-            'email' => $email,
-        ])->setPaper([0, 0, 400, 700])->output();
-
     }
 
     public function pdf(TicketInstance $instance)
