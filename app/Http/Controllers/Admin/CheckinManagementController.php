@@ -7,15 +7,17 @@ use App\Models\Eventos;
 use App\Models\Ticket;
 use App\Models\TicketInstance;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CheckinManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $historySearch = trim((string) $request->input('history_search'));
-        $historyEventId = $request->input('history_event_id');
-        $historyType = $request->input('history_type');
+        $activeTab = (string) $request->input('tab', 'history');
+        if (!in_array($activeTab, ['history', 'tickets', 'registrations'], true)) {
+            $activeTab = 'history';
+        }
 
         $historyItems = TicketInstance::query()
             ->with([
@@ -29,53 +31,27 @@ class CheckinManagementController extends Controller
                 'checkins as invalid_scans' => fn($query) => $query->where('result', 'invalid'),
             ])
             ->withMax('checkins', 'scanned_at')
-            ->when($historyEventId, fn($query) => $query->where('event_id', $historyEventId))
-            ->when($historyType === 'ticket', fn($query) => $query->whereNotNull('ticket_id'))
-            ->when($historyType === 'registration', fn($query) => $query->whereNull('ticket_id'))
-            ->when($historySearch !== '', function ($query) use ($historySearch) {
-                $query->where(function ($innerQuery) use ($historySearch) {
-                    $likeTerm = '%' . $historySearch . '%';
-
-                    $innerQuery->where('id', 'like', $likeTerm)
-                        ->orWhere('email', 'like', $likeTerm)
-                        ->orWhere('nombre', 'like', $likeTerm)
-                        ->orWhere('reference', 'like', $likeTerm)
-                        ->orWhereHas('ticket', fn($ticketQuery) => $ticketQuery->where('name', 'like', $likeTerm))
-                        ->orWhereHas('evento', fn($eventQuery) => $eventQuery->where('name', 'like', $likeTerm));
-                });
-            })
             ->orderByDesc('checkins_max_scanned_at')
             ->orderByDesc('created_at')
-            ->paginate(20, ['*'], 'history_page')
-            ->withQueryString();
+            ->get();
 
-        $historyItems->setCollection(
-            $historyItems->getCollection()->map(function (TicketInstance $instance) {
+        $historyItems = $historyItems->map(function (TicketInstance $instance) {
                 $instance->resolved_max_checkins = $this->resolveMaxCheckins($instance);
 
                 return $instance;
-            })
-        );
-
-        $ticketEventFilter = $request->input('ticket_event_id');
+            });
 
         $ticketLimits = Ticket::query()
             ->with('event:id,name')
             ->select(['id', 'event_id', 'name', 'max_checkins'])
-            ->when($ticketEventFilter, fn($query) => $query->where('event_id', $ticketEventFilter))
             ->orderBy('name')
-            ->paginate(15, ['*'], 'tickets_page')
-            ->withQueryString();
-
-        $registrationEventSearch = trim((string) $request->input('registration_event_search'));
+            ->get();
 
         $registrationEvents = Eventos::query()
             ->select(['id', 'name', 'registration_max_checkins'])
             ->where('is_registration', true)
-            ->when($registrationEventSearch !== '', fn($query) => $query->where('name', 'like', '%' . $registrationEventSearch . '%'))
             ->orderBy('name')
-            ->paginate(15, ['*'], 'events_page')
-            ->withQueryString();
+            ->get();
 
         $events = Eventos::query()
             ->select(['id', 'name'])
@@ -87,11 +63,8 @@ class CheckinManagementController extends Controller
             'ticketLimits' => $ticketLimits,
             'registrationEvents' => $registrationEvents,
             'events' => $events,
-            'historySearch' => $historySearch,
-            'historyEventId' => $historyEventId,
-            'historyType' => $historyType,
-            'ticketEventFilter' => $ticketEventFilter,
-            'registrationEventSearch' => $registrationEventSearch,
+            'selectedTicketEventId' => (string) $request->input('ticket_event_id', ''),
+            'activeTab' => $activeTab,
         ]);
     }
 
@@ -124,7 +97,7 @@ class CheckinManagementController extends Controller
         ]);
     }
 
-    public function updateTicketMaxCheckins(Request $request, Ticket $ticket): RedirectResponse
+    public function updateTicketMaxCheckins(Request $request, Ticket $ticket): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'max_checkins' => ['required', 'integer', 'min:1', 'max:9999'],
@@ -134,12 +107,25 @@ class CheckinManagementController extends Controller
             'max_checkins' => (int) $data['max_checkins'],
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Limite de escaneos actualizado para el ticket.',
+                'max_checkins' => (int) $ticket->max_checkins,
+            ]);
+        }
+
         return back()->with('status', 'Limite de escaneos actualizado para el ticket.');
     }
 
-    public function updateRegistrationMaxCheckins(Request $request, Eventos $event): RedirectResponse
+    public function updateRegistrationMaxCheckins(Request $request, Eventos $event): RedirectResponse|JsonResponse
     {
         if (!$event->is_registration) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'El evento seleccionado no es de tipo registro.',
+                ], 422);
+            }
+
             return back()->withErrors([
                 'registration_max_checkins' => 'El evento seleccionado no es de tipo registro.',
             ]);
@@ -152,6 +138,13 @@ class CheckinManagementController extends Controller
         $event->update([
             'registration_max_checkins' => (int) $data['registration_max_checkins'],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Limite de escaneos por registro actualizado.',
+                'registration_max_checkins' => (int) $event->registration_max_checkins,
+            ]);
+        }
 
         return back()->with('status', 'Limite de escaneos por registro actualizado.');
     }
