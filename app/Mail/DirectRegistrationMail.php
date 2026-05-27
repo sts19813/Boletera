@@ -12,6 +12,8 @@ class DirectRegistrationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    private const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/FaPvvNc1XyV9QxLKk6xb5w?mode=gi_t';
+
     public int $tries = 5;
     public int $timeout = 120;
     public array $backoff = [15, 60, 180];
@@ -26,13 +28,18 @@ class DirectRegistrationMail extends Mailable implements ShouldQueue
 
     public function build()
     {
+        $templateForm = (string) ($this->registrationData['template_form'] ?? '');
+        $whatsappLink = $templateForm === 'whatsapp_direct'
+            ? self::WHATSAPP_GROUP_LINK
+            : null;
+
         return $this
             ->subject('Registro confirmado - ' . $this->event->name)
             ->view('emails.direct-registration')
             ->with([
                 'evento' => $this->event,
                 'registration' => $this->registrationData,
-                'whatsappLink' => 'https://chat.whatsapp.com/FaPvvNc1XyV9QxLKk6xb5w?mode=gi_t',
+                'whatsappLink' => $whatsappLink,
             ]);
     }
 }

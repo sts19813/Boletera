@@ -213,6 +213,10 @@ Route::get('/pago/cancel', [PaymentController::class, 'cancel'])->name('pago.can
 Route::post('/event/{event}/registration/direct', [DirectRegistrationController::class, 'store'])
     ->name('registration.direct.store');
 
+    //solo lo utiliza el dia del padre remover cuando termine el evento
+Route::get('/event/{event}/registration/availability', [DirectRegistrationController::class, 'availability'])
+    ->name('registration.direct.availability');
+
 Route::get('/cart', [CartController::class, 'get'])->name('cart.get');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/events/{event}/coupons/validate', [CouponController::class, 'validateForEvent'])->name('events.coupons.validate');

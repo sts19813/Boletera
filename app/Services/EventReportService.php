@@ -373,6 +373,7 @@ class EventReportService
 
         $teamName = trim((string) ($formData['team_name'] ?? ''));
         $fatherName = trim((string) ($formData['father_full_name'] ?? ''));
+        $fatherEmail = trim((string) ($formData['father_email'] ?? ''));
         $totalPeople = (int) ($formData['total_people'] ?? $registrationInstances->count());
 
         $children = collect($formData['children'] ?? [])
@@ -383,6 +384,7 @@ class EventReportService
         $lines[] = 'Template form: dia_padres_cumbres';
         $lines[] = 'Nombre del equipo: ' . ($teamName !== '' ? $teamName : '-');
         $lines[] = 'Nombre del padre: ' . ($fatherName !== '' ? $fatherName : '-');
+        $lines[] = 'Correo del padre: ' . ($fatherEmail !== '' ? $fatherEmail : '-');
 
         foreach ($children as $index => $child) {
             $childName = trim((string) ($child['full_name'] ?? ''));
@@ -416,6 +418,7 @@ class EventReportService
     {
         $teamName = trim((string) ($formData['team_name'] ?? ''));
         $fatherName = trim((string) ($formData['father_full_name'] ?? ''));
+        $fatherEmail = trim((string) ($formData['father_email'] ?? ''));
         $totalPeople = (int) ($formData['total_people'] ?? max(1, $instances->count()));
 
         $children = collect($formData['children'] ?? [])
@@ -464,6 +467,7 @@ class EventReportService
                 'fields' => [
                     ['label' => 'Nombre del equipo', 'value' => $teamName !== '' ? $teamName : '-'],
                     ['label' => 'Padre responsable', 'value' => $fatherName !== '' ? $fatherName : '-'],
+                    ['label' => 'Correo del padre', 'value' => $fatherEmail !== '' ? $fatherEmail : '-'],
                     ['label' => 'Tipo de asistente', 'value' => (string) ($person['role'] ?? '-')],
                     ['label' => 'Nombre completo', 'value' => (string) (($person['full_name'] ?? '') !== '' ? $person['full_name'] : '-')],
                     ['label' => 'Nivel escolar', 'value' => (string) ($person['school_level'] ?? '-')],

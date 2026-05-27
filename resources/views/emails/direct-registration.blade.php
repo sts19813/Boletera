@@ -25,31 +25,57 @@
 
                     <tr>
                         <td style="padding:40px;">
+                            @php
+                                $templateForm = (string) ($registration['template_form'] ?? '');
+                                $isDiaPadres = $templateForm === 'dia_padres_cumbres';
+                            @endphp
+
                             <h1 style="margin:0 0 18px 0; font-size:26px; color:#111;">Gracias por tu registro</h1>
 
-                            <p style="font-size:15px; color:#555; margin:0 0 10px 0;">
-                                Ya estas inscrito al torneo de Brawl stars.
-                            </p>
+                            @if($isDiaPadres)
+                                <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
+                                    Tu registro para <strong>{{ $evento->name }}</strong> fue confirmado correctamente.
+                                </p>
+                            @else
+                                <p style="font-size:15px; color:#555; margin:0 0 10px 0;">
+                                    Ya estas inscrito al torneo de Brawl stars.
+                                </p>
 
-                            <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
-                                Unete al grupo de WhatsApp para que te demos mas informacion del evento.
-                            </p>
+                                <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
+                                    Unete al grupo de WhatsApp para que te demos mas informacion del evento.
+                                </p>
 
-                            <div style="margin:0 0 26px 0;">
-                                <a href="{{ $whatsappLink }}"
-                                    style="display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:6px; font-weight:bold;">
-                                    Unirme al grupo de WhatsApp
-                                </a>
-                            </div>
+                                @if(!empty($whatsappLink))
+                                    <div style="margin:0 0 26px 0;">
+                                        <a href="{{ $whatsappLink }}"
+                                            style="display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:6px; font-weight:bold;">
+                                            Unirme al grupo de WhatsApp
+                                        </a>
+                                    </div>
+                                @endif
+                            @endif
 
                             <table width="100%" cellpadding="0" cellspacing="0"
                                 style="background:#f8f9fa; border-radius:6px; margin:8px 0 0 0;">
                                 <tr>
                                     <td style="padding:20px; font-size:14px; color:#333; line-height:1.7;">
                                         <strong>Evento:</strong> {{ $evento->name }}<br>
-                                        <strong>Nombre:</strong> {{ $registration['full_name'] ?? '-' }}<br>
-                                        <strong>Correo:</strong> {{ $registration['email'] ?? '-' }}<br>
-                                        <strong>Telefono:</strong> {{ $registration['phone'] ?? '-' }}
+                                        @if($isDiaPadres)
+                                            <strong>Equipo:</strong> {{ $registration['team_name'] ?? '-' }}<br>
+                                            <strong>Padre:</strong> {{ $registration['father_full_name'] ?? '-' }}<br>
+                                            <strong>Correo del padre:</strong> {{ $registration['father_email'] ?? '-' }}<br>
+                                            <strong>Total personas:</strong> {{ $registration['total_people'] ?? '-' }}<br>
+                                            <strong>Hijos:</strong><br>
+                                            @forelse(($registration['children'] ?? []) as $index => $child)
+                                                - {{ $child['full_name'] ?? '-' }} ({{ ucfirst($child['school_level'] ?? '-') }}, {{ $child['grade'] ?? '-' }})<br>
+                                            @empty
+                                                - Sin hijos registrados<br>
+                                            @endforelse
+                                        @else
+                                            <strong>Nombre:</strong> {{ $registration['full_name'] ?? '-' }}<br>
+                                            <strong>Correo:</strong> {{ $registration['email'] ?? '-' }}<br>
+                                            <strong>Telefono:</strong> {{ $registration['phone'] ?? '-' }}
+                                        @endif
                                     </td>
                                 </tr>
                             </table>

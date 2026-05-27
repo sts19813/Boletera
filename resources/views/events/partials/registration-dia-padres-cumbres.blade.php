@@ -1,16 +1,26 @@
 <div class="card shadow-sm mb-8">
     <div class="card-header bg-light">
-        <h4 class="card-title fw-bold mb-0">Registro directo día padres cumbres</h4>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 w-100">
+            <h4 class="card-title fw-bold mb-0">Registro directo día padres cumbres</h4>
+            <span class="badge badge-light-primary fs-7" style="color:white !important">
+                Disponibles: <span id="dia-padres-total-people">0/0</span>
+            </span>
+        </div>
     </div>
     <div class="card-body">
         <div class="row g-5">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label required">Nombre del equipo</label>
                 <input type="text" name="team_name" class="form-control form-control-solid" required>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label required">Nombre completo del padre</label>
                 <input type="text" name="father_full_name" class="form-control form-control-solid" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label required">Correo del padre</label>
+                <input type="email" name="father_email" class="form-control form-control-solid"
+                    placeholder="correo@ejemplo.com" required>
             </div>
         </div>
     </div>
@@ -19,8 +29,8 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h5 class="fw-bold mb-0">Hijos</h5>
     <div class="d-flex align-items-center gap-3">
-        <span class="badge badge-light-primary fs-7">Total personas: <span id="dia-padres-total-people">2</span></span>
-        <button type="button" id="dia-padres-add-child" class="btn btn-sm btn-light-primary">Agregar hijo</button>
+        <span class="badge badge-light-primary fs-7" style="color:white !important">Total personas: <span id="dia-padres-selected-people">2</span></span>
+        <button type="button" id="dia-padres-add-child" class="btn btn-sm btn-light-primary" style="color:white !important">Agregar hijo</button>
     </div>
 </div>
 
@@ -55,6 +65,11 @@
 </div>
 
 <script>
+    const diaPadresAvailability = {
+        remaining: null,
+        total: null,
+    };
+
     window.resolveRegistrationQty = function () {
         const wrapper = document.getElementById('dia-padres-children-wrapper');
         const childrenCount = wrapper ? wrapper.querySelectorAll('.js-child-card').length : 0;
@@ -73,9 +88,33 @@
             }
         }
 
-        const totalPeople = document.getElementById('dia-padres-total-people');
-        if (totalPeople) {
-            totalPeople.textContent = String(qty);
+        const selectedPeople = document.getElementById('dia-padres-selected-people');
+        if (selectedPeople) {
+            selectedPeople.textContent = String(qty);
+        }
+
+        const availableCounter = document.getElementById('dia-padres-total-people');
+        if (availableCounter) {
+            const hasAvailability = Number.isFinite(diaPadresAvailability.remaining) && Number.isFinite(diaPadresAvailability.total);
+            if (hasAvailability) {
+                const remaining = Number(diaPadresAvailability.remaining);
+                const total = Number(diaPadresAvailability.total);
+                const projectedRemaining = Math.max(0, remaining - qty);
+                availableCounter.textContent = `${projectedRemaining}/${total}`;
+            }
+
+            const addChildButton = document.getElementById('dia-padres-add-child');
+            if (addChildButton) {
+                if (hasAvailability) {
+                    const remaining = Number(diaPadresAvailability.remaining);
+                    const canAddMore = qty < remaining;
+                    addChildButton.disabled = !canAddMore;
+                    addChildButton.classList.toggle('disabled', !canAddMore);
+                } else {
+                    addChildButton.disabled = false;
+                    addChildButton.classList.remove('disabled');
+                }
+            }
         }
 
         return qty;
@@ -84,10 +123,34 @@
     document.addEventListener('DOMContentLoaded', function () {
         const wrapper = document.getElementById('dia-padres-children-wrapper');
         const addButton = document.getElementById('dia-padres-add-child');
+        const availabilityUrl = @json(route('registration.direct.availability', $lot->id));
 
         if (!wrapper || !addButton) {
             return;
         }
+
+        const loadAvailability = async () => {
+            try {
+                const response = await fetch(availabilityUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+                diaPadresAvailability.remaining = Number(payload?.remaining ?? 0);
+                diaPadresAvailability.total = Number(payload?.total ?? 0);
+                window.syncRegistrationQty();
+            } catch (error) {
+                // Si falla el endpoint, el formulario sigue funcionando sin bloquear.
+            }
+        };
 
         const refreshChildrenIndexes = () => {
             const cards = wrapper.querySelectorAll('.js-child-card');
@@ -165,5 +228,6 @@
 
         refreshChildrenIndexes();
         window.syncRegistrationQty();
+        loadAvailability();
     });
 </script>
