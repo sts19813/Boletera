@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Eventos;
 use App\Models\TicketCheckin;
 use App\Models\TicketInstance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CheckinController extends Controller
@@ -12,9 +14,17 @@ class CheckinController extends Controller
     /**
      * Vista del escaner
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('checkin.scanner');
+        $events = $this->resolveAccessibleEvents($request);
+        $selectedEventId = $this->resolveSelectedEventId($request, $events);
+        $canScanAnyEvent = $request->user()?->hasRole('admin') || $events->isNotEmpty();
+
+        return view('checkin.scanner', [
+            'events' => $events,
+            'selectedEventId' => $selectedEventId,
+            'canScanAnyEvent' => $canScanAnyEvent,
+        ]);
     }
 
     /**
@@ -26,12 +36,15 @@ class CheckinController extends Controller
             'ticket_instance_id' => 'nullable|uuid|required_without:registration_instance_id',
             'registration_instance_id' => 'nullable|uuid|required_without:ticket_instance_id',
             'hash' => 'required|string',
+            'event_id' => 'nullable|uuid',
         ]);
 
         $instanceId = $request->ticket_instance_id ?? $request->registration_instance_id;
         $scanHash = (string) $request->hash;
+        $selectedEventId = filled($request->input('event_id')) ? (string) $request->input('event_id') : null;
+        $accessibleEventIds = $this->resolveAccessibleEventIds($request);
 
-        $result = DB::transaction(function () use ($instanceId, $scanHash, $request) {
+        $result = DB::transaction(function () use ($instanceId, $scanHash, $request, $selectedEventId, $accessibleEventIds) {
             $ticket = TicketInstance::with(['ticket', 'evento'])
                 ->where('id', $instanceId)
                 ->lockForUpdate()
@@ -52,6 +65,35 @@ class CheckinController extends Controller
                     'payload' => [
                         'status' => 'error',
                         'message' => 'Boleto invalido',
+                    ],
+                ];
+            }
+
+            if ($accessibleEventIds !== null && !$accessibleEventIds->contains((string) $ticket->event_id)) {
+                TicketCheckin::create([
+                    'ticket_instance_id' => $ticket->id,
+                    'hash' => $scanHash,
+                    'result' => 'invalid',
+                    'message' => 'Evento no autorizado para este scanner',
+                    'scanned_at' => now(),
+                    'scanner_ip' => $request->ip(),
+                ]);
+
+                return [
+                    'statusCode' => 403,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => 'No tienes permiso para escanear este evento',
+                    ],
+                ];
+            }
+
+            if ($selectedEventId !== null && (string) $ticket->event_id !== $selectedEventId) {
+                return [
+                    'statusCode' => 422,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => 'Este codigo corresponde a otro evento.',
                     ],
                 ];
             }
@@ -121,15 +163,49 @@ class CheckinController extends Controller
         return response()->json($result['payload'], $result['statusCode']);
     }
 
-    public function stats()
+    public function stats(Request $request)
     {
-        $total = TicketInstance::count();
+        $events = $this->resolveAccessibleEvents($request);
+        $selectedEventId = $this->resolveSelectedEventId($request, $events);
+        $accessibleEventIds = $this->resolveAccessibleEventIds($request);
 
-        $scanned = TicketCheckin::where('result', 'success')
+        $totalQuery = TicketInstance::query();
+        $scannedQuery = TicketCheckin::query()->where('result', 'success');
+        $courtesyQuery = TicketInstance::query()->where('email', 'CORTESIA');
+
+        if ($selectedEventId !== null) {
+            $totalQuery->where('event_id', $selectedEventId);
+            $scannedQuery->whereHas('ticketInstance', fn($query) => $query->where('event_id', $selectedEventId));
+            $courtesyQuery->where('event_id', $selectedEventId);
+        } elseif ($accessibleEventIds !== null) {
+            if ($accessibleEventIds->isEmpty()) {
+                $total = 0;
+                $scanned = 0;
+                $courtesyScanned = 0;
+                $pending = 0;
+
+                return view('checkin.stats', [
+                    'total' => $total,
+                    'scanned' => $scanned,
+                    'courtesyScanned' => $courtesyScanned,
+                    'pending' => $pending,
+                    'events' => $events,
+                    'selectedEventId' => null,
+                ]);
+            }
+
+            $totalQuery->whereIn('event_id', $accessibleEventIds);
+            $scannedQuery->whereHas('ticketInstance', fn($query) => $query->whereIn('event_id', $accessibleEventIds));
+            $courtesyQuery->whereIn('event_id', $accessibleEventIds);
+        }
+
+        $total = $totalQuery->count();
+
+        $scanned = $scannedQuery
             ->distinct('ticket_instance_id')
             ->count('ticket_instance_id');
 
-        $courtesyScanned = TicketInstance::where('email', 'CORTESIA')
+        $courtesyScanned = $courtesyQuery
             ->whereHas('checkins', function ($q) {
                 $q->where('result', 'success');
             })
@@ -137,12 +213,69 @@ class CheckinController extends Controller
 
         $pending = $total - $scanned;
 
-        return view('checkin.stats', compact(
-            'total',
-            'scanned',
-            'courtesyScanned',
-            'pending'
-        ));
+        return view('checkin.stats', [
+            'total' => $total,
+            'scanned' => $scanned,
+            'courtesyScanned' => $courtesyScanned,
+            'pending' => $pending,
+            'events' => $events,
+            'selectedEventId' => $selectedEventId,
+        ]);
+    }
+
+    /**
+     * @return Collection<int, Eventos>
+     */
+    private function resolveAccessibleEvents(Request $request): Collection
+    {
+        $user = $request->user();
+
+        if ($user?->hasRole('admin')) {
+            return Eventos::query()
+                ->select(['id', 'name'])
+                ->orderBy('name')
+                ->get();
+        }
+
+        $allowedEventIds = $user?->events()->pluck('eventos.id') ?? collect();
+
+        return Eventos::query()
+            ->select(['id', 'name'])
+            ->whereIn('id', $allowedEventIds)
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, string>|null
+     */
+    private function resolveAccessibleEventIds(Request $request): ?Collection
+    {
+        $user = $request->user();
+
+        if ($user?->hasRole('admin')) {
+            return null;
+        }
+
+        return $user?->events()
+            ->pluck('eventos.id')
+            ->map(fn($id) => (string) $id)
+            ->values() ?? collect();
+    }
+
+    private function resolveSelectedEventId(Request $request, Collection $accessibleEvents): ?string
+    {
+        $selectedEventId = $request->input('event_id');
+        if (!filled($selectedEventId)) {
+            return null;
+        }
+
+        $selectedEventId = (string) $selectedEventId;
+        $allowed = $accessibleEvents
+            ->pluck('id')
+            ->map(fn($id) => (string) $id);
+
+        return $allowed->contains($selectedEventId) ? $selectedEventId : null;
     }
 
     private function resolveMaxCheckins(TicketInstance $instance): int
