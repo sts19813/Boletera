@@ -215,6 +215,10 @@
                                         {{ old('template_form', $event->template_form) === 'whatsapp_direct' ? 'selected' : '' }}>
                                         Registro WhatsApp Directo (EAFC 26)
                                     </option>
+                                    <option value="dia_padres_cumbres"
+                                        {{ old('template_form', $event->template_form) === 'dia_padres_cumbres' ? 'selected' : '' }}>
+                                        Registro directo día padres cumbres
+                                    </option>
                                 </select>
                             </div>
 
