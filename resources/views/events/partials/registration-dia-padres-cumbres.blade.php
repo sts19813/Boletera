@@ -30,7 +30,7 @@
     <h5 class="fw-bold mb-0">Hijos</h5>
     <div class="d-flex align-items-center gap-3">
         <span class="badge badge-light-primary fs-7" style="color:white !important">Total personas: <span id="dia-padres-selected-people">2</span></span>
-        <button type="button" id="dia-padres-add-child" class="btn btn-sm btn-light-primary" style="color:white !important">Agregar hijo</button>
+        <button type="button" id="dia-padres-add-child" class="btn btn-primary w-100 fw-semibold">Agregar hijo</button>
     </div>
 </div>
 
