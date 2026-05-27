@@ -34,6 +34,8 @@
                             @include('events.partials.registration-golf-team')
                         @elseif($lot->is_registration && $lot->template_form === 'whatsapp_direct')
                             @include('events.partials.registration-whatsapp-direct')
+                        @elseif($lot->is_registration && $lot->template_form === 'dia_padres_cumbres')
+                            @include('events.partials.registration-dia-padres-cumbres')
                         @endif
                     </form>
                 @elseif($lot->has_seat_mapping)

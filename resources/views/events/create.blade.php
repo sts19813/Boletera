@@ -174,6 +174,7 @@
                                     <option value="golf_team">Equipo de Golf (3 jugadores)</option>
                                     <option value="cena_gala">Cena Gala (multiples personas)</option>
                                     <option value="whatsapp_direct">Registro WhatsApp Directo (EAFC 26)</option>
+                                    <option value="dia_padres_cumbres">Registro directo día padres cumbres</option>
                                 </select>
                             </div>
 

@@ -43,7 +43,6 @@
                             <th>ID</th>
                             <th>Nombre</th>
                             <th style="width: 300px !important">Descripción</th>
-                            <th>Imagen</th>
                             <th>Creado</th>
                             <th>Acciones</th>
                         </tr>
@@ -56,21 +55,6 @@
                                 <td style="width:300px!important" data-bs-toggle="tooltip" data-bs-placement="top"
                                     title="{{ $event->description }}">
                                     {{ \Illuminate\Support\Str::limit($event->description, 35) }}
-                                </td>
-                                <td>
-                                    @if ($event->png_image || $event->svg_image)
-                                        <div class="image-container" style="position: relative; height: 100px;">
-                                            @if ($event->png_image)
-                                                <img data-src="{{ asset('/' . $event->png_image) }}" alt="PNG"
-                                                    class="img-thumbnail lazy-img" style="width:100%; height:100%; object-fit:cover;"
-                                                    loading="lazy">
-                                            @endif
-                                            @if ($event->svg_image)
-                                                <img data-src="{{ asset('/' . $event->svg_image) }}" alt="SVG" class="svg-lazy lazy-img"
-                                                    style="position:absolute; top:0; left:0; width:100%; height:100%;" loading="lazy">
-                                            @endif
-                                        </div>
-                                    @endif
                                 </td>
                                 <td>{{ $event->created_at->format('d/m/Y H:i') }}</td>
                                 <td>
@@ -116,17 +100,6 @@
             document.querySelectorAll('[data-bs-toggle="tooltip"]')
                 .forEach(el => new bootstrap.Tooltip(el));
 
-            // Lazy load de imágenes
-            let observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        img.src = img.dataset.src;
-                        observer.unobserve(img);
-                    }
-                });
-            }, { root: null, threshold: 0.1 });
-
             // DataTable
             const table = $("#events_table").DataTable({
                 responsive: true,
@@ -144,14 +117,7 @@
                 ],
                 dom: "<'row mb-3'<'col-12 d-flex justify-content-end'f>>" +
                     "<'row'<'col-12'tr>>" +
-                    "<'row mt-3'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'p>>",
-                drawCallback: function () {
-                    document.querySelectorAll("img.lazy-img:not([data-observed])")
-                        .forEach(img => {
-                            img.dataset.observed = "true";
-                            observer.observe(img);
-                        });
-                }
+                    "<'row mt-3'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'p>>"
             });
 
             // Botón actualizar

@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (
                 window.registrationConfig.templateForm === 'golf_team'
                 || window.registrationConfig.templateForm === 'whatsapp_direct'
+                || window.registrationConfig.templateForm === 'dia_padres_cumbres'
             ) {
                 stock = 1;
             }
@@ -206,6 +207,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.applyRegistrationPricingToItem(window.cartState.items[0]);
         window.cartState.items[0].total_price = Number(window.cartState.items[0].unit_price ?? window.registrationTicket.total_price);
+        if (typeof window.syncRegistrationQty === 'function') {
+            window.syncRegistrationQty();
+        }
         updateCartUI();
 
         if (window.couponConfig?.enabled) {
@@ -585,8 +589,12 @@ function submitDirectRegistration() {
     }
 
     const body = new FormData(form);
-    const directQty = Number(window.cartState?.items?.find(t => t.id === 'registration')?.qty ?? 1);
-    body.append('qty', String(Math.max(1, directQty)));
+    const cartQty = Number(window.cartState?.items?.find(t => t.id === 'registration')?.qty ?? 1);
+    const customQty = typeof window.resolveRegistrationQty === 'function'
+        ? Number(window.resolveRegistrationQty())
+        : cartQty;
+    const directQty = Number.isFinite(customQty) ? customQty : cartQty;
+    body.set('qty', String(Math.max(1, directQty)));
 
     if (btn) {
         btn.disabled = true;

@@ -86,6 +86,7 @@ class EventReportService
         $ticketEntries = $this->buildTicketEntries($ticketInstances);
         $registrationInstances = $instances->filter(fn(TicketInstance $instance) => $instance->sale_type === 'registration')->values();
         $registrationEntries = $this->buildRegistrationEntries($registrationInstances);
+        $diaPadresSummary = $this->buildDiaPadresSummary($registrationInstances);
         $itemsCount = $instances->count();
         $ticketCount = $ticketInstances->count();
         $registrationsCount = $registrationInstances->count();
@@ -164,16 +165,24 @@ class EventReportService
             $saleType = 'Registro';
             $seat = '-';
             $ticketType = 'Inscripcion';
-            $recordData = !empty($registrationEntries)
-                ? $this->formatRegistrationEntriesAsText($registrationEntries)
-                : '-';
+            if ($diaPadresSummary !== null) {
+                $recordData = $diaPadresSummary;
+            } else {
+                $recordData = !empty($registrationEntries)
+                    ? $this->formatRegistrationEntriesAsText($registrationEntries)
+                    : '-';
+            }
         } elseif ($ticketCount > 0 && $registrationsCount > 0) {
             $saleType = 'Mixta';
             $seat = 'Multiples (' . $ticketCount . ')';
             $ticketType = 'Boletos + Inscripcion';
-            $recordData = !empty($registrationEntries)
-                ? $this->formatRegistrationEntriesAsText($registrationEntries)
-                : 'Compra con boletos e inscripciones.';
+            if ($diaPadresSummary !== null) {
+                $recordData = $diaPadresSummary;
+            } else {
+                $recordData = !empty($registrationEntries)
+                    ? $this->formatRegistrationEntriesAsText($registrationEntries)
+                    : 'Compra con boletos e inscripciones.';
+            }
         }
 
         $searchBlob = implode(' | ', array_filter([
@@ -293,6 +302,11 @@ class EventReportService
         $firstFormData = is_array($first->form_data) ? $first->form_data : [];
         $instanceList = $registrationInstances->values();
 
+        //eliminar cuando termine dia del padre y cumbres, para mantener compatibilidad con el formato actual de ese evento, mientras se migra a un formato mas estandarizado usando form_data con campos de tipo array para participantes o registros
+        if (($firstFormData['template_form'] ?? null) === 'dia_padres_cumbres') {
+            return $this->buildDiaPadresCumbresEntries($firstFormData, $instanceList);
+        }
+
         if (isset($firstFormData['registrations']) && is_array($firstFormData['registrations'])) {
             return $this->buildIndexedEntries(
                 $firstFormData['registrations'],
@@ -336,6 +350,130 @@ class EventReportService
                 'instance_id' => $instance->id,
                 'title' => 'Registro ' . ($index + 1),
                 'fields' => $fields,
+            ];
+        }
+
+        return $entries;
+    }
+
+    //eliminar cuando termine dia del padre y cumbres, para mantener compatibilidad con el formato actual de ese evento, mientras se migra a un formato mas estandarizado usando form_data con campos de tipo array para participantes o registros
+    private function buildDiaPadresSummary(Collection $registrationInstances): ?string
+    {
+        if ($registrationInstances->isEmpty()) {
+            return null;
+        }
+
+        /** @var TicketInstance $first */
+        $first = $registrationInstances->first();
+        $formData = is_array($first->form_data) ? $first->form_data : [];
+
+        if (($formData['template_form'] ?? null) !== 'dia_padres_cumbres') {
+            return null;
+        }
+
+        $teamName = trim((string) ($formData['team_name'] ?? ''));
+        $fatherName = trim((string) ($formData['father_full_name'] ?? ''));
+        $fatherEmail = trim((string) ($formData['father_email'] ?? ''));
+        $totalPeople = (int) ($formData['total_people'] ?? $registrationInstances->count());
+
+        $children = collect($formData['children'] ?? [])
+            ->filter(fn($child) => is_array($child))
+            ->values();
+
+        $lines = [];
+        $lines[] = 'Template form: dia_padres_cumbres';
+        $lines[] = 'Nombre del equipo: ' . ($teamName !== '' ? $teamName : '-');
+        $lines[] = 'Nombre del padre: ' . ($fatherName !== '' ? $fatherName : '-');
+        $lines[] = 'Correo del padre: ' . ($fatherEmail !== '' ? $fatherEmail : '-');
+
+        foreach ($children as $index => $child) {
+            $childName = trim((string) ($child['full_name'] ?? ''));
+            $childLevel = trim((string) ($child['school_level'] ?? ''));
+            $childGrade = trim((string) ($child['grade'] ?? ''));
+
+            $childLevelLabel = match ($childLevel) {
+                'primaria' => 'Primaria',
+                'secundaria' => 'Secundaria',
+                default => '-',
+            };
+
+            $num = $index + 1;
+            $lines[] = "Hijo {$num} nombre: " . ($childName !== '' ? $childName : '-');
+            $lines[] = "Hijo {$num} nivel: " . $childLevelLabel;
+            $lines[] = "Hijo {$num} grado: " . ($childGrade !== '' ? $childGrade : '-');
+        }
+
+        $lines[] = 'Cantidad de hijos: ' . $children->count();
+        $lines[] = 'Total personas: ' . max(1, $totalPeople);
+
+        return implode("\n", $lines);
+    }
+
+    /** eliminar cuando termine el dia del padre
+     * @param  array<string, mixed>  $formData
+     * @param  Collection<int, TicketInstance>  $instances
+     * @return array<int, array{instance_id: string, title: string, fields: array<int, array{label: string, value: string}>}>
+     */
+    private function buildDiaPadresCumbresEntries(array $formData, Collection $instances): array
+    {
+        $teamName = trim((string) ($formData['team_name'] ?? ''));
+        $fatherName = trim((string) ($formData['father_full_name'] ?? ''));
+        $fatherEmail = trim((string) ($formData['father_email'] ?? ''));
+        $totalPeople = (int) ($formData['total_people'] ?? max(1, $instances->count()));
+
+        $children = collect($formData['children'] ?? [])
+            ->filter(fn($child) => is_array($child))
+            ->map(function (array $child, int $index) {
+                $level = trim((string) ($child['school_level'] ?? ''));
+                $levelLabel = match ($level) {
+                    'primaria' => 'Primaria',
+                    'secundaria' => 'Secundaria',
+                    default => '-',
+                };
+
+                return [
+                    'role' => 'Hijo ' . ($index + 1),
+                    'full_name' => trim((string) ($child['full_name'] ?? '')),
+                    'school_level' => $levelLabel,
+                    'grade' => trim((string) ($child['grade'] ?? '')),
+                ];
+            })
+            ->values();
+
+        $people = collect([[
+            'role' => 'Padre',
+            'full_name' => $fatherName,
+            'school_level' => '-',
+            'grade' => '-',
+        ]])->merge($children);
+
+        $entries = [];
+        foreach ($instances->values() as $index => $instance) {
+            $person = $people->get($index) ?? [
+                'role' => 'Asistente ' . ($index + 1),
+                'full_name' => '',
+                'school_level' => '-',
+                'grade' => '-',
+            ];
+
+            $title = $person['role'];
+            if (($person['full_name'] ?? '') !== '') {
+                $title .= ': ' . $person['full_name'];
+            }
+
+            $entries[] = [
+                'instance_id' => $instance->id,
+                'title' => $title,
+                'fields' => [
+                    ['label' => 'Nombre del equipo', 'value' => $teamName !== '' ? $teamName : '-'],
+                    ['label' => 'Padre responsable', 'value' => $fatherName !== '' ? $fatherName : '-'],
+                    ['label' => 'Correo del padre', 'value' => $fatherEmail !== '' ? $fatherEmail : '-'],
+                    ['label' => 'Tipo de asistente', 'value' => (string) ($person['role'] ?? '-')],
+                    ['label' => 'Nombre completo', 'value' => (string) (($person['full_name'] ?? '') !== '' ? $person['full_name'] : '-')],
+                    ['label' => 'Nivel escolar', 'value' => (string) ($person['school_level'] ?? '-')],
+                    ['label' => 'Grado', 'value' => (string) (($person['grade'] ?? '') !== '' ? $person['grade'] : '-')],
+                    ['label' => 'Total personas', 'value' => (string) max(1, $totalPeople)],
+                ],
             ];
         }
 

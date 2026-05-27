@@ -31,6 +31,10 @@ class DirectRegistrationController extends Controller
             return response()->json(['message' => 'La venta en linea esta detenida para este evento.'], 403);
         }
 
+        if ($event->template_form === 'dia_padres_cumbres') {
+            return $this->storeDiaPadresCumbres($request, $event);
+        }
+
         if ($event->template_form === 'whatsapp_direct') {
             return $this->storeWhatsappDirect($request, $event);
         }
@@ -79,6 +83,116 @@ class DirectRegistrationController extends Controller
         ]);
     }
 
+    //eliminar cuando termine dia del padre
+    public function availability(Eventos $event)
+    {
+        if (!$event->is_registration) {
+            return response()->json(['message' => 'El evento seleccionado no permite inscripciones.'], 422);
+        }
+
+        $remaining = max(0, (int) ($event->max_capacity ?? 0));
+        $sold = TicketInstance::registrationSales()
+            ->where('event_id', $event->id)
+            ->count();
+        $total = $remaining + $sold;
+
+        return response()->json([
+            'remaining' => $remaining,
+            'total' => $total,
+            'sold' => $sold,
+        ]);
+    }
+
+    //eliminar cuando termine dia del padre
+    private function storeDiaPadresCumbres(Request $request, Eventos $event)
+    {
+        $validated = $request->validate([
+            'team_name' => 'required|string|max:255',
+            'father_full_name' => 'required|string|max:255',
+            'father_email' => 'required|email|max:255',
+            'children' => 'nullable|array',
+            'children.*.full_name' => 'nullable|string|max:255',
+            'children.*.school_level' => 'nullable|in:primaria,secundaria',
+            'children.*.grade' => 'nullable|string|max:100',
+        ]);
+
+        $children = collect($validated['children'] ?? [])
+            ->map(function ($child) {
+                return [
+                    'full_name' => trim((string) ($child['full_name'] ?? '')),
+                    'school_level' => trim((string) ($child['school_level'] ?? '')),
+                    'grade' => trim((string) ($child['grade'] ?? '')),
+                ];
+            })
+            ->filter(function ($child) {
+                return $child['full_name'] !== ''
+                    || $child['school_level'] !== ''
+                    || $child['grade'] !== '';
+            })
+            ->values();
+
+        foreach ($children as $index => $child) {
+            if (
+                $child['full_name'] === ''
+                || $child['school_level'] === ''
+                || $child['grade'] === ''
+            ) {
+                return response()->json([
+                    'message' => 'Completa nombre, nivel y grado para cada hijo.',
+                    'errors' => [
+                        "children.$index" => ['Cada hijo debe tener nombre completo, nivel y grado.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        $fatherEmail = Str::lower(trim((string) $validated['father_email']));
+        $qty = 1 + $children->count();
+
+        if (!is_null($event->max_capacity) && (int) $event->max_capacity < $qty) {
+            return response()->json(['message' => 'No hay cupo suficiente para completar el registro.'], 409);
+        }
+
+        $formData = [
+            'template_form' => 'dia_padres_cumbres',
+            'team_name' => trim((string) $validated['team_name']),
+            'father_full_name' => trim((string) $validated['father_full_name']),
+            'father_email' => $fatherEmail,
+            'children' => $children->all(),
+            'children_count' => $children->count(),
+            'total_people' => $qty,
+        ];
+
+        $instances = $this->registrationService->create($event, [
+            'qty' => $qty,
+            'email' => $fatherEmail,
+            'nombre' => $formData['father_full_name'],
+            'celular' => '',
+            'form_data' => $formData,
+            'reference' => 'DIRECT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+            'sale_channel' => 'taquilla',
+            'payment_method' => 'cash',
+            'price' => (float) ($event->price ?? 0),
+            'base_price' => (float) ($event->price ?? 0),
+        ]);
+
+        $this->queueMailTaskService->queueDirectRegistration(
+            recipient: $fatherEmail,
+            eventId: (string) $event->id,
+            registrationData: $formData,
+            reference: $instances[0]->reference ?? null
+        );
+
+        return response()->json([
+            'message' => 'Registro completado correctamente.',
+            'title' => 'Registro completado',
+            'description' => 'La información del equipo fue guardada correctamente.',
+            'whatsapp_link' => '',
+            'reference' => $instances[0]->reference ?? null,
+        ]);
+    }
+
+    //eliminar cuando termine torneo anahuac
     private function storeWhatsappDirect(Request $request, Eventos $event)
     {
         if (!is_null($event->max_capacity) && (int) $event->max_capacity <= 0) {
