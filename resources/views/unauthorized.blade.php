@@ -27,10 +27,20 @@
                         No tienes permisos para acceder a esta página.
                     </div>
 
-                    <!-- Botón regresar -->
-                    <a href="{{ url('/') }}" class="btn btn-primary">
-                        Ir al inicio
-                    </a>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="{{ url('/') }}" class="btn btn-primary">
+                            Ir al inicio
+                        </a>
+
+                        @auth
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="btn btn-light-danger">
+                                    Cerrar sesión
+                                </button>
+                            </form>
+                        @endauth
+                    </div>
                 </div>
             </div>
         </div>
