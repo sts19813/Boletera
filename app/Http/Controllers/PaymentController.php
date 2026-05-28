@@ -15,6 +15,7 @@ use App\Support\RegistrationPricing;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Stripe;
@@ -226,6 +227,23 @@ class PaymentController extends Controller
         }
     }
 
+    /**
+     * Confirma la compra en Stripe, materializa los boletos/inscripciones y
+     * entrega la vista de éxito con datos de impresión/reimpresión.
+     *
+     * Flujo principal:
+     * 1. Toma `pi` (PaymentIntent ID) desde query string.
+     * 2. Recupera metadata de Stripe (incluido email).
+     * 3. Lee el carrito de sesión y genera instancias reales según tipo:
+     *    - ticket: via TicketService
+     *    - registration: via RegistrationStripeService
+     * 4. Encola correo de entrega cuando el email es válido.
+     * 5. Genera una URL pública firmada y temporal para reimpresión PDF
+     *    orientada a usuario no autenticado.
+     *
+     * @param Request $request Debe incluir `pi` como query param.
+     * @return \Illuminate\Contracts\View\View
+     */
     public function success(Request $request)
     {
         $paymentIntentId = $request->query('pi');
@@ -283,10 +301,32 @@ class PaymentController extends Controller
         $eventId = $cart[0]['event_id'] ?? null;
         $evento = Eventos::findOrFail($eventId);
         session()->forget('coupon_code');
+        $publicReprintUrl = null;
 
-        return view('pago.success', compact('boletos', 'email', 'evento'));
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $publicReprintUrl = URL::temporarySignedRoute(
+                'boletos.reprint.public',
+                now()->addDays(7),
+                [
+                    'ref' => $paymentIntentId,
+                    'email' => $email,
+                ]
+            );
+        }
+
+        return view('pago.success', compact('boletos', 'email', 'evento', 'publicReprintUrl'));
     }
 
+    /**
+     * Reimprime boletos/inscripciones en PDF para usuarios autenticados.
+     *
+     * Busca por referencia de pago (`payment_intent_id`) o referencia interna
+     * de taquilla (`reference`) y delega la construcción final del PDF al método
+     * privado compartido.
+     *
+     * @param Request $request Espera `ref` y opcionalmente `email`.
+     * @return \Illuminate\Http\Response
+     */
     public function reprint(Request $request)
     {
         $reference = $request->get('ref');
@@ -296,6 +336,49 @@ class PaymentController extends Controller
             abort(400, 'Referencia requerida');
         }
 
+        return $this->buildReprintPdfResponse($reference, $email);
+    }
+
+    /**
+     * Reimpresión pública (sin sesión) de boletos/inscripciones en PDF.
+     *
+     * Esta acción está diseñada para usarse con ruta firmada (`signed`) y
+     * expiración temporal. Solo valida presencia de referencia y reutiliza el
+     * mismo pipeline de render que la reimpresión autenticada.
+     *
+     * @param Request $request Espera `ref` y opcionalmente `email`.
+     * @return \Illuminate\Http\Response
+     */
+    public function reprintPublic(Request $request)
+    {
+        $reference = (string) $request->get('ref', '');
+        $email = (string) $request->get('email', 'taquilla@local');
+
+        if ($reference === '') {
+            abort(400, 'Referencia requerida');
+        }
+
+        return $this->buildReprintPdfResponse($reference, $email);
+    }
+
+    /**
+     * Construye la respuesta HTTP con el PDF de boletos/inscripciones.
+     *
+     * Responsabilidades:
+     * - Resolver instancias por `payment_intent_id` o `reference`.
+     * - Mapear cada instancia al payload estándar de PDF (ticket o registration).
+     * - Renderizar `pdf.boletos` y devolver respuesta inline `application/pdf`.
+     *
+     * Consideraciones:
+     * - Si no hay instancias para la referencia, aborta con 404.
+     * - El email recibido funciona como fallback para payload/plantilla.
+     *
+     * @param string $reference Identificador de compra (Stripe o taquilla).
+     * @param string $email Email a mostrar como fallback en el PDF.
+     * @return \Illuminate\Http\Response
+     */
+    private function buildReprintPdfResponse(string $reference, string $email)
+    {
         $instances = TicketInstance::with(['ticket', 'evento'])
             ->where(function ($q) use ($reference) {
                 $q->where('payment_intent_id', $reference)
@@ -397,7 +480,20 @@ class PaymentController extends Controller
     }
 
 
-    //para validar el estatus del pago, y monto. Solo para uso interno, expuesto a rutas publicas.
+    /**
+     * Consulta un PaymentIntent en Stripe y devuelve datos útiles de validación.
+     *
+     * Uso esperado:
+     * - Verificación operativa/manual del estado de pago.
+     * - Confirmación de montos cobrados y método de pago asociado.
+     *
+     * Respuesta:
+     * - `id`, `status`, `currency`, `amount`, `amount_received`,
+     *   `customer`, `payment_method`, `created_at`.
+     *
+     * @param string $paymentIntentId ID del PaymentIntent en Stripe.
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function showPaymentIntent($paymentIntentId)
     {
         Stripe::setApiKey(config('services.stripe.secret'));
