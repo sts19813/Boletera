@@ -48,7 +48,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label required">Nivel</label>
-                    <select name="children[0][school_level]" class="form-select form-select-solid" required>
+                    <select name="children[0][school_level]" class="form-select form-select-solid js-school-level" required>
                         <option value="">Selecciona</option>
                         <option value="primaria">Primaria</option>
                         <option value="secundaria">Secundaria</option>
@@ -56,8 +56,9 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label required">Grado</label>
-                    <input type="text" name="children[0][grade]" class="form-control form-control-solid"
-                        placeholder="Ej. 5to" required>
+                    <select name="children[0][grade]" class="form-select form-select-solid js-grade-select" required disabled>
+                        <option value="">Selecciona nivel primero</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -171,6 +172,57 @@
             });
         };
 
+        const getGradeOptionsByLevel = (level) => {
+            if (level === 'primaria') {
+                return ['1', '2', '3', '4', '5', '6'];
+            }
+
+            if (level === 'secundaria') {
+                return ['1', '2', '3'];
+            }
+
+            return [];
+        };
+
+        const syncGradeSelectByLevel = (card) => {
+            if (!card) {
+                return;
+            }
+
+            const levelSelect = card.querySelector('.js-school-level');
+            const gradeSelect = card.querySelector('.js-grade-select');
+
+            if (!levelSelect || !gradeSelect) {
+                return;
+            }
+
+            const currentGrade = gradeSelect.value;
+            const level = String(levelSelect.value || '').toLowerCase();
+            const options = getGradeOptionsByLevel(level);
+
+            gradeSelect.innerHTML = '';
+
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = options.length ? 'Selecciona grado' : 'Selecciona nivel primero';
+            gradeSelect.appendChild(placeholderOption);
+
+            options.forEach((grade) => {
+                const option = document.createElement('option');
+                option.value = grade;
+                option.textContent = grade;
+                gradeSelect.appendChild(option);
+            });
+
+            gradeSelect.disabled = options.length === 0;
+
+            if (options.includes(currentGrade)) {
+                gradeSelect.value = currentGrade;
+            } else {
+                gradeSelect.value = '';
+            }
+        };
+
         const buildChildCard = (index) => {
             return `
                 <div class="card shadow-sm mb-5 js-child-card">
@@ -186,7 +238,7 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label required">Nivel</label>
-                                <select name="children[${index}][school_level]" class="form-select form-select-solid" required>
+                                <select name="children[${index}][school_level]" class="form-select form-select-solid js-school-level" required>
                                     <option value="">Selecciona</option>
                                     <option value="primaria">Primaria</option>
                                     <option value="secundaria">Secundaria</option>
@@ -194,7 +246,9 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label required">Grado</label>
-                                <input type="text" name="children[${index}][grade]" class="form-control form-control-solid" placeholder="Ej. 5to" required>
+                                <select name="children[${index}][grade]" class="form-select form-select-solid js-grade-select" required disabled>
+                                    <option value="">Selecciona nivel primero</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -206,7 +260,19 @@
             const nextIndex = wrapper.querySelectorAll('.js-child-card').length;
             wrapper.insertAdjacentHTML('beforeend', buildChildCard(nextIndex));
             refreshChildrenIndexes();
+            const addedCard = wrapper.querySelector('.js-child-card:last-child');
+            syncGradeSelectByLevel(addedCard);
             window.syncRegistrationQty();
+        });
+
+        wrapper.addEventListener('change', function (event) {
+            const levelSelect = event.target.closest('.js-school-level');
+            if (!levelSelect) {
+                return;
+            }
+
+            const card = levelSelect.closest('.js-child-card');
+            syncGradeSelectByLevel(card);
         });
 
         wrapper.addEventListener('click', function (event) {
@@ -227,6 +293,7 @@
         });
 
         refreshChildrenIndexes();
+        wrapper.querySelectorAll('.js-child-card').forEach((card) => syncGradeSelectByLevel(card));
         window.syncRegistrationQty();
         loadAvailability();
     });
