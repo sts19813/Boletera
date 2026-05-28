@@ -210,6 +210,9 @@ Route::get('/pago', [PaymentController::class, 'formulario'])->name('pago.form')
 Route::post('/pago/intent', [PaymentController::class, 'crearIntent'])->name('pago.intent');
 Route::get('/pago/success', [PaymentController::class, 'success'])->name('pago.success');
 Route::get('/pago/cancel', [PaymentController::class, 'cancel'])->name('pago.cancel');
+Route::get('/boletos/reprint/public', [PaymentController::class, 'reprintPublic'])
+    ->middleware('signed')
+    ->name('boletos.reprint.public');
 Route::post('/event/{event}/registration/direct', [DirectRegistrationController::class, 'store'])
     ->name('registration.direct.store');
 

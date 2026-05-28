@@ -8,6 +8,7 @@
 		$isAdminUser = $authUser && ($authUser->hasRole('admin') || (bool) $authUser->is_admin);
 		$isTaquillaRole = $authUser && ($authUser->hasRole('taquillero') || $authUser->hasRole('viewer'));
 		$reference = $boletos[0]['order']['payment_intent'] ?? null;
+		$isGuest = !auth()->check();
 	@endphp
 
 	<x-event-header :evento="$evento" />
@@ -32,11 +33,11 @@
 						<i class="ki-duotone ki-download fs-5 me-2"></i>
 						Descargar boletos en PDF
 					</a>
-				@elseif(!$isAdminUser)
-					<button onclick="downloadTicketsPDF()" class="btn btn-light-primary fw-bold mb-6">
+				@elseif($isGuest && !empty($publicReprintUrl))
+					<a href="{{ $publicReprintUrl }}" class="btn btn-light-primary fw-bold mb-6" target="_blank">
 						<i class="ki-duotone ki-download fs-5 me-2"></i>
 						Descargar boletos en PDF
-					</button>
+					</a>
 				@endif
 
 
@@ -130,64 +131,6 @@
 	</div>
 
 
-	@if(!$isAdminUser && !$isTaquillaRole)
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-		<script>
-			async function downloadTicketsPDF() {
-
-				const { jsPDF } = window.jspdf;
-
-				const tickets = document.querySelectorAll('.printable-ticket');
-
-				if (!tickets.length) {
-					alert('No se encontraron boletos');
-					return;
-				}
-
-				const pdf = new jsPDF({
-					orientation: 'portrait',
-					unit: 'px',
-					format: 'a4'
-				});
-
-				for (let i = 0; i < tickets.length; i++) {
-
-					const ticket = tickets[i];
-
-					// Captura el card
-					const canvas = await html2canvas(ticket, {
-						scale: 2,
-						backgroundColor: '#ffffff',
-						useCORS: true
-					});
-
-					const imgData = canvas.toDataURL('image/png');
-
-					const pageWidth = pdf.internal.pageSize.getWidth();
-					const pageHeight = pdf.internal.pageSize.getHeight();
-
-					const imgWidth = pageWidth - 40;
-					const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-					if (i > 0) {
-						pdf.addPage();
-					}
-
-					pdf.addImage(
-						imgData,
-						'PNG',
-						20,
-						20,
-						imgWidth,
-						imgHeight
-					);
-				}
-
-				pdf.save('boletos.pdf');
-			}
-		</script>
-	@endif
 
 	{{-- Si es admin y hay referencia, autoimprimir
 	@if(auth()->check() && auth()->user()->is_admin && !empty($reference))
