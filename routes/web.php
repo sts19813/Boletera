@@ -68,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
         Route::resource('/users', UserController::class);
+        Route::post('/users/check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
+        Route::post('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.update-password');
 
 
         /*

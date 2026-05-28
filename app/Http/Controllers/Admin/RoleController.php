@@ -11,10 +11,25 @@ class RoleController extends Controller
 
     public function index()
     {
-        $roles = Role::with('permissions')->get();
-        $permissions = Permission::all();
+        return redirect()->route('users.index', ['tab' => 'roles']);
+    }
 
-        return view('admin.roles.index', compact('roles', 'permissions'));
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:roles,name',
+        ]);
+
+        $role = Role::create([
+            'name' => $request->name,
+            'guard_name' => 'web',
+        ]);
+
+        $role->syncPermissions($request->permissions ?? []);
+
+        return redirect()
+            ->route('users.index', ['tab' => 'roles'])
+            ->with('success', 'Rol creado correctamente.');
     }
 
     public function edit(Role $role)
@@ -37,7 +52,7 @@ class RoleController extends Controller
 
         $role->syncPermissions($request->permissions ?? []);
 
-        return redirect()->route('roles.index')
+        return redirect()->route('users.index', ['tab' => 'roles'])
             ->with('success', 'Rol actualizado correctamente.');
     }
 
@@ -45,7 +60,7 @@ class RoleController extends Controller
     {
         $role->delete();
 
-        return redirect()->route('roles.index')
+        return redirect()->route('users.index', ['tab' => 'roles'])
             ->with('success', 'Rol eliminado correctamente.');
     }
 }

@@ -147,7 +147,7 @@
 
                 {{-- ================= CONFIGURACIONES () =================--}}
                 @can('crear eventos')
-                    <div class="menu-item menu-accordion {{ request()->is('users*') ? 'show' : '' }}"
+                    <div class="menu-item menu-accordion {{ request()->is('users*', 'roles*', 'permissions*') ? 'show' : '' }}"
                         data-kt-menu-trigger="click">
 
                         <span class="menu-link">
@@ -161,28 +161,11 @@
                         <div class="menu-sub menu-sub-accordion">
                             @can('crear eventos')
                                 <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('users*') ? 'active' : '' }}" href="/users">
+                                    <a class="menu-link {{ request()->is('users*', 'roles*', 'permissions*') ? 'active' : '' }}" href="/users">
                                         <span class="menu-bullet">
                                             <span class="bullet bullet-dot"></span>
                                         </span>
-                                        <span class="menu-title">Usuarios</span>
-                                    </a>
-                                </div>
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('roles*') ? 'active' : '' }}" href="/roles">
-                                        <span class="menu-bullet">
-                                            <span class="bullet bullet-dot"></span>
-                                        </span>
-                                        <span class="menu-title">Roles</span>
-                                    </a>
-                                </div>
-                                <div class="menu-item">
-                                    <a class="menu-link {{ request()->is('permissions*') ? 'active' : '' }}"
-                                        href="/permissions">
-                                        <span class="menu-bullet">
-                                            <span class="bullet bullet-dot"></span>
-                                        </span>
-                                        <span class="menu-title">Permisos</span>
+                                        <span class="menu-title">Usuarios y permisos</span>
                                     </a>
                                 </div>
                                 <div class="menu-item">
