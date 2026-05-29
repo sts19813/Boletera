@@ -167,7 +167,7 @@ Route::middleware(['auth'])->group(function () {
     | SCANNER
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:admin|scanner'])->group(function () {
+    Route::middleware(['role_or_permission:admin|scanner|escanear boletos'])->group(function () {
 
         Route::get('/checkin', [CheckinController::class, 'index']);
         Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
