@@ -10,8 +10,7 @@ class PermissionController extends Controller
 {
     public function index()
     {
-        $permissions = Permission::orderBy('name')->get();
-        return view('admin.permissions.index', compact('permissions'));
+        return redirect()->route('users.index', ['tab' => 'permissions']);
     }
 
     public function store(Request $request)
@@ -24,12 +23,17 @@ class PermissionController extends Controller
             'name' => $request->name
         ]);
 
-        return back()->with('success', 'Permiso creado correctamente');
+        return redirect()
+            ->route('users.index', ['tab' => 'permissions'])
+            ->with('success', 'Permiso creado correctamente');
     }
 
     public function destroy(Permission $permission)
     {
         $permission->delete();
-        return back()->with('success', 'Permiso eliminado');
+
+        return redirect()
+            ->route('users.index', ['tab' => 'permissions'])
+            ->with('success', 'Permiso eliminado');
     }
 }

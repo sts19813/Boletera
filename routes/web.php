@@ -68,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/dashboard/boletos', [DashboardController::class, 'boletos'])->name('admin.dashboard.boletos');
         Route::resource('/users', UserController::class);
+        Route::post('/users/check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
+        Route::post('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.update-password');
 
 
         /*
@@ -165,7 +167,7 @@ Route::middleware(['auth'])->group(function () {
     | SCANNER
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:admin|scanner'])->group(function () {
+    Route::middleware(['role_or_permission:admin|scanner|escanear boletos'])->group(function () {
 
         Route::get('/checkin', [CheckinController::class, 'index']);
         Route::post('/checkin/validate', [CheckinController::class, 'validateTicket']);
