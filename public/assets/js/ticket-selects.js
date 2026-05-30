@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const typeSelect = document.getElementById('ticketType');
     const seatSelect = document.getElementById('ticketSeat');
+    const seatGroup = document.getElementById('ticketSeatGroup');
     const addBtn = document.getElementById('btnAddTicket');
 
     if (!typeSelect || !seatSelect || !addBtn || !window.ticketsByType) {
@@ -9,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let selectedTicket = null;
+    const toggleSeatSelector = (isVisible) => {
+        if (seatGroup) {
+            seatGroup.hidden = !isVisible;
+        }
+    };
 
     typeSelect.addEventListener('change', () => {
 
@@ -18,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         seatSelect.disabled = true;
         addBtn.disabled = true;
         selectedTicket = null;
+        toggleSeatSelector(true);
 
         if (!type || !window.ticketsByType[type]) {
             seatSelect.innerHTML = '<option>Selecciona un tipo primero</option>';
@@ -30,10 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 🎫 CASO GENERAL (1 solo ticket con stock > 1)
         if (tickets.length === 1 && tickets[0].stock > 1) {
 
-            const disponibles = tickets[0].stock;
-
             seatSelect.disabled = true;
-            seatSelect.innerHTML = `<option>No aplica (${disponibles} disponibles)</option>`;
+            seatSelect.innerHTML = `<option>No aplica</option>`;
+            toggleSeatSelector(false);
 
             selectedTicket = tickets[0];
             addBtn.disabled = false;
