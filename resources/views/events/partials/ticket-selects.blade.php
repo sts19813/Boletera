@@ -25,7 +25,7 @@
         </div>
 
         {{-- SELECT 2: ASIENTO / BOLETO --}}
-        <div class="mb-5">
+        <div id="ticketSeatGroup" class="mb-5">
             <label class="form-label fw-bold">
                 Asiento
             </label>
