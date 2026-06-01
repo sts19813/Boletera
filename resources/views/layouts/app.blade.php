@@ -82,21 +82,30 @@
 	<!--begin::Theme mode setup on page load-->
 	<script>
 		var defaultThemeMode = "light";
+		var adminThemeKey = "admin-data-bs-theme";
+		var adminThemeModeKey = "admin-data-bs-theme-mode";
+		var sharedThemeKey = "data-bs-theme";
+		var sharedThemeModeKey = "data-bs-theme-mode";
+		var themeMenuMode;
 		var themeMode;
 		if (document.documentElement) {
-			if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
-				themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
+			if (localStorage.getItem(adminThemeModeKey) !== null) {
+				themeMenuMode = localStorage.getItem(adminThemeModeKey);
+			} else if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
+				themeMenuMode = document.documentElement.getAttribute("data-bs-theme-mode");
 			} else {
-				if (localStorage.getItem("data-bs-theme") !== null) {
-					themeMode = localStorage.getItem("data-bs-theme");
-				} else {
-					themeMode = defaultThemeMode;
-				}
+				themeMenuMode = defaultThemeMode;
 			}
+			themeMode = themeMenuMode;
 			if (themeMode === "system") {
 				themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 			}
 			document.documentElement.setAttribute("data-bs-theme", themeMode);
+			document.documentElement.setAttribute("data-bs-theme-mode", themeMenuMode);
+			localStorage.setItem(sharedThemeKey, themeMode);
+			localStorage.setItem(sharedThemeModeKey, themeMenuMode);
+			localStorage.setItem(adminThemeKey, themeMode);
+			localStorage.setItem(adminThemeModeKey, themeMenuMode);
 		}
 	</script>
 	<!--end::Theme mode setup on page load-->
@@ -172,6 +181,26 @@
 	<script src="{{ asset('assets/js/custom/utilities/modals/upgrade-plan.js') }}"></script>
 	<script src="{{ asset('assets/js/custom/utilities/modals/users-search.js') }}"></script>
 	<!--end::Custom Javascript-->
+	<script>
+		(function() {
+			var adminThemeKey = "admin-data-bs-theme";
+			var adminThemeModeKey = "admin-data-bs-theme-mode";
+			var syncAdminThemePreference = function() {
+				var currentTheme = document.documentElement.getAttribute("data-bs-theme") || localStorage.getItem("data-bs-theme");
+				var currentMode = localStorage.getItem("data-bs-theme-mode")
+					|| document.documentElement.getAttribute("data-bs-theme-mode")
+					|| "light";
+
+				if (currentTheme) {
+					localStorage.setItem(adminThemeKey, currentTheme);
+				}
+				localStorage.setItem(adminThemeModeKey, currentMode);
+			};
+
+			document.documentElement.addEventListener("kt.thememode.change", syncAdminThemePreference);
+			document.addEventListener("DOMContentLoaded", syncAdminThemePreference);
+		})();
+	</script>
 
 
 	<!-- Load Pickr -->
