@@ -44,9 +44,20 @@
         rel="stylesheet">
 
     <script>
-        // Forzar tema oscuro por defecto
-        document.documentElement.setAttribute("data-bs-theme", "dark");
-        localStorage.setItem("kt_theme_mode_value", "dark");
+        (function () {
+            const themeKeys = ["data-bs-theme", "data-bs-theme-mode", "kt_theme_mode_value"];
+            const backup = {};
+
+            themeKeys.forEach((key) => {
+                backup[key] = localStorage.getItem(key);
+            });
+
+            window.__iframeThemeStorageBackup = backup;
+
+            // El iframe de clientes siempre debe renderizar oscuro.
+            document.documentElement.setAttribute("data-bs-theme", "dark");
+            document.documentElement.setAttribute("data-bs-theme-mode", "dark");
+        })();
     </script>
 
 </head>
@@ -74,6 +85,24 @@
     <script src="{{ asset('assets/js/custom/utilities/modals/upgrade-plan.js') }}"></script>
     <script src="{{ asset('assets/js/custom/utilities/modals/users-search.js') }}"></script>
     <!--end::Custom Javascript-->
+    <script>
+        (function () {
+            const restoreThemeStorage = () => {
+                const backup = window.__iframeThemeStorageBackup || {};
+                const keys = ["data-bs-theme", "data-bs-theme-mode", "kt_theme_mode_value"];
+
+                keys.forEach((key) => {
+                    if (Object.prototype.hasOwnProperty.call(backup, key) && backup[key] !== null) {
+                        localStorage.setItem(key, backup[key]);
+                    } else {
+                        localStorage.removeItem(key);
+                    }
+                });
+            };
+
+            window.addEventListener("load", restoreThemeStorage);
+        })();
+    </script>
 
     <!-- Para cargar scripts adicionales desde otras vistas -->
     @stack('scripts')

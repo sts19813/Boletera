@@ -3,6 +3,31 @@
 @section('title', 'Dashboard | STOM Tickets')
 
 @section('content')
+    <style>
+        #admin-dashboard {
+            color: var(--bs-body-color);
+        }
+
+        #admin-dashboard .card-title,
+        #admin-dashboard .form-label,
+        #admin-dashboard .table> :not(caption)>*>*,
+        #admin-dashboard .dataTables_info,
+        #admin-dashboard .dataTables_paginate,
+        #admin-dashboard .dataTables_length label,
+        #admin-dashboard .dataTables_filter label {
+            color: var(--bs-body-color) !important;
+        }
+
+        #admin-dashboard .table thead th {
+            color: var(--bs-gray-700);
+        }
+
+        html[data-bs-theme="dark"] #admin-dashboard .table thead th {
+            color: var(--bs-gray-300);
+        }
+    </style>
+
+    <div id="admin-dashboard">
     <div class="card mb-6">
         <div class="card-body">
             <div class="row g-4 align-items-end">
@@ -284,11 +309,13 @@
             </div>
         </div>
     </div>
+    </div>
 @endsection
 
 @push('scripts')
     <script>
         const chartRoots = {};
+        let dashboardSnapshot = null;
         let salesDataTable = null;
 
         const currencyFormatter = new Intl.NumberFormat('es-MX', {
@@ -305,6 +332,33 @@
 
         function formatNumber(value) {
             return numberFormatter.format(Number(value || 0));
+        }
+
+        function isDarkTheme() {
+            return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        }
+
+        function getChartThemeColors() {
+            return {
+                text: am5.color(isDarkTheme() ? 0xD1D5DB : 0x4B5563),
+                grid: am5.color(isDarkTheme() ? 0x374151 : 0xE5E7EB),
+            };
+        }
+
+        function applyXYAxisTheme(axis, textColor, gridColor) {
+            const renderer = axis.get('renderer');
+            renderer.labels.template.setAll({
+                fill: textColor,
+            });
+            renderer.grid.template.setAll({
+                stroke: gridColor,
+                strokeOpacity: 0.35,
+            });
+        }
+
+        function applyLegendTheme(legend, textColor) {
+            legend.labels.template.setAll({ fill: textColor });
+            legend.valueLabels.template.setAll({ fill: textColor });
         }
 
         function escapeHtml(value) {
@@ -380,6 +434,11 @@
                 const root = am5.Root.new(containerId);
                 chartRoots[containerId] = root;
                 root.setThemes([am5themes_Animated.new(root)]);
+                const themeColors = getChartThemeColors();
+                root.interfaceColors.setAll({
+                    text: themeColors.text,
+                    grid: themeColors.grid,
+                });
 
                 const chart = root.container.children.push(am5xy.XYChart.new(root, {
                     panX: false,
@@ -399,11 +458,13 @@
                     paddingTop: 15,
                     fontSize: 11,
                 });
+                applyXYAxisTheme(xAxis, themeColors.text, themeColors.grid);
 
                 const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
                     min: 0,
                     renderer: am5xy.AxisRendererY.new(root, {}),
                 }));
+                applyXYAxisTheme(yAxis, themeColors.text, themeColors.grid);
 
                 xAxis.data.setAll(data);
 
@@ -438,7 +499,9 @@
                 courtesySeries.data.setAll(data);
 
                 chart.set('cursor', am5xy.XYCursor.new(root, {}));
-                chart.children.push(am5.Legend.new(root, { centerX: am5.p50, x: am5.p50 }));
+                const legend = chart.children.push(am5.Legend.new(root, { centerX: am5.p50, x: am5.p50 }));
+                legend.data.setAll([paidSeries, courtesySeries]);
+                applyLegendTheme(legend, themeColors.text);
                 chart.appear(800, 100);
             });
         }
@@ -456,6 +519,11 @@
                 const root = am5.Root.new(containerId);
                 chartRoots[containerId] = root;
                 root.setThemes([am5themes_Animated.new(root)]);
+                const themeColors = getChartThemeColors();
+                root.interfaceColors.setAll({
+                    text: themeColors.text,
+                    grid: themeColors.grid,
+                });
 
                 const chart = root.container.children.push(am5xy.XYChart.new(root, {
                     panX: false,
@@ -466,10 +534,12 @@
                     categoryField: 'date',
                     renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 40 }),
                 }));
+                applyXYAxisTheme(xAxis, themeColors.text, themeColors.grid);
 
                 const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
                     renderer: am5xy.AxisRendererY.new(root, {}),
                 }));
+                applyXYAxisTheme(yAxis, themeColors.text, themeColors.grid);
 
                 xAxis.data.setAll(data);
 
@@ -512,6 +582,11 @@
                 const root = am5.Root.new(containerId);
                 chartRoots[containerId] = root;
                 root.setThemes([am5themes_Animated.new(root)]);
+                const themeColors = getChartThemeColors();
+                root.interfaceColors.setAll({
+                    text: themeColors.text,
+                    grid: themeColors.grid,
+                });
 
                 const chart = root.container.children.push(am5xy.XYChart.new(root, {
                     panX: false,
@@ -523,11 +598,13 @@
                     categoryField: 'evento',
                     renderer: am5xy.AxisRendererY.new(root, { minGridDistance: 20 }),
                 }));
+                applyXYAxisTheme(yAxis, themeColors.text, themeColors.grid);
 
                 const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
                     min: 0,
                     renderer: am5xy.AxisRendererX.new(root, {}),
                 }));
+                applyXYAxisTheme(xAxis, themeColors.text, themeColors.grid);
 
                 const series = chart.series.push(am5xy.ColumnSeries.new(root, {
                     xAxis,
@@ -564,6 +641,11 @@
                 const root = am5.Root.new(containerId);
                 chartRoots[containerId] = root;
                 root.setThemes([am5themes_Animated.new(root)]);
+                const themeColors = getChartThemeColors();
+                root.interfaceColors.setAll({
+                    text: themeColors.text,
+                    grid: themeColors.grid,
+                });
 
                 const chart = root.container.children.push(am5percent.PieChart.new(root, {
                     layout: root.verticalLayout,
@@ -577,6 +659,7 @@
                 series.labels.template.setAll({
                     oversizedBehavior: 'truncate',
                     maxWidth: 160,
+                    fill: themeColors.text,
                 });
 
                 series.slices.template.setAll({
@@ -584,9 +667,23 @@
                 });
 
                 series.data.setAll(data);
-                chart.children.push(am5.Legend.new(root, { centerX: am5.p50, x: am5.p50 }));
+                const legend = chart.children.push(am5.Legend.new(root, { centerX: am5.p50, x: am5.p50 }));
+                legend.data.setAll(series.dataItems);
+                applyLegendTheme(legend, themeColors.text);
                 chart.appear(800, 100);
             });
+        }
+
+        function rerenderDashboardCharts() {
+            if (!dashboardSnapshot) {
+                return;
+            }
+
+            renderVolumeChart(dashboardSnapshot.charts?.volume_by_day || []);
+            renderRevenueChart(dashboardSnapshot.charts?.revenue_by_day || []);
+            renderTopEventsChart(dashboardSnapshot.charts?.top_events || []);
+            renderPieChart('chartPayments', dashboardSnapshot.charts?.payment_methods || [], 'ingresos');
+            renderPieChart('chartChannels', dashboardSnapshot.charts?.sale_channels || [], 'ingresos');
         }
 
         function renderEventsRevenueTable(rows) {
@@ -718,17 +815,14 @@
 
             const dashboardData = await dashboardRes.json();
             const boletosData = await boletosRes.json();
+            dashboardSnapshot = dashboardData;
 
             updateCards(dashboardData.cards || {});
             renderLastSales(dashboardData.ultimas_ventas || []);
             renderEventsRevenueTable(dashboardData.charts?.events_revenue || []);
             renderSalesTable(boletosData || []);
 
-            renderVolumeChart(dashboardData.charts?.volume_by_day || []);
-            renderRevenueChart(dashboardData.charts?.revenue_by_day || []);
-            renderTopEventsChart(dashboardData.charts?.top_events || []);
-            renderPieChart('chartPayments', dashboardData.charts?.payment_methods || [], 'ingresos');
-            renderPieChart('chartChannels', dashboardData.charts?.sale_channels || [], 'ingresos');
+            rerenderDashboardCharts();
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -782,6 +876,10 @@
                     option.selected = false;
                 });
                 cargarDashboard();
+            });
+
+            document.documentElement.addEventListener('kt.thememode.change', function () {
+                rerenderDashboardCharts();
             });
         });
     </script>
