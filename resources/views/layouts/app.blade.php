@@ -80,34 +80,56 @@
 
 
 	<!--begin::Theme mode setup on page load-->
-	<script>
-		var defaultThemeMode = "light";
-		var adminThemeKey = "admin-data-bs-theme";
-		var adminThemeModeKey = "admin-data-bs-theme-mode";
-		var sharedThemeKey = "data-bs-theme";
-		var sharedThemeModeKey = "data-bs-theme-mode";
-		var themeMenuMode;
-		var themeMode;
-		if (document.documentElement) {
-			if (localStorage.getItem(adminThemeModeKey) !== null) {
-				themeMenuMode = localStorage.getItem(adminThemeModeKey);
-			} else if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
-				themeMenuMode = document.documentElement.getAttribute("data-bs-theme-mode");
-			} else {
-				themeMenuMode = defaultThemeMode;
+		<script>
+			var defaultThemeMode = "light";
+			var adminThemeKey = "admin-data-bs-theme";
+			var adminThemeModeKey = "admin-data-bs-theme-mode";
+			var sharedThemeKey = "data-bs-theme";
+			var sharedThemeModeKey = "data-bs-theme-mode";
+			var metronicThemeModeKey = "kt_theme_mode_value";
+			var themeMenuMode;
+			var themeMode;
+			var normalizeThemeMode = function(value) {
+				return value === "light" || value === "dark" || value === "system" ? value : null;
+			};
+			if (document.documentElement) {
+				themeMenuMode = normalizeThemeMode(localStorage.getItem(adminThemeModeKey));
+				if (!themeMenuMode) {
+					themeMenuMode = normalizeThemeMode(localStorage.getItem(sharedThemeModeKey));
+				}
+				if (!themeMenuMode) {
+					themeMenuMode = normalizeThemeMode(localStorage.getItem(metronicThemeModeKey));
+				}
+				if (!themeMenuMode && document.documentElement.hasAttribute("data-bs-theme-mode")) {
+					themeMenuMode = normalizeThemeMode(document.documentElement.getAttribute("data-bs-theme-mode"));
+				}
+				if (!themeMenuMode) {
+					themeMenuMode = defaultThemeMode;
+				}
+
+				themeMode = normalizeThemeMode(localStorage.getItem(adminThemeKey));
+				if (!themeMode) {
+					themeMode = normalizeThemeMode(localStorage.getItem(sharedThemeKey));
+				}
+				if (!themeMode) {
+					themeMode = themeMenuMode;
+				}
+				if (themeMode === "system") {
+					themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+				}
+				if (themeMode !== "dark" && themeMode !== "light") {
+					themeMode = "light";
+				}
+
+				document.documentElement.setAttribute("data-bs-theme", themeMode);
+				document.documentElement.setAttribute("data-bs-theme-mode", themeMenuMode);
+				localStorage.setItem(sharedThemeKey, themeMode);
+				localStorage.setItem(sharedThemeModeKey, themeMenuMode);
+				localStorage.setItem(metronicThemeModeKey, themeMenuMode);
+				localStorage.setItem(adminThemeKey, themeMode);
+				localStorage.setItem(adminThemeModeKey, themeMenuMode);
 			}
-			themeMode = themeMenuMode;
-			if (themeMode === "system") {
-				themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-			}
-			document.documentElement.setAttribute("data-bs-theme", themeMode);
-			document.documentElement.setAttribute("data-bs-theme-mode", themeMenuMode);
-			localStorage.setItem(sharedThemeKey, themeMode);
-			localStorage.setItem(sharedThemeModeKey, themeMenuMode);
-			localStorage.setItem(adminThemeKey, themeMode);
-			localStorage.setItem(adminThemeModeKey, themeMenuMode);
-		}
-	</script>
+		</script>
 	<!--end::Theme mode setup on page load-->
 	<!--begin::App-->
 
@@ -181,26 +203,45 @@
 	<script src="{{ asset('assets/js/custom/utilities/modals/upgrade-plan.js') }}"></script>
 	<script src="{{ asset('assets/js/custom/utilities/modals/users-search.js') }}"></script>
 	<!--end::Custom Javascript-->
-	<script>
-		(function() {
-			var adminThemeKey = "admin-data-bs-theme";
-			var adminThemeModeKey = "admin-data-bs-theme-mode";
-			var syncAdminThemePreference = function() {
-				var currentTheme = document.documentElement.getAttribute("data-bs-theme") || localStorage.getItem("data-bs-theme");
-				var currentMode = localStorage.getItem("data-bs-theme-mode")
-					|| document.documentElement.getAttribute("data-bs-theme-mode")
-					|| "light";
+		<script>
+			(function() {
+				var adminThemeKey = "admin-data-bs-theme";
+				var adminThemeModeKey = "admin-data-bs-theme-mode";
+				var sharedThemeModeKey = "data-bs-theme-mode";
+				var metronicThemeModeKey = "kt_theme_mode_value";
 
-				if (currentTheme) {
-					localStorage.setItem(adminThemeKey, currentTheme);
-				}
-				localStorage.setItem(adminThemeModeKey, currentMode);
-			};
+				var normalizeThemeMode = function(value) {
+					return value === "light" || value === "dark" || value === "system" ? value : null;
+				};
 
-			document.documentElement.addEventListener("kt.thememode.change", syncAdminThemePreference);
-			document.addEventListener("DOMContentLoaded", syncAdminThemePreference);
-		})();
-	</script>
+				var syncAdminThemePreference = function() {
+					var currentTheme = document.documentElement.getAttribute("data-bs-theme") || localStorage.getItem("data-bs-theme");
+					var currentMode = normalizeThemeMode(localStorage.getItem(sharedThemeModeKey))
+						|| normalizeThemeMode(localStorage.getItem(metronicThemeModeKey))
+						|| normalizeThemeMode(document.documentElement.getAttribute("data-bs-theme-mode"))
+						|| "light";
+
+					if (currentTheme) {
+						localStorage.setItem(adminThemeKey, currentTheme);
+					}
+					localStorage.setItem(adminThemeModeKey, currentMode);
+					localStorage.setItem(metronicThemeModeKey, currentMode);
+				};
+
+				var bindThemeModeListener = function() {
+					if (window.KTThemeMode && typeof window.KTThemeMode.on === "function") {
+						window.KTThemeMode.on("kt.thememode.change", syncAdminThemePreference);
+					} else {
+						document.documentElement.addEventListener("kt.thememode.change", syncAdminThemePreference);
+					}
+				};
+
+				document.addEventListener("DOMContentLoaded", function() {
+					syncAdminThemePreference();
+					bindThemeModeListener();
+				});
+			})();
+		</script>
 
 
 	<!-- Load Pickr -->
