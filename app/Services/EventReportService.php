@@ -665,6 +665,8 @@ class EventReportService
             $fields[] = ['label' => 'Boleto', 'value' => (string) ($instance->ticket?->name ?? '-')];
             $fields[] = ['label' => 'Tipo', 'value' => (string) ($instance->ticket?->type ?? $instance->ticket?->name ?? '-')];
             $fields[] = ['label' => 'Precio', 'value' => '$' . number_format($this->instanceAmountForReports($instance), 2)];
+            $fields[] = ['label' => 'Metodo de pago', 'value' => $this->mapPaymentMethod((string) $instance->payment_method)];
+            $fields[] = ['label' => 'Canal de venta', 'value' => (string) ($instance->sale_channel ?? '-')];
 
             if ($instance->nombre) {
                 $fields[] = ['label' => 'Nombre', 'value' => $instance->nombre];
@@ -682,6 +684,12 @@ class EventReportService
             $entries[] = [
                 'instance_id' => $instance->id,
                 'title' => 'Boleto ' . ($index + 1),
+                'nombre' => $instance->nombre ?? '',
+                'email' => $instance->email ?? '',
+                'price' => (float) ($instance->price ?? $instance->total ?? 0),
+                'payment_method' => $instance->payment_method ?? 'card',
+                'sale_channel' => $instance->sale_channel ?? 'stripe',
+                'is_cortesia' => $this->isCourtesyByIdentity($instance->email, $instance->nombre),
                 'fields' => $fields,
             ];
         }

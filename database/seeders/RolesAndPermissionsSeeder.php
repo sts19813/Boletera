@@ -25,11 +25,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'ver reportes',
             'exportar reportes',
             'editar reportes',
+            'editar tickets',
             'ver inscripciones',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::findOrCreate($permission);
         }
 
         // ROLES
