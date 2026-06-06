@@ -8,9 +8,11 @@
     <div class="d-flex align-items-center justify-content-between mb-6 flex-wrap gap-3">
         <h3 class="fw-bold mb-0">Corte de Ventas</h3>
 
-        <a href="{{ route('admin.corte.export.general', request()->query()) }}" class="btn btn-primary">
-            Exportar Corte
-        </a>
+        @if(auth()->user()?->hasRole('admin') || auth()->user()?->hasRole('finance') || auth()->user()?->can('exportar reportes'))
+            <a href="{{ route('admin.corte.export.general', request()->query()) }}" class="btn btn-primary">
+                Exportar Corte
+            </a>
+        @endif
     </div>
 
     <div class="card card-flush mb-6">

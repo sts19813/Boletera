@@ -182,12 +182,13 @@ Route::middleware(['auth'])->group(function () {
     | FINANCE
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:admin|finance'])->group(function () {
+    Route::get('/corte', [CorteController::class, 'index'])
+        ->middleware(['role_or_permission:admin|finance|ver corte'])
+        ->name('admin.corte.index');
 
-        Route::get('/corte', [CorteController::class, 'index'])->name('admin.corte.index');
-        Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])->name('admin.corte.export.general');
-
-    });
+    Route::get('/corte/export/general', [CorteController::class, 'exportGeneral'])
+        ->middleware(['role_or_permission:admin|finance|exportar reportes'])
+        ->name('admin.corte.export.general');
 
     Route::middleware(['role:admin|cumbres|taquillero|viewer'])->group(function () {
 

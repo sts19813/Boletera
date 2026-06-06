@@ -27,6 +27,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'editar reportes',
             'editar tickets',
             'ver inscripciones',
+            'ver corte',
         ];
 
         foreach ($permissions as $permission) {
@@ -63,7 +64,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $finance->givePermissionTo([
             'ver reportes',
-            'exportar reportes'
+            'exportar reportes',
+            'ver corte',
         ]);
 
         $viewer->givePermissionTo([

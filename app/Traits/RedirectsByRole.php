@@ -11,6 +11,10 @@ trait RedirectsByRole
             return redirect()->route('events.index');
         }
 
+        if ($user->can('ver corte')) {
+            return redirect()->route('admin.corte.index');
+        }
+
         if ($user->hasRole('organizer')) {
             return redirect()->route('events.index');
         }
@@ -55,7 +59,7 @@ trait RedirectsByRole
             return redirect('/checkin');
         }
 
-        if ($user->hasAnyPermission([
+        if ($user->can('ver corte') || $user->hasAnyPermission([
             'ver reportes',
             'exportar reportes',
         ])) {

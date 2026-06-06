@@ -15,11 +15,12 @@ class CorteController extends Controller
     {
         $events = $this->resolveAccessibleEvents($request);
         $selectedEventIds = $this->resolveSelectedEventIds($request, $events);
+        $reportEventIds = $this->resolveReportEventIds($request, $events, $selectedEventIds);
 
         $data = $this->getCorteData(
             $request->input('from'),
             $request->input('to'),
-            $selectedEventIds
+            $reportEventIds
         );
 
         return view('admin.corte.index', [
@@ -34,11 +35,12 @@ class CorteController extends Controller
     {
         $events = $this->resolveAccessibleEvents($request);
         $selectedEventIds = $this->resolveSelectedEventIds($request, $events);
+        $reportEventIds = $this->resolveReportEventIds($request, $events, $selectedEventIds);
 
         $data = $this->getCorteData(
             $request->input('from'),
             $request->input('to'),
-            $selectedEventIds
+            $reportEventIds
         );
         $corte = $data['rows'];
         $totales = $data['totales'];
@@ -110,7 +112,7 @@ class CorteController extends Controller
      * CORTE AGRUPADO POR TIPO
      * ===============================
      */
-    protected function getCorteData($from = null, $to = null, array $eventIds = [])
+    protected function getCorteData($from = null, $to = null, ?array $eventIds = null)
     {
         $fromDateTime = $this->normalizeDateTimeInput($from);
         $toDateTime = $this->normalizeDateTimeInput($to);
@@ -131,7 +133,9 @@ class CorteController extends Controller
             $baseQuery->where('ti.created_at', '<=', $toDateTime);
         }
 
-        if (!empty($eventIds)) {
+        if (is_array($eventIds) && empty($eventIds)) {
+            $baseQuery->whereRaw('1 = 0');
+        } elseif (is_array($eventIds)) {
             $baseQuery->whereIn('ti.event_id', $eventIds);
         }
 
@@ -276,6 +280,28 @@ class CorteController extends Controller
 
         return $normalized
             ->intersect($allowed)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param Collection<int, Eventos> $accessibleEvents
+     * @param array<int, string> $selectedEventIds
+     * @return array<int, string>|null
+     */
+    private function resolveReportEventIds(Request $request, Collection $accessibleEvents, array $selectedEventIds): ?array
+    {
+        if ($request->user()?->hasRole('admin')) {
+            return empty($selectedEventIds) ? null : $selectedEventIds;
+        }
+
+        if (!empty($selectedEventIds)) {
+            return $selectedEventIds;
+        }
+
+        return $accessibleEvents
+            ->pluck('id')
+            ->map(fn($id) => (string) $id)
             ->values()
             ->all();
     }

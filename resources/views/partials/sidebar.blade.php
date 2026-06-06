@@ -211,7 +211,7 @@
                     </div>
                 @endcan
 
-                @canany(['ver reportes'])
+                @canany(['ver reportes', 'ver corte'])
                     <div class="menu-item">
                         <a class="menu-link {{ request()->is('corte*') ? 'active' : '' }}" href="/corte">
                             <span class="menu-icon">
