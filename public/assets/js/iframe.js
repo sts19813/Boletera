@@ -635,11 +635,16 @@ function submitDirectRegistration() {
                     title: title,
                     html: message,
                     confirmButtonText: whatsappLink ? 'Abrir grupo' : 'Aceptar',
+                    cancelButtonText: 'Cerrar',
                     showCancelButton: !!whatsappLink,
                     reverseButtons: true,
                     allowOutsideClick: false,
                     allowEscapeKey: false
                 }).then((result) => {
+                    if (whatsappLink && result.isConfirmed) {
+                        window.open(whatsappLink, '_blank', 'noopener');
+                    }
+
                     window.location.href = 'https://stomtickets.com';
                 });
             } else {

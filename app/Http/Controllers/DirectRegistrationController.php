@@ -74,11 +74,24 @@ class DirectRegistrationController extends Controller
             'base_price' => (float) ($event->price ?? 0),
         ]);
 
+        if ($email !== 'registro@local') {
+            $this->queueMailTaskService->queueDirectRegistration(
+                recipient: $email,
+                eventId: (string) $event->id,
+                registrationData: $formData,
+                reference: $instances[0]->reference ?? null
+            );
+        }
+
+        $whatsappLink = $this->whatsappGroupLink($event);
+
         return response()->json([
             'message' => 'Registro completado correctamente.',
             'title' => 'Registro completado',
-            'description' => 'Tu información fue guardada correctamente.',
-            'whatsapp_link' => '',
+            'description' => $whatsappLink
+                ? 'Tu información fue guardada correctamente. Únete al grupo de WhatsApp para recibir más información del evento.'
+                : 'Tu información fue guardada correctamente.',
+            'whatsapp_link' => $whatsappLink,
             'reference' => $instances[0]->reference ?? null,
         ]);
     }
@@ -187,7 +200,7 @@ class DirectRegistrationController extends Controller
             'message' => 'Registro completado correctamente.',
             'title' => 'Registro completado',
             'description' => 'La información del equipo fue guardada correctamente.',
-            'whatsapp_link' => '',
+            'whatsapp_link' => $this->whatsappGroupLink($event),
             'reference' => $instances[0]->reference ?? null,
         ]);
     }
@@ -289,7 +302,7 @@ class DirectRegistrationController extends Controller
             'message' => 'Registro completado correctamente.',
             'title' => 'Gracias por tu registro',
             'description' => 'Ya estas inscrito al torneo',
-            'whatsapp_link' => self::WHATSAPP_GROUP_LINK,
+            'whatsapp_link' => $this->whatsappGroupLink($event, true),
             'reference' => $instances[0]->reference ?? null,
         ]);
     }
@@ -317,6 +330,17 @@ class DirectRegistrationController extends Controller
     {
         $value = Str::lower(trim((string) $email));
         return filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : 'registro@local';
+    }
+
+    private function whatsappGroupLink(Eventos $event, bool $useLegacyFallback = false): string
+    {
+        $link = trim((string) ($event->whatsapp_group_link ?? ''));
+
+        if ($link !== '') {
+            return $link;
+        }
+
+        return $useLegacyFallback ? self::WHATSAPP_GROUP_LINK : '';
     }
 
     private function canBypassOnlineStop(): bool

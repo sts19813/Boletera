@@ -36,9 +36,12 @@ class BoletosMail extends Mailable implements ShouldQueue
     {
         $evento = $this->boletos[0]['event'] ?? ['id' => null, 'name' => 'Evento'];
         $eventId = (string) ($evento['id'] ?? '');
-        $whatsappGroupLink = $eventId === self::WHATSAPP_BUTTON_EVENT_ID
-            ? self::WHATSAPP_GROUP_LINK
-            : null;
+        $configuredWhatsappLink = trim((string) ($evento['whatsapp_group_link'] ?? ''));
+        $whatsappGroupLink = $configuredWhatsappLink !== '' ? $configuredWhatsappLink : null;
+
+        if (!$whatsappGroupLink && $eventId === self::WHATSAPP_BUTTON_EVENT_ID) {
+            $whatsappGroupLink = self::WHATSAPP_GROUP_LINK;
+        }
 
         $email = (string) ($this->boletos[0]['user']['email'] ?? '');
         $pdfContent = Pdf::loadView('pdf.boletos', [

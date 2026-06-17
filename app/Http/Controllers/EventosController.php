@@ -82,6 +82,7 @@ class EventosController extends Controller
             'template_form' => 'nullable|required_if:registration_form_mode,manual|string|max:100',
             'registration_form_mode' => 'nullable|required_if:is_registration,1|in:manual,builder',
             'registration_form_id' => 'nullable|required_if:registration_form_mode,builder|uuid|exists:registration_forms,id',
+            'whatsapp_group_link' => 'nullable|url|max:255',
             'allows_multiple_registrations' => 'nullable|boolean',
             'registration_max_checkins' => 'nullable|required_if:is_registration,1|integer|min:1',
             'modal_color' => 'nullable|string|max:50',
@@ -128,6 +129,7 @@ class EventosController extends Controller
                 'template',
                 'registration_form_mode',
                 'registration_form_id',
+                'whatsapp_group_link',
                 'registration_max_checkins',
                 'modal_color',
                 'modal_selector',
@@ -158,6 +160,7 @@ class EventosController extends Controller
                 $data['template_form'] = null;
                 $data['registration_form_mode'] = null;
                 $data['registration_form_id'] = null;
+                $data['whatsapp_group_link'] = null;
                 $data['registration_max_checkins'] = 1;
             }
 
@@ -315,6 +318,7 @@ class EventosController extends Controller
             'template_form' => 'nullable|required_if:registration_form_mode,manual|string|max:100',
             'registration_form_mode' => 'nullable|required_if:is_registration,1|in:manual,builder',
             'registration_form_id' => 'nullable|required_if:registration_form_mode,builder|uuid|exists:registration_forms,id',
+            'whatsapp_group_link' => 'nullable|url|max:255',
             'allows_multiple_registrations' => 'nullable|boolean',
             'registration_max_checkins' => 'nullable|required_if:is_registration,1|integer|min:1',
             'modal_color' => 'nullable|string|max:50',
@@ -362,6 +366,7 @@ class EventosController extends Controller
                 'template_form',
                 'registration_form_mode',
                 'registration_form_id',
+                'whatsapp_group_link',
                 'registration_max_checkins',
                 'modal_color',
                 'modal_selector',
@@ -395,6 +400,7 @@ class EventosController extends Controller
                 $data['template_form'] = null;
                 $data['registration_form_mode'] = null;
                 $data['registration_form_id'] = null;
+                $data['whatsapp_group_link'] = null;
                 $data['allows_multiple_registrations'] = false;
                 $data['template'] = $data['template'] ?? 'default';
                 $data['registration_max_checkins'] = 1;

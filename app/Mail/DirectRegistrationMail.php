@@ -29,9 +29,10 @@ class DirectRegistrationMail extends Mailable implements ShouldQueue
     public function build()
     {
         $templateForm = (string) ($this->registrationData['template_form'] ?? '');
-        $whatsappLink = $templateForm === 'whatsapp_direct'
-            ? self::WHATSAPP_GROUP_LINK
-            : null;
+        $configuredWhatsappLink = trim((string) ($this->event->whatsapp_group_link ?? ''));
+        $whatsappLink = $configuredWhatsappLink !== ''
+            ? $configuredWhatsappLink
+            : ($templateForm === 'whatsapp_direct' ? self::WHATSAPP_GROUP_LINK : null);
 
         return $this
             ->subject('Registro confirmado - ' . $this->event->name)

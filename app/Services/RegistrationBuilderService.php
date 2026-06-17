@@ -24,6 +24,7 @@ class RegistrationBuilderService
                     Carbon::parse($evento->hora_inicio)->format('g:i a')
                 ),
                 'venue' => $evento->location,
+                'whatsapp_group_link' => $evento->whatsapp_group_link,
             ],
             'ticket' => [
                 'name' => 'General',

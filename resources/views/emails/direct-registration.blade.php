@@ -28,6 +28,18 @@
                             @php
                                 $templateForm = (string) ($registration['template_form'] ?? '');
                                 $isDiaPadres = $templateForm === 'dia_padres_cumbres';
+                                $hasWhatsappLink = !empty($whatsappLink);
+                                $registrantName = $registration['full_name']
+                                    ?? $registration['nombre_completo']
+                                    ?? $registration['name']
+                                    ?? '-';
+                                $registrantEmail = $registration['email']
+                                    ?? $registration['correo']
+                                    ?? '-';
+                                $registrantPhone = $registration['phone']
+                                    ?? $registration['telefono']
+                                    ?? $registration['celular']
+                                    ?? '-';
                             @endphp
 
                             <h1 style="margin:0 0 18px 0; font-size:26px; color:#111;">Gracias por tu registro</h1>
@@ -38,20 +50,24 @@
                                 </p>
                             @else
                                 <p style="font-size:15px; color:#555; margin:0 0 10px 0;">
-                                    Ya estas inscrito al torneo de Brawl stars.
+                                    Tu registro para <strong>{{ $evento->name }}</strong> fue confirmado correctamente.
                                 </p>
 
-                                <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
-                                    Unete al grupo de WhatsApp para que te demos mas informacion del evento.
-                                </p>
+                                @if($hasWhatsappLink)
+                                    <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
+                                        Unete al grupo de WhatsApp para que te demos mas informacion del evento.
+                                    </p>
 
-                                @if(!empty($whatsappLink))
                                     <div style="margin:0 0 26px 0;">
                                         <a href="{{ $whatsappLink }}"
                                             style="display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:6px; font-weight:bold;">
                                             Unirme al grupo de WhatsApp
                                         </a>
                                     </div>
+                                @else
+                                    <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
+                                        Te esperamos en el evento.
+                                    </p>
                                 @endif
                             @endif
 
@@ -72,9 +88,9 @@
                                                 - Sin hijos registrados<br>
                                             @endforelse
                                         @else
-                                            <strong>Nombre:</strong> {{ $registration['full_name'] ?? '-' }}<br>
-                                            <strong>Correo:</strong> {{ $registration['email'] ?? '-' }}<br>
-                                            <strong>Telefono:</strong> {{ $registration['phone'] ?? '-' }}
+                                            <strong>Nombre:</strong> {{ $registrantName }}<br>
+                                            <strong>Correo:</strong> {{ $registrantEmail }}<br>
+                                            <strong>Telefono:</strong> {{ $registrantPhone }}
                                         @endif
                                     </td>
                                 </tr>

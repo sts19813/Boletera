@@ -34,6 +34,7 @@ class TicketBuilderService
                 ),
                 'venue' => $event->location,
                 'organizer' => '',
+                'whatsapp_group_link' => $event->whatsapp_group_link,
             ],
             'ticket' => [
                 'name' => $ticket->name,

@@ -25,6 +25,7 @@ class Eventos extends Model
         'template_form', // Para determinar blade archivo formulario de registro usar contiene logica js
         'registration_form_mode',
         'registration_form_id',
+        'whatsapp_group_link',
         'allows_multiple_registrations',
         'registration_max_checkins',
         'report_settings',

@@ -185,6 +185,15 @@
                                 </label>
                             </div>
 
+                            <div class="col-md-6 d-none registration-field">
+                                <label class="form-label fw-bold">Link grupo WhatsApp</label>
+                                <input type="url"
+                                    name="whatsapp_group_link"
+                                    class="form-control"
+                                    value="{{ old('whatsapp_group_link') }}"
+                                    placeholder="https://chat.whatsapp.com/...">
+                            </div>
+
                         </div>
                     </div>
                 </div>
