@@ -55,13 +55,13 @@
 
                                 @if($hasWhatsappLink)
                                     <p style="font-size:15px; color:#555; margin:0 0 24px 0;">
-                                        Unete al grupo de WhatsApp para que te demos mas informacion del evento.
+                                        Unete al grupo para que te demos mas informacion del evento.
                                     </p>
 
                                     <div style="margin:0 0 26px 0;">
                                         <a href="{{ $whatsappLink }}"
                                             style="display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:6px; font-weight:bold;">
-                                            Unirme al grupo de WhatsApp
+                                            Unirme al grupo
                                         </a>
                                     </div>
                                 @else

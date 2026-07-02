@@ -18,8 +18,7 @@ class DirectRegistrationController extends Controller
         private RegistrationService $registrationService,
         private RegistrationFormSchemaService $schemaService,
         private QueueMailTaskService $queueMailTaskService
-    ) {
-    }
+    ) {}
 
     public function store(Request $request, Eventos $event)
     {
@@ -89,7 +88,7 @@ class DirectRegistrationController extends Controller
             'message' => 'Registro completado correctamente.',
             'title' => 'Registro completado',
             'description' => $whatsappLink
-                ? 'Tu información fue guardada correctamente. Únete al grupo de WhatsApp para recibir más información del evento.'
+                ? 'Tu información fue guardada correctamente. Únete al grupo para recibir más información del evento.'
                 : 'Tu información fue guardada correctamente.',
             'whatsapp_link' => $whatsappLink,
             'reference' => $instances[0]->reference ?? null,
