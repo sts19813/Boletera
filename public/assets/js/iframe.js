@@ -626,7 +626,7 @@ function submitDirectRegistration() {
 
             let message = description;
             if (whatsappLink) {
-                message += `<br><br><span class="fw-bold">¿Deseas unirte al grupo de WhatsApp?</span>`;
+                message += `<br><br><span class="fw-bold">¿Deseas unirte al grupo?</span>`;
             }
 
             if (window.Swal?.fire) {
@@ -661,11 +661,11 @@ function submitDirectRegistration() {
             toastr.error(extractErrorMessage(payload));
         })
         .finally(() => {
-        if (btn) {
-            btn.disabled = false;
-            updateCartUI();
-        }
-    });
+            if (btn) {
+                btn.disabled = false;
+                updateCartUI();
+            }
+        });
 }
 
 function validateRegistrationForm() {
